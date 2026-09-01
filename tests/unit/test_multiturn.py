@@ -13,12 +13,12 @@ from financial_rag.pipeline.models import RAGResponse
 
 class TestConversationTurn:
     def test_fields(self):
-        turn = ConversationTurn(role="user", content="¿Cuál fue la utilidad?")
+        turn = ConversationTurn(role="user", content="What was the net profit?")
         assert turn.role == "user"
-        assert turn.content == "¿Cuál fue la utilidad?"
+        assert turn.content == "What was the net profit?"
 
     def test_assistant_role(self):
-        turn = ConversationTurn(role="assistant", content="La utilidad fue S/ 1,234M.")
+        turn = ConversationTurn(role="assistant", content="Net profit was S/ 1,234M.")
         assert turn.role == "assistant"
 
 
@@ -29,11 +29,11 @@ class TestMockGeneratorHistory:
         from financial_rag.retrieval.models import RetrievalResult
         gen = MockGenerator()
         history = [
-            ConversationTurn(role="user", content="pregunta anterior"),
-            ConversationTurn(role="assistant", content="respuesta anterior"),
+            ConversationTurn(role="user", content="previous question"),
+            ConversationTurn(role="assistant", content="previous answer"),
         ]
         result = gen.generate(
-            RetrievalResult(query="nueva pregunta", results=[]),
+            RetrievalResult(query="new question", results=[]),
             history=history,
         )
         assert result.answer == gen._answer
@@ -66,8 +66,8 @@ class TestPipelineHistory:
         )
 
         pipeline = RAGPipeline(retriever=mock_retriever, generator=mock_generator)
-        history = [ConversationTurn(role="user", content="pregunta previa")]
-        pipeline.ask("nueva pregunta", history=history)
+        history = [ConversationTurn(role="user", content="previous question")]
+        pipeline.ask("new question", history=history)
 
         called_history = mock_generator.generate.call_args[1]["history"]
         assert called_history == history
@@ -90,7 +90,7 @@ class TestPipelineHistory:
         )
 
         pipeline = RAGPipeline(retriever=mock_retriever, generator=mock_generator)
-        pipeline.ask("pregunta", history=None)
+        pipeline.ask("question", history=None)
 
         called_history = mock_generator.generate.call_args[1]["history"]
         assert called_history is None
@@ -110,7 +110,7 @@ class _MockPipelineMulti:
 
     def ask(self, question, top_k=5, source_filter=None, history=None, **kwargs):
         return RAGResponse(
-            answer=f"Respuesta con {len(history or [])} turnos de historial",
+            answer=f"Response with {len(history or [])} history turns",
             query=question,
             citations=[],
             retrieval_scores=[],
@@ -132,32 +132,32 @@ def multi_client():
 class TestAPIHistory:
     def test_history_field_accepted(self, multi_client):
         r = multi_client.post("/ask", json={
-            "question": "¿Y cómo compara con Scotiabank?",
+            "question": "How does that compare to Scotiabank?",
             "history": [
-                {"role": "user", "content": "¿Cuál fue la utilidad de Interbank?"},
-                {"role": "assistant", "content": "La utilidad fue S/ 1,234M."},
+                {"role": "user", "content": "What was Interbank's net profit?"},
+                {"role": "assistant", "content": "Net profit was S/ 1,234M."},
             ],
         })
         assert r.status_code == 200
 
     def test_history_forwarded_to_pipeline(self, multi_client):
         r = multi_client.post("/ask", json={
-            "question": "pregunta de seguimiento",
+            "question": "follow-up question",
             "history": [
-                {"role": "user", "content": "primera pregunta"},
-                {"role": "assistant", "content": "primera respuesta"},
+                {"role": "user", "content": "first question"},
+                {"role": "assistant", "content": "first answer"},
             ],
         })
-        assert "2 turnos" in r.json()["answer"]
+        assert "2 history turns" in r.json()["answer"]
 
     def test_empty_history_accepted(self, multi_client):
         r = multi_client.post("/ask", json={
-            "question": "pregunta sin historial",
+            "question": "question without history",
             "history": [],
         })
         assert r.status_code == 200
 
     def test_missing_history_defaults_empty(self, multi_client):
-        r = multi_client.post("/ask", json={"question": "pregunta válida"})
+        r = multi_client.post("/ask", json={"question": "valid question"})
         assert r.status_code == 200
-        assert "0 turnos" in r.json()["answer"]
+        assert "0 history turns" in r.json()["answer"]

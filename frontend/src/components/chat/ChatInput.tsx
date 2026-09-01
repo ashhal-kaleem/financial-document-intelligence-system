@@ -12,10 +12,10 @@ interface ChatInputProps {
 }
 
 const SUGGESTIONS = [
-  "¿Cuál fue la utilidad neta de Interbank en 2024?",
-  "¿Qué estrategia digital implementó Scotiabank?",
-  "¿Cuál es la política de dividendos de Interbank?",
-  "¿Cómo gestionan el riesgo de crédito los bancos peruanos?",
+  "What was Interbank's net profit in 2024?",
+  "What digital strategy did Scotiabank implement?",
+  "What is Interbank's dividend policy?",
+  "How do the Peruvian banks manage credit risk?",
 ]
 
 export function ChatInput({ onSend, isLoading, onStop }: ChatInputProps) {
@@ -44,7 +44,7 @@ export function ChatInput({ onSend, isLoading, onStop }: ChatInputProps) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pregunta sobre las memorias anuales bancarias..."
+          placeholder="Ask about the bank annual reports..."
           rows={1}
           className="max-h-40 min-h-[2.5rem] resize-none border-0 bg-transparent p-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:ring-offset-0"
           disabled={isLoading}

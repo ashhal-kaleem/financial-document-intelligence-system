@@ -50,13 +50,13 @@ class AskRequest(BaseModel):
     )
 
     model_config = {"json_schema_extra": {"example": {
-        "question": "¿Y cómo compara eso con Scotiabank?",
+        "question": "How does that compare to Scotiabank?",
         "top_k": 5,
         "source_filter": None,
         "model": "llama-3.3-70b-versatile",
         "history": [
-            {"role": "user", "content": "¿Cuál fue la utilidad neta de Interbank en 2024?"},
-            {"role": "assistant", "content": "La utilidad neta de Interbank fue S/ 1,234M [1]."},
+            {"role": "user", "content": "What was Interbank's net profit in 2024?"},
+            {"role": "assistant", "content": "Interbank's net profit was S/ 1,234M [1]."},
         ],
     }}}
 

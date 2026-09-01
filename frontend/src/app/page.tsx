@@ -67,7 +67,7 @@ export default function Home() {
               isLoading={isLoading}
             />
             <p className="mt-2 text-center text-xs text-zinc-700">
-              Enter para enviar · Shift+Enter para nueva línea
+              Enter to send · Shift+Enter for new line
             </p>
           </div>
         </div>

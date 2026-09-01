@@ -65,7 +65,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   />
                 ))}
               </span>
-              Pensando...
+              Thinking...
             </span>
           )}
 
@@ -86,7 +86,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {!response.is_grounded && (
               <div className="flex items-center gap-2 text-xs text-amber-400/80">
                 <AlertCircle className="h-3.5 w-3.5" />
-                Sin información en los documentos indexados
+                No information found in the indexed documents
               </div>
             )}
 
@@ -94,7 +94,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {response.citations.length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium uppercase tracking-wider text-zinc-600">
-                  Fuentes
+                  Sources
                 </p>
                 {response.citations.map((citation, i) => (
                   <CitationCard
@@ -119,9 +119,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             className="flex items-center gap-1 text-xs text-zinc-600 transition-colors hover:text-zinc-400"
           >
             {copied ? (
-              <><Check className="h-3 w-3" /> Copiado</>
+              <><Check className="h-3 w-3" /> Copied</>
             ) : (
-              <><Copy className="h-3 w-3" /> Copiar</>
+              <><Copy className="h-3 w-3" /> Copy</>
             )}
           </button>
         )}
