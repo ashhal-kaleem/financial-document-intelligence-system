@@ -1,0 +1,279 @@
+[
+  {
+    "_comment": "=== CATEGORY A: Cross-bank ambiguity ===",
+    "id": "q01",
+    "question": "What is the name of the new brand identity color introduced by HBL?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Light Lemon Yellow"],
+    "document_ids": null
+  },
+  {
+    "id": "q02",
+    "question": "Who is the President & CEO of HBL?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Muhammad Nassir Salim"],
+    "document_ids": null
+  },
+  {
+    "id": "q03",
+    "question": "In what year did the Ibrahim Group recapitalize Allied Bank?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["2004"],
+    "document_ids": null
+  },
+  {
+    "id": "q04",
+    "question": "What was the deposit base of Allied Bank exceeding in 2025?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["2.3 trillion", "Rs. 2.3 trillion"],
+    "document_ids": null
+  },
+  {
+    "id": "q05",
+    "question": "Which areas did the Allied Karavan expedition travel through?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Abbottabad", "Naran", "Lake Saif-ul-Maluk", "Babusar Top", "Hunza", "Attabad Lake", "Khunjerab Pass"],
+    "document_ids": null
+  },
+  {
+    "id": "q06",
+    "question": "How many members were in the Allied Karavan convoy?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["35 members"],
+    "document_ids": null
+  },
+  {
+    "id": "q07",
+    "question": "What are the four guiding principles of HBL's unified identity?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Forging Ahead", "Progressing Together", "Accelerating Towards the Future", "Shared Prosperity"],
+    "document_ids": null
+  },
+  {
+    "id": "q08",
+    "question": "Which subsidiaries will the refreshed HBL identity be rolled out across?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["HBL Microfinance Bank", "HBL Asset Management", "HBL Zarai Services Limited", "HBL Currency Exchange", "HBL Bank UK"],
+    "document_ids": null
+  },
+  {
+    "id": "q09",
+    "question": "What is the name of Pakistan's first humanoid robot mentioned by Allied Bank?",
+    "category": "distractor",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Pepper"],
+    "document_ids": null
+  },
+  {
+    "id": "q10",
+    "question": "Compare the deposit bases of Allied Bank and HBL.",
+    "category": "multi_document_comparison",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf", "HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Allied Bank has a deposit base exceeding Rs. 2.3 trillion"],
+    "document_ids": null
+  },
+  {
+    "id": "q11",
+    "question": "Who is the Chief Financial Officer of HBL?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Irfan Ahmed Meer"],
+    "document_ids": null
+  },
+  {
+    "id": "q12",
+    "question": "How much waste did the Allied Karavan team collect?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["1,300 kilograms"],
+    "document_ids": null
+  },
+  {
+    "id": "q13",
+    "question": "What is the CEO's favorite color?",
+    "category": "unanswerable",
+    "answerable": false,
+    "expected_sources": [],
+    "expected_answer_facts": [],
+    "document_ids": null
+  },
+  {
+    "id": "q14",
+    "question": "What is the cost of unlisted equity securities in The Benefit Company, Bahrain in 2025?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["5,945"],
+    "document_ids": null
+  },
+  {
+    "id": "q15",
+    "question": "What are the core values of Allied Bank?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Integrity", "High Performance", "Excellence in Service", "Innovation and Growth"],
+    "document_ids": null
+  },
+  {
+    "_comment": "=== CATEGORY B: Cross-bank ambiguity (distractors) ===",
+    "id": "q16",
+    "question": "Which bank describes itself as a symbol of national pride and financial leadership in Pakistan?",
+    "category": "cross_bank_ambiguity",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["HBL"],
+    "document_ids": null
+  },
+  {
+    "id": "q17",
+    "question": "What is the total number of branches mentioned in Allied Bank's 2025 annual report?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["1,400", "1400"],
+    "document_ids": null
+  },
+  {
+    "_comment": "=== CATEGORY C: Semantic paraphrases ===",
+    "id": "q18",
+    "question": "How did HBL rebrand its visual appearance for the modern era?",
+    "category": "semantic_paraphrase",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Light Lemon Yellow", "unified identity"],
+    "document_ids": null
+  },
+  {
+    "id": "q19",
+    "question": "What environmental initiative was conducted by Allied Bank employees in the northern areas of Pakistan?",
+    "category": "semantic_paraphrase",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Karavan", "waste", "clean"],
+    "document_ids": null
+  },
+  {
+    "id": "q20",
+    "question": "Who leads the executive management team at Habib Bank Limited?",
+    "category": "semantic_paraphrase",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Muhammad Nassir Salim"],
+    "document_ids": null
+  },
+  {
+    "_comment": "=== CATEGORY D: Multi-document comparison ===",
+    "id": "q21",
+    "question": "Which bank - HBL or Allied Bank - has more subsidiaries mentioned in their 2025 annual report?",
+    "category": "multi_document_comparison",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf", "ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["HBL Microfinance Bank", "HBL Asset Management", "HBL Zarai Services Limited", "HBL Currency Exchange", "HBL Bank UK"],
+    "document_ids": null
+  },
+  {
+    "id": "q22",
+    "question": "Compare the community/CSR initiatives of HBL and Allied Bank as described in their 2025 annual reports.",
+    "category": "multi_document_comparison",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf", "ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Karavan", "unified identity", "Shared Prosperity"],
+    "document_ids": null
+  },
+  {
+    "_comment": "=== CATEGORY E: Distractor questions ===",
+    "id": "q23",
+    "question": "What does HBL call its strategy of serving both corporate and retail clients simultaneously?",
+    "category": "distractor",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Progressing Together", "Forging Ahead", "Shared Prosperity"],
+    "document_ids": null
+  },
+  {
+    "id": "q24",
+    "question": "Which bank introduced a humanoid robot in its 2025 annual report and for what purpose?",
+    "category": "distractor",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Pepper", "Allied Bank"],
+    "document_ids": null
+  },
+  {
+    "_comment": "=== CATEGORY F: Unanswerable questions ===",
+    "id": "q25",
+    "question": "What was the net profit of Meezan Bank in 2025?",
+    "category": "unanswerable",
+    "answerable": false,
+    "expected_sources": [],
+    "expected_answer_facts": [],
+    "document_ids": null
+  },
+  {
+    "id": "q26",
+    "question": "What is the market share of HBL in the agricultural lending segment?",
+    "category": "unanswerable",
+    "answerable": false,
+    "expected_sources": [],
+    "expected_answer_facts": [],
+    "document_ids": null
+  },
+  {
+    "id": "q27",
+    "question": "What was Allied Bank's non-performing loan ratio in 2024?",
+    "category": "unanswerable",
+    "answerable": false,
+    "expected_sources": [],
+    "expected_answer_facts": [],
+    "document_ids": null
+  },
+  {
+    "_comment": "=== CATEGORY G: Fine-grained numerical distractors ===",
+    "id": "q28",
+    "question": "What is the rupee value of HBL's investment in Saudi Hollandi Bank?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["Saudi", "Hollandi"],
+    "document_ids": null
+  },
+  {
+    "id": "q29",
+    "question": "In which year was Allied Bank originally established?",
+    "category": "factual",
+    "answerable": true,
+    "expected_sources": ["ABL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["1942"],
+    "document_ids": null
+  },
+  {
+    "id": "q30",
+    "question": "What is the ticker symbol of HBL on the Pakistan Stock Exchange?",
+    "category": "fine_grained_numerical",
+    "answerable": true,
+    "expected_sources": ["HBL_Annual_Report_2025.pdf"],
+    "expected_answer_facts": ["HBL"],
+    "document_ids": null
+  }
+]

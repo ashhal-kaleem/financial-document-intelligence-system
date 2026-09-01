@@ -1,0 +1,91 @@
+ACME CORPORATION
+Annual Report 2023
+
+LETTER TO SHAREHOLDERS
+
+Dear Fellow Shareholders,
+
+Fiscal year 2023 was a year of strong execution and strategic progress for ACME Corporation.
+We delivered revenue of $4.2 billion, representing 12% year-over-year growth, driven by
+continued momentum in our cloud software division and disciplined cost management.
+
+Net income attributable to common shareholders was $612 million, or $3.84 per diluted share,
+compared with $489 million, or $3.07 per diluted share, in fiscal 2022. Adjusted EBITDA
+margin expanded 180 basis points to 28.4%.
+
+We returned $320 million to shareholders through dividends and share repurchases during
+the year, reflecting our confidence in the durability of our cash flows.
+
+FINANCIAL HIGHLIGHTS
+
+Total Revenue:       $4,200M  (+12% YoY)
+Gross Profit:        $2,730M  (65.0% margin)
+Operating Income:    $840M    (20.0% margin)
+Net Income:          $612M    (14.6% margin)
+Adjusted EBITDA:     $1,193M  (28.4% margin)
+Free Cash Flow:      $890M
+EPS (diluted):       $3.84
+Dividends per Share: $1.20
+
+SEGMENT PERFORMANCE
+
+Cloud Software Division
+Revenue grew 24% to $2,100M, fueled by net new customer additions of 1,400 and
+expansion within our existing customer base. Annual recurring revenue (ARR) reached
+$1,950M, up from $1,560M in the prior year. Net revenue retention rate was 118%,
+indicating strong upsell and cross-sell performance.
+
+Industrial Products Division
+Revenue of $1,680M was flat compared to the prior year, reflecting softness in
+European markets partially offset by strength in Asia-Pacific. Operating margin
+contracted 90 basis points to 15.2% due to elevated raw material costs.
+
+Financial Services Division
+Revenue increased 8% to $420M. The division launched two new financial analytics
+products and expanded its enterprise client roster to 340 institutions globally.
+
+RISK FACTORS
+
+The Company's business is subject to a number of material risks, including:
+
+1. Macroeconomic Risk: A deterioration in global economic conditions could reduce
+   customer spending on software and technology products.
+
+2. Competition: The cloud software market is highly competitive. Competitors include
+   large, well-resourced technology companies as well as emerging startups.
+
+3. Cybersecurity: The Company processes sensitive financial data and is a potential
+   target for cyberattacks. A successful breach could result in reputational and
+   financial harm.
+
+4. Regulatory: Changes in data privacy regulations (GDPR, CCPA) or financial
+   services regulations could increase compliance costs or restrict product capabilities.
+
+5. Foreign Exchange: Approximately 38% of revenue is denominated in currencies other
+   than the U.S. dollar. Currency fluctuations can materially affect reported results.
+
+OUTLOOK FOR FISCAL 2024
+
+Management expects:
+- Total revenue in the range of $4,600M to $4,700M (approximately 10-12% growth)
+- Adjusted EBITDA margin of 29.0% to 29.5%
+- Free cash flow of approximately $950M to $1,000M
+- Capital expenditures of approximately $180M
+
+The Board of Directors has approved a quarterly dividend of $0.32 per share,
+representing a 7% increase from the prior year.
+
+BALANCE SHEET HIGHLIGHTS (as of December 31, 2023)
+
+Cash and equivalents:    $1,240M
+Total assets:            $8,900M
+Total debt:              $2,100M
+Net debt:                $860M
+Shareholders' equity:    $4,750M
+Debt-to-EBITDA ratio:    1.8x
+
+ABOUT ACME CORPORATION
+
+ACME Corporation (NASDAQ: ACME) is a global provider of cloud software, industrial
+products, and financial analytics services. Founded in 1985 and headquartered in
+San Francisco, California, the Company employs approximately 18,500 people in 32 countries.
