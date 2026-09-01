@@ -75,7 +75,7 @@ export function DocumentList({
                 {doc.status === "processing" && (
                   <span className="flex items-center gap-1 text-sky-400">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Procesando...
+                    Processing...
                   </span>
                 )}
                 {doc.status === "error" && (
@@ -86,7 +86,7 @@ export function DocumentList({
                 )}
                 {doc.status === "ready" && (
                   <span className="text-zinc-500">
-                    {doc.page_count ? `${doc.page_count} páginas` : "Listo"}
+                    {doc.page_count ? `${doc.page_count} pages` : "Ready"}
                   </span>
                 )}
               </div>

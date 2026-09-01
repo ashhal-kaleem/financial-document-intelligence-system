@@ -9,15 +9,15 @@ import { DocumentUpload } from "./DocumentUpload"
 import { DocumentList } from "./DocumentList"
 
 const MODELS = [
-  { value: "qwen3:4b", label: "Qwen3 4B", note: "Rápido" },
-  { value: "qwen3:8b", label: "Qwen3 8B", note: "Balanceado" },
-  { value: "qwen3:14b", label: "Qwen3 14B", note: "Alta calidad" },
-  { value: "mistral:latest", label: "Mistral 7B", note: "Alternativa" },
-  { value: "qwen2.5-coder:32b", label: "Qwen2.5 32B", note: "Máxima potencia" },
+  { value: "qwen3:4b", label: "Qwen3 4B", note: "Fast" },
+  { value: "qwen3:8b", label: "Qwen3 8B", note: "Balanced" },
+  { value: "qwen3:14b", label: "Qwen3 14B", note: "High quality" },
+  { value: "mistral:latest", label: "Mistral 7B", note: "Alternative" },
+  { value: "qwen2.5-coder:32b", label: "Qwen2.5 32B", note: "Max power" },
 ]
 
 const BANKS: { value: BankFilter; label: string; color: string }[] = [
-  { value: "all", label: "Todos los bancos", color: "bg-zinc-500" },
+  { value: "all", label: "All banks", color: "bg-zinc-500" },
   { value: "interbank", label: "Interbank", color: "bg-violet-500" },
   { value: "scotiabank", label: "Scotiabank", color: "bg-sky-500" },
 ]
@@ -70,7 +70,7 @@ export function Sidebar({
         {/* Model */}
         <div className="space-y-2">
           <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-zinc-600">
-            <Cpu className="h-3.5 w-3.5" /> Modelo
+            <Cpu className="h-3.5 w-3.5" /> Model
           </label>
           <Select value={model} onValueChange={(v) => v && onModelChange(v)} disabled={isLoading}>
             <SelectTrigger className="border-zinc-800 bg-zinc-900 text-zinc-200 text-sm focus:ring-violet-500/30">
@@ -113,7 +113,7 @@ export function Sidebar({
               }`}
             >
               <span className={`h-2 w-2 rounded-full bg-zinc-500`} />
-              Todos los documentos (All Documents)
+              All Documents
             </button>
           </div>
 
@@ -166,7 +166,7 @@ export function Sidebar({
         {/* Top K */}
         <div className="space-y-2">
           <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wider text-zinc-600">
-            <span>Chunks a recuperar</span>
+            <span>Chunks to Retrieve</span>
             <span className="font-mono text-zinc-400">{topK}</span>
           </label>
           <input
@@ -193,7 +193,7 @@ export function Sidebar({
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-900 hover:text-zinc-400"
         >
           <Trash2 className="h-4 w-4" />
-          Limpiar conversación
+          Clear conversation
         </button>
       </div>
     </aside>

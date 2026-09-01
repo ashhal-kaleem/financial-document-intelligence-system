@@ -46,7 +46,7 @@ export function DocumentUpload({ onUpload, isUploading }: DocumentUploadProps) {
         {isUploading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Subiendo...</span>
+            <span>Uploading...</span>
           </>
         ) : (
           <>
