@@ -27,7 +27,7 @@ export default function Home() {
   const isHydrated = useHydrated();
   const queryClient = useQueryClient();
   const [deletingId, setDeletingId] = useState<string | undefined>(undefined);
-  const { activeTab, activeBackground, activeFont } = useFDISStore();
+  const { activeTab } = useFDISStore();
 
   const {
     data: documents = [],
@@ -51,26 +51,8 @@ export default function Home() {
     onSettled: () => setDeletingId(undefined),
   });
 
-  const bgStyle =
-    activeBackground === "emerald"
-      ? { backgroundImage: "url('/images/hero-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center" }
-      : activeBackground === "wallstreet"
-      ? { backgroundImage: "url('/wallpapers/wallstreet.jpg')", backgroundSize: "cover", backgroundPosition: "center" }
-      : undefined;
-
-  const fontClass =
-    activeFont === "outfit"
-      ? "font-sans tracking-wide"
-      : activeFont === "roboto"
-      ? "font-sans"
-      : activeFont === "mono"
-      ? "font-mono"
-      : "font-sans";
-
   return (
-    <div className={`relative h-screen w-screen flex flex-col overflow-hidden bg-background ${fontClass}`} style={bgStyle}>
-      <div className="absolute inset-0 bg-background/85 backdrop-blur-md pointer-events-none" />
-
+    <div className="relative h-screen w-screen flex flex-col overflow-hidden bg-background text-foreground font-sans">
       <BorderBeam
         size={140}
         duration={8}
@@ -99,7 +81,8 @@ export default function Home() {
                 <KPIStrip />
               </div>
               <div className="flex-1 overflow-hidden">
-                <ChatInterface onDocumentUploaded={() => queryClient.invalidateQueries({ queryKey: ["documents"] })}
+                <ChatInterface
+                  onDocumentUploaded={() => queryClient.invalidateQueries({ queryKey: ["documents"] })}
                   documentCount={documents.length}
                 />
               </div>

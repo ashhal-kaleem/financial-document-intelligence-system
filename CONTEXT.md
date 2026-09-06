@@ -5,7 +5,8 @@
 - **Status**: Production Full-Stack Deployed to Vercel (Serverless Python Backend + Next.js Frontend)
 - **Git Commit**: `39cb206` pushed to `origin/main` on GitHub
 - **Hosting**: 100% Free Tier, Zero-Card Serverless on Vercel Cloud
-- **Local Machine**: Zero laptop load (0% CPU/RAM consumption).
+- **GitHub Codespaces VM**: SHUT DOWN (`shiny-tribble-wrrgx46wv5wvf9999` stopped). Zero VM consumption.
+- **Local Machine**: Zero background processes / sync daemons (0% CPU/RAM consumption).
 
 ## Production Live URLs (Vercel Serverless)
 - **Primary Domain**: [https://financial-doc-ai.vercel.app](https://financial-doc-ai.vercel.app)
@@ -29,5 +30,6 @@
    - `/api/v1/documents`: Confirmed document list and chunk counts.
    - `/api/v1/ask/context`: Confirmed vector search with Hugging Face API and prompt generation.
    - `/api/v1/ask/stream`: Confirmed token-by-token SSE streaming from Groq LPU.
-4. **Codebase Synchronized**:
-   - All commits pushed to GitHub repository: `https://github.com/ashhal-kaleem/financial-document-intelligence-system`.
+4. **Cloud VM Retired**:
+   - GitHub Codespace `shiny-tribble-wrrgx46wv5wvf9999` and local sync daemons have been stopped.
+   - System is 100% self-hosted serverless on Vercel without relying on active VMs.

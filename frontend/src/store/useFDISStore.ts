@@ -36,8 +36,6 @@ export interface AuthUser {
 }
 
 export type DashboardTab = "chat" | "statements" | "comparison";
-export type BackgroundTheme = "emerald" | "wallstreet" | "slate";
-export type TypographyFont = "inter" | "outfit" | "roboto" | "mono";
 
 interface FDISState {
   activeCitation: Citation | null;
@@ -58,12 +56,6 @@ interface FDISState {
 
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
-
-  activeBackground: BackgroundTheme;
-  setActiveBackground: (bg: BackgroundTheme) => void;
-
-  activeFont: TypographyFont;
-  setActiveFont: (font: TypographyFont) => void;
 
   isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
@@ -104,12 +96,6 @@ export const useFDISStore = create<FDISState>((set) => ({
 
   activeTab: "chat",
   setActiveTab: (tab) => set({ activeTab: tab }),
-
-  activeBackground: "emerald",
-  setActiveBackground: (bg) => set({ activeBackground: bg }),
-
-  activeFont: "inter",
-  setActiveFont: (font) => set({ activeFont: font }),
 
   isSidebarCollapsed: false,
   toggleSidebar: () =>

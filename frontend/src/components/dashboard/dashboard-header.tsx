@@ -8,17 +8,15 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
-import { FileText, Palette, FileDown, DollarSign, GitCompare, MessageSquare, LogIn } from "lucide-react";
+import { useEffect } from "react";
+import { FileText, FileDown, DollarSign, GitCompare, MessageSquare, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useFDISStore, DashboardTab } from "@/store/useFDISStore";
-import { ThemeCustomizer } from "@/components/settings/theme-customizer";
 import { getSessionUser } from "@/lib/supabase";
 
 export function DashboardHeader() {
   const { activeTab, setActiveTab, setExportModalOpen, setAuthModalOpen, currentUser, setCurrentUser } = useFDISStore();
-  const [themeOpen, setThemeOpen] = useState(false);
 
   useEffect(() => {
     getSessionUser().then((user) => {
@@ -84,16 +82,6 @@ export function DashboardHeader() {
           <FileDown className="size-3.5 text-primary" /> Export Memo
         </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setThemeOpen(true)}
-          className="size-8 active:scale-[0.98]"
-          title="Customize Theme & Fonts"
-        >
-          <Palette className="size-4 text-muted-foreground hover:text-foreground" />
-        </Button>
-
         <div className="h-5 w-px bg-border/40 mx-1 hidden sm:block" />
 
         {currentUser ? (
@@ -116,8 +104,6 @@ export function DashboardHeader() {
           </Button>
         )}
       </div>
-
-      <ThemeCustomizer open={themeOpen} onOpenChange={setThemeOpen} />
     </header>
   );
 }
