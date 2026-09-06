@@ -105,6 +105,8 @@ For resource-constrained or low-spec local laptops (preventing CPU throttling, R
   ```bash
   gh codespace create -r Fardin7798/financial-document-intelligence-system --machine standardLinux32gb
   ```
+- **Autonomous Zero-Git Background Sync (`./dev-sync.sh`)**:
+  - The agent runs `./dev-sync.sh` as a background daemon process. Every keystroke/save in Antigravity IDE auto-syncs to Cloud Codespace in 1 second without `git push`.
 - **Automatic Cloud Configuration**:
   - Defined in `.devcontainer/devcontainer.json`.
   - Exposes port `3000` (Frontend) and `8000` (Backend) with auto-HTTPS port forwarding.
