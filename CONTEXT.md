@@ -41,3 +41,11 @@
   2. Guarded `documents` in [page.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/app/page.tsx) with `safeDocs = documents || []`.
   3. Cleared `.next` build cache. Verified zero TypeScript errors (`tsc --noEmit`). Verified 100% Playbook Invariants via `verify-playbook.py`.
   4. Pushed commit `fb7300a` to GitHub main for auto-deployment to Vercel.
+
+### RAG Document Intelligence Prompt Enhancement (080a860)
+- **Problem**: When users uploaded non-corporate 10-K documents (e.g. college engineering project synopses) and asked general questions like "isko read karo", the LLM correctly extracted the context but prepended a rigid refusal ("The provided financial document does not disclose this information... not a corporate annual report or 10-K").
+- **Root Cause**: Hardcoded `GROUNDED_SYSTEM_PROMPT` in `citation.py` and `user_prompt` in `inference.py` strictly limited scope to 10-K/balance sheets and mandated the phrase "The provided financial document does not disclose this information".
+- **Fix**:
+  1. Updated `GROUNDED_SYSTEM_PROMPT` in `backend/src/domain/citation.py` and `frontend/api/src/domain/citation.py` to act as an advanced Document Intelligence AI that analyzes, summarizes, and answers questions on *any* document while retaining strict grounding and exact `[1]`, `[2]` citations.
+  2. Updated `user_prompt` in `backend/src/services/inference.py` and `frontend/api/src/services/inference.py` to explicitly fulfill requests to read, explain, and summarize uploaded documents.
+  3. Committed and pushed commit `080a860` to GitHub `main`.
