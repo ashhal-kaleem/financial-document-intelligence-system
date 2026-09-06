@@ -25,10 +25,23 @@ Instead of built-in file and inspection tools, ALWAYS execute native Linux termi
   - GitHub repositories, issues, and PR lookups (via `gh` CLI)
   - Reddit, Twitter/X, and social discussions (via `rdt-cli` / `opencli`)
 
-### 🛡️ Mandatory Exa Search Protocol (Zero Waste Standards)
-1. **Query Precision**: No conversational filler (`"how to"`, `"can you"`). Use statement-style vectors or dense technical keywords.
-2. **Strict Result Cap**: Always pass `numResults: 3` (maximum 5). Never request 10–25 results.
-3. **Recency & Version Guard**: For modern web frameworks, specify explicit version or `startPublishedDate: "2025-01-01"`.
-4. **Domain Filtering**: Target official docs and repositories with `includeDomains` to eliminate SEO spam.
-5. **Code Search First**: Use `get_code_context_exa` when code snippets are needed instead of crawling blog pages.
-6. **2-Stage Lookup**: Stage 1 = Highlights; Stage 2 = Fetch single targeted URL via Jina Reader only when deep content is required.
+### 🛡️ Mandatory Cognitive Deep Research & Exa Protocol
+1. **Query Decomposition (MindSearch WebPlanner Standard)**:
+   - Never fire a single broad query for a complex technical question.
+   - Decompose multi-faceted problems into 2 to 4 atomic sub-questions (Mechanics, Constraints, Disconfirmation/Regrets, Implementation).
+2. **Deterministic Search Operators**:
+   - Use `"exact phrase"` for exact error messages, function names, and quotes.
+   - Use `site:trusted.domain` (e.g. `site:arxiv.org`, `site:github.com`) to anchor search in authority sources.
+   - Use `OR` for synonym expansions (`"vector store" OR "pgvector"`).
+   - Use `-exclusion` (`-course -medium -pricing`) to eliminate low-signal SEO aggregators.
+3. **Query Precision & Recency Guard**:
+   - No conversational filler (`"how to"`, `"can you"`). Use statement-style vectors or dense technical keywords.
+   - For fast-moving frameworks, always supply library version or `startPublishedDate: "2025-01-01"`.
+4. **Strict Result Cap**: Keep `numResults: 3` (maximum 5). Quality over quantity.
+5. **Mandatory Anti-Snippet Verification (Jina Reader Direct-Read)**:
+   - Never finalize an architecture or code solution based solely on 2-line search snippets or highlight cards.
+   - Drill into the primary authority URL via Jina Reader (`curl -sL https://r.jina.ai/<URL> | head -n 100`) to verify ground-truth signatures and caveats.
+6. **Code Search First**: Use `get_code_context_exa` when code snippets are needed instead of crawling blog pages.
+7. **Bounded Reflection & Saturation Rule (EXSEARCH Standard)**:
+   - Evaluate what was proven vs what gap remains after each search.
+   - Max 3 search iterations per sub-question; stop immediately when 2 consecutive searches return redundant evidence.
