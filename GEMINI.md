@@ -18,12 +18,13 @@ Instead of built-in file and inspection tools, ALWAYS execute native Linux termi
 | **Search in Code / Text** | `grep -rn "pattern" path/`, `find . -name "*.ext"` |
 
 ## 🌐 Default Internet & Web Research Mechanism
-- **ALWAYS** use the `agent-reach` skill as the default and only router for:
-  - Web searches and general internet research (Exa via `mcporter`)
-  - Fetching and reading URLs / web pages (via Jina Reader: `curl -sL https://r.jina.ai/URL`)
-  - YouTube video transcripts and metadata (via `yt-dlp`)
-  - GitHub repositories, issues, and PR lookups (via `gh` CLI)
-  - Reddit, Twitter/X, and social discussions (via `rdt-cli` / `opencli`)
+- **ALWAYS** strictly follow the Research Master Orchestrator:
+  `/home/shaikhfardin/templates/playbooks/research/00-research-orchestrator.md`
+  - Web searches & code context: Exa AI via `mcporter`
+  - Anti-Snippet ground-truth reading: Jina Reader (`curl -sL https://r.jina.ai/URL`)
+  - Video & podcast transcripts: `yt-dlp` + Groq Whisper
+  - GitHub code & issue intelligence: `gh` CLI (governed by `playbooks/dev/01-github-orchestrator.md`)
+  - Real developer regrets & discussions: Reddit CLI (`rdt`)
 
 ### 🛡️ Mandatory Cognitive Deep Research & Exa Protocol (`playbooks/research/00-research-orchestrator.md`)
 1. **Query Decomposition (MindSearch WebPlanner Standard)**:
