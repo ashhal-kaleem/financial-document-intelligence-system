@@ -66,7 +66,7 @@ export function AuthModal() {
             <div className="p-3.5 rounded-lg border border-border/30 bg-card/20 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold">{currentUser.name || "Financial Analyst"}</span>
-                <Badge variant="outline" className="text-[10px] font-mono text-emerald-400 border-emerald-500/30">
+                <Badge variant="outline" className="text-[10px] font-mono text-primary border-primary/30">
                   <CheckCircle2 className="size-3 mr-1" /> Active Session
                 </Badge>
               </div>

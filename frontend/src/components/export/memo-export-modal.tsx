@@ -95,7 +95,7 @@ Status: Grounded Passages & Vector Index Verified
             onClick={handleDownloadCsv}
           >
             <div className="flex items-center gap-3">
-              <Table className="size-5 text-emerald-400" />
+              <Table className="size-5 text-primary" />
               <div className="text-left">
                 <span className="text-xs font-semibold block">Statement Metrics Dataset (.csv)</span>
                 <span className="text-[10px] text-muted-foreground font-normal">Raw financial figures for Excel & quantitative models</span>
@@ -120,7 +120,7 @@ Status: Grounded Passages & Vector Index Verified
           </Button>
 
           {downloadedFormat && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-primary text-xs font-mono">
               <CheckCircle2 className="size-3.5" /> Downloaded {downloadedFormat} successfully
             </div>
           )}

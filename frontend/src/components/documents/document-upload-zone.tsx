@@ -112,7 +112,7 @@ export function DocumentUploadZone({ onSuccess }: DocumentUploadZoneProps) {
               Drop PDF here or click to browse
             </span>
             <span className="text-xs text-muted-foreground">
-              SEC filings, balance sheets, annual reports
+              Corporate filings, reports, and PDF documents
             </span>
           </div>
           <input

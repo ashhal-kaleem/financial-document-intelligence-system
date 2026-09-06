@@ -59,9 +59,9 @@ export default function Home() {
         size={140}
         duration={8}
         borderWidth={1.5}
-        colorFrom="oklch(0.72 0.17 165)"
-        colorTo="oklch(0.66 0.13 195)"
-        className="opacity-30"
+        colorFrom="oklch(0.72 0.05 30)"
+        colorTo="oklch(0.47 0.055 40)"
+        className="opacity-40"
       />
 
       <DashboardHeader />

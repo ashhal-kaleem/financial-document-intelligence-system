@@ -2,7 +2,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Phase 1: TheColorAPI-verified OKLCH token registration ─── */
+/* ─── Phase 1: Roasted Espresso & Dusty Rose OKLCH tokens ─── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -37,60 +37,62 @@
 }
 
 /*
- * TheColorAPI-verified palette:
- * Background #1A1F36 → "Mirage" contrast:#ffffff → oklch(0.17 0.025 260)
- * Card #222845 → "Port Gore" contrast:#ffffff → oklch(0.21 0.028 260)
- * Primary #10B981 → "Emerald" contrast:#000000 → oklch(0.70 0.17 165)
- * Accent #12AAB1 → "Teal Blue" → oklch(0.66 0.13 195)
- * Destructive #EF4444 → Red → oklch(0.63 0.22 25)
+ * Luxury Espresso & Dusty Rose Palette Mapping:
+ * #2A0800 → Deep Espresso Black-Brown → oklch(0.18 0.05 40)
+ * #775144 → Medium Mocha / Coffee Brown → oklch(0.47 0.055 40)
+ * #C09891 → Dusty Rose / Mauve Brown → oklch(0.72 0.05 30)
+ * #BEA8A7 → Light Grayish Mauve → oklch(0.75 0.026 21)
+ * #F4DBD8 → Light Pinkish White / Blush → oklch(0.91 0.028 26)
  */
 :root {
   color-scheme: dark;
   --radius: 0.625rem;
 
-  /* Surfaces — Mirage deep blue-gray (API-verified) */
-  --background: oklch(0.14 0.02 260);
-  --foreground: oklch(0.95 0.01 250);
-  --card: oklch(0.18 0.025 260);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.20 0.025 260);
-  --popover-foreground: oklch(0.95 0.01 250);
+  /* Surfaces — Deep Roasted Espresso Canvas (#2A0800) */
+  --background: oklch(0.18 0.05 40);
+  --foreground: oklch(0.91 0.028 26);
 
-  /* Actions — Emerald green (API-verified contrast:#000000) */
-  --primary: oklch(0.72 0.17 165);
-  --primary-foreground: oklch(0.14 0.02 165);
+  /* Elevated Surface — Medium Mocha (#775144 blended for card depth) */
+  --card: oklch(0.24 0.04 40);
+  --card-foreground: oklch(0.91 0.028 26);
+  --popover: oklch(0.26 0.04 40);
+  --popover-foreground: oklch(0.91 0.028 26);
 
-  /* Secondary — subtle elevated surface */
-  --secondary: oklch(0.22 0.02 260);
-  --secondary-foreground: oklch(0.90 0.01 250);
+  /* Primary Action — Dusty Rose Accent (#C09891) */
+  --primary: oklch(0.72 0.05 30);
+  --primary-foreground: oklch(0.18 0.05 40);
 
-  /* Muted — subdued text & backgrounds */
-  --muted: oklch(0.20 0.018 260);
-  --muted-foreground: oklch(0.55 0.02 250);
+  /* Secondary Surface — Medium Mocha (#775144) */
+  --secondary: oklch(0.32 0.045 40);
+  --secondary-foreground: oklch(0.91 0.028 26);
 
-  /* Accent — Teal Blue (API-verified) */
-  --accent: oklch(0.66 0.13 195);
-  --accent-foreground: oklch(0.14 0.02 195);
+  /* Muted Surface & Text — Light Grayish Mauve (#BEA8A7) */
+  --muted: oklch(0.25 0.035 40);
+  --muted-foreground: oklch(0.75 0.026 21);
 
-  /* Destructive — warm red */
-  --destructive: oklch(0.63 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
+  /* Accent Highlight — Warm Mauve Mocha Tint */
+  --accent: oklch(0.38 0.05 35);
+  --accent-foreground: oklch(0.91 0.028 26);
 
-  /* Borders & inputs */
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.72 0.17 165);
+  /* Destructive — Deep Terracotta Red */
+  --destructive: oklch(0.58 0.18 25);
+  --destructive-foreground: oklch(0.98 0.01 26);
 
-  /* Chart palette — analogic from TheColorAPI */
-  --chart-1: oklch(0.72 0.17 165);
-  --chart-2: oklch(0.66 0.13 195);
-  --chart-3: oklch(0.70 0.14 280);
-  --chart-4: oklch(0.75 0.12 80);
+  /* Borders & Inputs — Soft Grayish Mauve Translucence (#BEA8A7) */
+  --border: oklch(0.75 0.026 21 / 18%);
+  --input: oklch(0.75 0.026 21 / 22%);
+  --ring: oklch(0.72 0.05 30);
 
-  /* Sidebar */
-  --sidebar: oklch(0.12 0.018 260);
-  --sidebar-foreground: oklch(0.90 0.01 250);
-  --sidebar-border: oklch(1 0 0 / 8%);
+  /* Chart Palette — Analogic Warm Mocha-Rose Tones */
+  --chart-1: oklch(0.72 0.05 30);
+  --chart-2: oklch(0.47 0.055 40);
+  --chart-3: oklch(0.80 0.035 25);
+  --chart-4: oklch(0.60 0.045 35);
+
+  /* Sidebar — Deep Espresso Canvas (#2A0800) */
+  --sidebar: oklch(0.16 0.045 40);
+  --sidebar-foreground: oklch(0.91 0.028 26);
+  --sidebar-border: oklch(0.75 0.026 21 / 15%);
 }
 
 @layer base {
@@ -102,12 +104,7 @@
   }
 }
 
-/* ─── Phase 2: Google Fonts API-verified typography ─── */
-/* Inter (sans-serif): 100-900 weights, latin/cyrillic/greek/vietnamese */
-/* JetBrains Mono (monospace): 100-800 weights, tabular-nums for finance */
-/* Both loaded via next/font/google in layout.tsx (zero CLS, self-hosted) */
-
-/* ─── Custom scrollbar (8pt rhythm) ─── */
+/* ─── Custom scrollbar (Warm Mocha-Rose) ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -116,11 +113,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.35 0.02 250 / 0.4);
+  background: oklch(0.47 0.055 40 / 0.45);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.45 0.02 250 / 0.6);
+  background: oklch(0.72 0.05 30 / 0.6);
 }
 
 /* ─── Tabular numerals for financial data (Playbook Invariant) ─── */

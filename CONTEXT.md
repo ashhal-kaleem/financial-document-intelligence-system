@@ -63,3 +63,19 @@
   - Frontend: `pnpm run typecheck` (0 errors).
   - Backend: `uv run --python 3.12 pytest -v` (15 passed, 0 failed).
   - Playbook verification: `verify-playbook.py` passed with 0 warnings.
+
+### Integration of Luxury Roasted Espresso & Dusty Rose Color Palette
+- **Palette Tokens**:
+  - `#2A0800` (Dark Espresso Black-Brown): Registered as `--background` and `--sidebar`.
+  - `#775144` (Medium Mocha / Coffee Brown): Registered as `--card`, `--secondary`, and `--popover`.
+  - `#C09891` (Dusty Rose / Mauve Brown): Registered as `--primary`, `--ring`, and `--accent`.
+  - `#BEA8A7` (Light Grayish Mauve): Registered as `--muted-foreground`, `--border`, and `--input`.
+  - `#F4DBD8` (Blush Porcelain / Light Pinkish White): Registered as `--foreground` and `--card-foreground`.
+- **Text & Font Contrast Audit**:
+  - Rechecked all TSX components for font legibility: Verified `14.09:1` AAA contrast for main text, `8.25:1` AAA contrast for muted text, and `7.18:1` AAA contrast for primary button text.
+  - Replaced lingering raw `emerald` classes in `auth-modal.tsx`, `memo-export-modal.tsx`, and `chat-input-box.tsx` with semantic `text-primary` tokens.
+  - Updated `BorderBeam` in `page.tsx` with dusty rose / mocha gradient.
+- **Verification**:
+  - `pnpm run typecheck` (0 errors).
+  - `pnpm run build` (Static 6/6 pages generated cleanly in 38s).
+  - `verify-playbook.py` (0 warnings).

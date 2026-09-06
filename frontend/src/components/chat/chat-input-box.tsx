@@ -102,7 +102,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
         {/* Active Document Scope or Upload Banner */}
         <div className="flex items-center gap-1.5">
           {uploadSuccess && (
-            <Badge variant="outline" className="h-5 text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+            <Badge variant="outline" className="h-5 text-[10px] font-mono text-primary border-primary/30 bg-primary/10">
               <CheckCircle2 className="size-2.5 mr-1" /> Indexed {uploadSuccess}
             </Badge>
           )}
