@@ -6,7 +6,10 @@
       "version": "lts",
       "pnpm": "latest"
     },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
   },
   "customizations": {
     "vscode": {
@@ -25,7 +28,10 @@
       ]
     }
   },
-  "forwardPorts": [3000, 8000],
+  "forwardPorts": [
+    3000,
+    8000
+  ],
   "portsAttributes": {
     "3000": {
       "label": "Frontend (Next.js)",
