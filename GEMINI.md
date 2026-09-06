@@ -25,7 +25,7 @@ Instead of built-in file and inspection tools, ALWAYS execute native Linux termi
   - GitHub repositories, issues, and PR lookups (via `gh` CLI)
   - Reddit, Twitter/X, and social discussions (via `rdt-cli` / `opencli`)
 
-### 🛡️ Mandatory Cognitive Deep Research & Exa Protocol
+### 🛡️ Mandatory Cognitive Deep Research & Exa Protocol (`playbooks/research/00-research-orchestrator.md`)
 1. **Query Decomposition (MindSearch WebPlanner Standard)**:
    - Never fire a single broad query for a complex technical question.
    - Decompose multi-faceted problems into 2 to 4 atomic sub-questions (Mechanics, Constraints, Disconfirmation/Regrets, Implementation).
