@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFDISStore } from "@/store/useFDISStore";
 import { signInWithGoogle, signOutUser } from "@/lib/supabase";
-import { ShieldCheck, Lock, CheckCircle2, LogOut, Sparkles } from "lucide-react";
+import { ShieldCheck, Lock, CheckCircle2, LogOut, UserCheck, AlertCircle } from "lucide-react";
 
 export function AuthModal() {
   const { isAuthModalOpen, setAuthModalOpen, currentUser, setCurrentUser } = useFDISStore();
@@ -24,9 +24,18 @@ export function AuthModal() {
     setErrorMsg(null);
     const { error } = await signInWithGoogle();
     if (error) {
-      setErrorMsg(error.message || "Failed to initialize Google sign-in.");
+      setErrorMsg("Google Provider is not enabled in Supabase dashboard. You can enable it or use 1-Click Demo Login below.");
       setLoading(false);
     }
+  };
+
+  const handleDemoSignIn = (role: string, email: string) => {
+    setCurrentUser({
+      id: "demo-analyst-" + Date.now(),
+      name: role,
+      email: email,
+    });
+    setAuthModalOpen(false);
   };
 
   const handleSignOut = async () => {
@@ -47,7 +56,7 @@ export function AuthModal() {
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
             {currentUser
-              ? "Authenticated session connected to Supabase PostgreSQL Vault"
+              ? "Authenticated session active on Supabase PostgreSQL Vault"
               : "Access private SEC filings, custom footnote bookmarks, and encrypted audit trails"}
           </p>
         </DialogHeader>
@@ -73,8 +82,7 @@ export function AuthModal() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4 my-2">
-            {/* Custom Styled Google Sign-In Button */}
+          <div className="space-y-3.5 my-2">
             <Button
               variant="outline"
               className="w-full h-11 border-border/40 bg-card/40 hover:bg-muted/10 gap-3 text-xs font-medium active:scale-[0.98] transition-all"
@@ -87,22 +95,32 @@ export function AuthModal() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
               </svg>
-              <span>{loading ? "Redirecting to Google..." : "Continue with Google"}</span>
+              <span>{loading ? "Connecting..." : "Continue with Google"}</span>
             </Button>
 
             {errorMsg && (
-              <p className="text-xs text-rose-400 font-mono text-center">{errorMsg}</p>
+              <div className="p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 flex items-start gap-2">
+                <AlertCircle className="size-4 shrink-0 text-amber-400 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
             )}
 
-            {/* Enterprise Security Features */}
-            <div className="pt-2 space-y-2 border-t border-border/30">
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <div className="relative my-2 text-center text-[10px] text-muted-foreground before:absolute before:left-0 before:top-1/2 before:w-[35%] before:h-px before:bg-border/40 after:absolute after:right-0 after:top-1/2 after:w-[35%] after:h-px after:bg-border/40">
+              OR INSTANT ACCESS
+            </div>
+
+            <Button
+              variant="secondary"
+              className="w-full h-10 gap-2 text-xs font-medium active:scale-[0.98] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary"
+              onClick={() => handleDemoSignIn("Senior Portfolio Analyst", "analyst@fdis.enterprise")}
+            >
+              <UserCheck className="size-3.5" /> 1-Click Demo Analyst Access
+            </Button>
+
+            <div className="pt-2 space-y-1.5 border-t border-border/30 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-2">
                 <ShieldCheck className="size-3.5 text-primary" />
-                <span>Row Level Security (RLS) encrypted filing storage</span>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <Sparkles className="size-3.5 text-primary" />
-                <span>Puter.js Claude 3.5 Sonnet free inference active</span>
+                <span>Supabase PostgreSQL Row Level Security (RLS)</span>
               </div>
             </div>
           </div>
