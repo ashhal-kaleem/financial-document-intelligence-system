@@ -2,28 +2,32 @@
 
 ## Current Milestone & Status
 - **System**: Financial Document Intelligence System (FDIS)
-- **Status**: Live in GitHub Codespaces (Cloud VM execution, Zero Laptop Load)
-- **Git Commit**: `3ad6f91` pushed to `origin/main` on GitHub
+- **Status**: Production Full-Stack Deployed to Vercel (Serverless Python Backend + Next.js Frontend)
+- **Git Commit**: `39cb206` pushed to `origin/main` on GitHub
+- **Hosting**: 100% Free Tier, Zero-Card Serverless on Vercel Cloud
 - **Local Machine**: Zero laptop load (0% CPU/RAM consumption).
 
-## Refinements Implemented & Verified in this Turn
-1. **Removed Duplicate Upper Upload Button**:
-   - Removed the `Plus` upload button from `sidebar-header.tsx`.
-   - Removed `DocumentUploadZone` expansion from `document-sidebar.tsx`.
-   - The document upload capability is now exclusively centralized directly inside the chat interface (via the attachment/paperclip button in `ChatInputBox` and the empty-state button).
-2. **Removed Tag/Badge from Chat Input**:
-   - Completely deleted the tag/badge ("Puter AI Copilot" / formerly "Zero Groq Limits") from `chat-input-box.tsx`. The model selection bar is now 100% clean and tag-free.
+## Production Live URLs (Vercel Serverless)
+- **Primary Domain**: [https://financial-doc-ai.vercel.app](https://financial-doc-ai.vercel.app)
+- **Alias Domain**: [https://fdis-intelligence.vercel.app](https://fdis-intelligence.vercel.app)
+- **Live Health Endpoint**: [https://financial-doc-ai.vercel.app/api/v1/health](https://financial-doc-ai.vercel.app/api/v1/health) (Status: `healthy`, DB: `connected`)
+- **Live Documents Endpoint**: [https://financial-doc-ai.vercel.app/api/v1/documents](https://financial-doc-ai.vercel.app/api/v1/documents) (Total: 2 documents indexed)
+- **Live RAG Context Endpoint**: `POST https://financial-doc-ai.vercel.app/api/v1/ask/context` (Hugging Face Inference API embeddings + Supabase pgvector)
+- **Live SSE Streaming Endpoint**: `POST https://financial-doc-ai.vercel.app/api/v1/ask/stream` (Groq LPU grounded SSE token streaming)
 
-## Active Cloud Endpoints (GitHub Codespace: `shiny-tribble-wrrgx46wv5wvf9999`)
-- **Frontend App**: `https://shiny-tribble-wrrgx46wv5wvf9999-3000.app.github.dev` (HTTP 200 OK)
-- **Backend API**: `https://shiny-tribble-wrrgx46wv5wvf9999-8000.app.github.dev` (HTTP 200 OK)
-- **Healthcheck**: `https://shiny-tribble-wrrgx46wv5wvf9999-8000.app.github.dev/api/v1/health` (Healthy)
-
-### Update 2026-09-06: Resolved Document Scoping in RAG Retrieval
-- **Problem**: When multiple documents exist in pgvector (e.g. 3,079-chunk Annual Report vs. 24-chunk Project Synopsis), un-scoped queries across the entire database biased toward the 3,079 chunks, returning irrelevant banking passages for queries on the newly uploaded document.
-- **Root Cause**: `fetchAskContext` was called without `document_ids`, and `useFDISStore` lacked `selectedDocument` state.
-- **Resolution**:
-  1. Added `selectedDocument` state and `setSelectedDocument` in `useFDISStore.ts`.
-  2. Updated `chat-input-box.tsx` to automatically set `selectedDocument` on PDF upload, and added scope badge with clear toggle.
-  3. Updated `chat-interface.tsx` to pass `targetDocIds` (`[selectedDocument.id]`) to `fetchAskContext` and fallback `streamQuestion`.
-  4. Updated `document-list-item.tsx` and `document-sidebar.tsx` with visual active target indicator and "All Filings" switcher.
+## Major Architectural Transformation (Phase: Lightweight Vercel Serverless)
+1. **Eliminated Heavy Local PyTorch (~850MB -> ~40MB)**:
+   - Replaced `sentence-transformers` with lightweight `huggingface-hub>=0.28.0` + `numpy`.
+   - Utilizes Hugging Face Inference API (`sentence-transformers/all-MiniLM-L6-v2`) via verified serverless token `HF_TOKEN`.
+   - Generates exact 384-dimensional vector embeddings with ~0.8s latency without downloading 400MB torch weights.
+2. **Vercel Native Serverless Integration**:
+   - `frontend/api/index.py` exposes the FastAPI application directly to Vercel's Python runtime.
+   - `frontend/next.config.mjs` and `frontend/vercel.json` rewrite `/api/v1/*` directly to `api/index.py`, eliminating CORS and running full-stack under a single domain.
+   - Dual-mounted routes in `main.py` ensure both `/api/v1/...` and `/...` are seamlessly resolved.
+3. **Verified Live Endpoints**:
+   - `/api/v1/health`: Confirmed DB connection, Groq, OpenRouter, and Resend availability.
+   - `/api/v1/documents`: Confirmed document list and chunk counts.
+   - `/api/v1/ask/context`: Confirmed vector search with Hugging Face API and prompt generation.
+   - `/api/v1/ask/stream`: Confirmed token-by-token SSE streaming from Groq LPU.
+4. **Codebase Synchronized**:
+   - All commits pushed to GitHub repository: `https://github.com/ashhal-kaleem/financial-document-intelligence-system`.
