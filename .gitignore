@@ -1,87 +1,63 @@
-# ── Python ───────────────────────────────────
+# ── Environment & Secrets ────────────────────
+.env
+.env*.local
+*.env
+!.env.example
+
+# ── Node.js / Next.js ────────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Python & Bytecode ────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
-dist/
 *.egg-info/
 .eggs/
 
-# ── Virtual environments ─────────────────────
+# ── Virtual Environments ─────────────────────
 .venv/
 venv/
 env/
 ENV/
 
-# ── Environment / secrets ────────────────────
-.env
-*.env
-!.env.example
-
-# ── Data (can be large; use DVC or S3) ───────
-data/raw/
-data/processed/
-!data/samples/
-
-# ── Vector stores ────────────────────────────
-*.faiss
-*.index
-chroma_db/
-
-# ── Model cache ──────────────────────────────
-.cache/
-models/
-*.bin
-*.safetensors
-
-# ── Testing and coverage ─────────────────────
+# ── Testing & Caching ────────────────────────
 .pytest_cache/
 .coverage
 htmlcov/
 coverage.xml
-
-# ── Type checking ────────────────────────────
-.mypy_cache/
 .ruff_cache/
+.mypy_cache/
 
-# ── IDE ──────────────────────────────────────
-.vscode/
+# ── Data & Large Model Artifacts ─────────────
+data/raw/
+data/processed/
+data/uploads/
+*.faiss
+*.index
+chroma_db/
+models/
+*.bin
+*.safetensors
+
+# ── OS & IDE ─────────────────────────────────
+.DS_Store
+Thumbs.db
 .idea/
+.vscode/
 *.swp
 *.swo
-.DS_Store
-
-# ── Jupyter ──────────────────────────────────
-.ipynb_checkpoints/
-*.ipynb_checkpoints
 
 # ── Logs ─────────────────────────────────────
 *.log
 logs/
-
-# ── Docker ───────────────────────────────────
-docker/volumes/
-
-# ── Build artifacts / egg-info ────────────────
-*.egg-info/
-src/*.egg-info/
-
-# ── Next.js build output ─────────────────────
-frontend/.next/
-frontend/tsconfig.tsbuildinfo
-
-# ── Scratch / temp files ─────────────────────
-scratch.py
-scratch/
-sample_chunks.json
-
-# ── Report outputs (regenerable) ─────────────
-reports/
-
-# ── Script pycache ────────────────────────────
-scripts/__pycache__/
-
-# ── Data uploads (user files, not samples) ───
-data/uploads/
