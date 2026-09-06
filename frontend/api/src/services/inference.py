@@ -25,7 +25,7 @@ class InferenceService:
                 {"role": "system", "content": GROUNDED_SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": f"The user asked: '{question}'. However, no relevant passages were found in the uploaded documents. Respond explaining that the provided documents do not contain information to answer this question.",
+                    "content": f"The user asked: '{question}'. However, no relevant passages were found in the uploaded documents. Respond explaining that the provided document passages do not contain information to answer this question.",
                 },
             ]
 
@@ -36,15 +36,15 @@ class InferenceService:
             )
 
         context_str = "\n\n".join(context_blocks)
-        user_prompt = f"""CONTEXT PASSAGES FROM VERIFIED FINANCIAL REPORTS:
+        user_prompt = f"""CONTEXT PASSAGES FROM UPLOADED DOCUMENT(S):
 ----------------------------------------
 {context_str}
 ----------------------------------------
 
-ANALYST INQUIRY:
+USER INQUIRY:
 {question}
 
-Provide an accurate, grounded answer citing relevant passages using [1], [2], etc. If the metric or information requested is not mentioned in the passages above, state clearly that it is not disclosed."""
+Provide an accurate, comprehensive, and grounded answer strictly citing relevant passages using [1], [2], etc. If the user asks to read, summarize, or explain the document, summarize and explain what is disclosed in these passages clearly and helpfully. If specific facts or metrics requested are not mentioned anywhere in the excerpts, state that they are not disclosed."""
 
         return [
             {"role": "system", "content": GROUNDED_SYSTEM_PROMPT},
