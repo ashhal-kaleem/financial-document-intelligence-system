@@ -23,6 +23,11 @@ export interface PdfViewerState {
   highlightedText?: string;
 }
 
+export interface SelectedDocument {
+  id: string;
+  filename: string;
+}
+
 export interface AuthUser {
   id: string;
   email?: string;
@@ -41,6 +46,9 @@ interface FDISState {
   pdfViewer: PdfViewerState;
   openPdfViewer: (state: Omit<PdfViewerState, "isOpen">) => void;
   closePdfViewer: () => void;
+
+  selectedDocument: SelectedDocument | null;
+  setSelectedDocument: (doc: SelectedDocument | null) => void;
 
   currentUser: AuthUser | null;
   setCurrentUser: (user: AuthUser | null) => void;
@@ -62,7 +70,6 @@ interface FDISState {
 
   isUploadOpen: boolean;
   setUploadOpen: (open: boolean) => void;
-
 
   isExportModalOpen: boolean;
   setExportModalOpen: (open: boolean) => void;
@@ -86,6 +93,9 @@ export const useFDISStore = create<FDISState>((set) => ({
       pdfViewer: { ...state.pdfViewer, isOpen: false },
     })),
 
+  selectedDocument: null,
+  setSelectedDocument: (doc) => set({ selectedDocument: doc }),
+
   currentUser: null,
   setCurrentUser: (user) => set({ currentUser: user }),
 
@@ -107,7 +117,6 @@ export const useFDISStore = create<FDISState>((set) => ({
 
   isUploadOpen: false,
   setUploadOpen: (open) => set({ isUploadOpen: open }),
-
 
   isExportModalOpen: false,
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),

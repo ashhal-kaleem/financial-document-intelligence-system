@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { SidebarHeader } from "./sidebar-header";
 import { DocumentListItem, DocumentListItemSkeleton } from "./document-list-item";
 import { EmptyDocsAnimation } from "@/components/ui/lottie-player";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle, Layers } from "lucide-react";
+import { useFDISStore } from "@/store/useFDISStore";
 import type { DocumentItem } from "@/lib/api";
 
 interface DocumentSidebarProps {
@@ -35,6 +36,8 @@ export function DocumentSidebar({
   deletingId,
 }: DocumentSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const selectedDocument = useFDISStore((s) => s.selectedDocument);
+  const setSelectedDocument = useFDISStore((s) => s.setSelectedDocument);
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return documents;
@@ -53,6 +56,24 @@ export function DocumentSidebar({
 
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-0.5 p-2">
+          {/* Global Search Scope Switcher */}
+          {!isLoading && !isError && documents.length > 0 && (
+            <div className="mb-1 flex items-center justify-between px-2 py-1">
+              <span className="text-[11px] font-medium text-muted-foreground">Query Scope</span>
+              <Button
+                variant={!selectedDocument ? "secondary" : "ghost"}
+                size="sm"
+                className={`h-5 gap-1 px-2 text-[10px] active:scale-[0.98] ${
+                  !selectedDocument ? "bg-primary/15 text-primary border border-primary/30" : "text-muted-foreground"
+                }`}
+                onClick={() => setSelectedDocument(null)}
+              >
+                <Layers className="size-2.5" />
+                All Filings ({documents.length})
+              </Button>
+            </div>
+          )}
+
           {/* State 2: Loading — Skeleton mirror */}
           {isLoading && (
             <>
@@ -102,7 +123,13 @@ export function DocumentSidebar({
                 key={doc.id}
                 document={doc}
                 isDeleting={deletingId === doc.id}
+                isSelected={selectedDocument?.id === doc.id}
                 onDelete={onDeleteDocument}
+                onSelect={(d) =>
+                  setSelectedDocument(
+                    selectedDocument?.id === d.id ? null : { id: d.id, filename: d.filename }
+                  )
+                }
               />
             ))}
         </div>

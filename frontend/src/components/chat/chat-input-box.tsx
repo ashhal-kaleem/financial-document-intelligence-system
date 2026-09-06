@@ -8,12 +8,13 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Send, Loader2, Cpu, Paperclip, CheckCircle2 } from "lucide-react";
+import { Send, Loader2, Cpu, Paperclip, CheckCircle2, FileText, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { uploadDocument } from "@/lib/api";
+import { useFDISStore } from "@/store/useFDISStore";
 
 interface ChatInputBoxProps {
   onSend: (message: string, model?: string) => void;
@@ -35,6 +36,9 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedDocument = useFDISStore((s) => s.selectedDocument);
+  const setSelectedDocument = useFDISStore((s) => s.setSelectedDocument);
 
   const handleSubmit = useCallback(() => {
     const trimmed = input.trim();
@@ -60,11 +64,12 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
     setIsUploading(true);
     setUploadSuccess(null);
     try {
-      await uploadDocument(file);
-      setUploadSuccess(file.name);
+      const doc = await uploadDocument(file);
+      setUploadSuccess(doc.filename);
+      setSelectedDocument({ id: doc.id, filename: doc.filename });
       onDocumentUploaded?.();
       setTimeout(() => setUploadSuccess(null), 4000);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Upload error:", err);
     } finally {
       setIsUploading(false);
@@ -74,44 +79,56 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
 
   return (
     <div className="border-t border-border/40 bg-card/20 p-4 space-y-2">
-      {/* Model Selection Bar - Clean & Tag-Free */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1.5">
+      {/* Controls & Model Selection Bar */}
+      <div className="flex items-center justify-between px-1 text-[11px]">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <Cpu className="size-3 text-primary" />
-          <span className="text-[11px] font-medium text-muted-foreground">Inference Model:</span>
-          <div className="flex items-center gap-1">
-            {PUTER_MODELS.map((m) => (
-              <Button
-                key={m.id}
-                variant={selectedModel === m.id ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-6 px-2 text-[10px] active:scale-[0.98] ${
-                  selectedModel === m.id ? "bg-primary/15 text-primary border border-primary/30" : "text-muted-foreground"
-                }`}
-                onClick={() => setSelectedModel(m.id)}
-              >
-                {m.label}
-              </Button>
-            ))}
-          </div>
+          <span className="font-medium text-muted-foreground">Model:</span>
+          {PUTER_MODELS.map((m) => (
+            <Button
+              key={m.id}
+              variant={selectedModel === m.id ? "secondary" : "ghost"}
+              size="sm"
+              className={`h-5 px-2 text-[10px] active:scale-[0.98] ${
+                selectedModel === m.id ? "bg-primary/15 text-primary border border-primary/30" : "text-muted-foreground"
+              }`}
+              onClick={() => setSelectedModel(m.id)}
+            >
+              {m.label}
+            </Button>
+          ))}
         </div>
 
-        {uploadSuccess && (
-          <Badge variant="outline" className="text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-            <CheckCircle2 className="size-2.5 mr-1" /> Indexed {uploadSuccess}
-          </Badge>
-        )}
+        {/* Active Document Scope or Upload Banner */}
+        <div className="flex items-center gap-1.5">
+          {uploadSuccess && (
+            <Badge variant="outline" className="h-5 text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+              <CheckCircle2 className="size-2.5 mr-1" /> Indexed {uploadSuccess}
+            </Badge>
+          )}
+          {selectedDocument ? (
+            <Badge variant="outline" className="h-5 gap-1 text-[10px] font-mono text-primary border-primary/30 bg-primary/10">
+              <FileText className="size-2.5" />
+              <span className="max-w-[120px] truncate">{selectedDocument.filename}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3.5 ml-0.5 p-0 hover:text-destructive"
+                onClick={() => setSelectedDocument(null)}
+                title="Switch to Search All Documents"
+              >
+                <X className="size-2.5" />
+              </Button>
+            </Badge>
+          ) : (
+            <span className="text-[10px] text-muted-foreground font-mono">Scope: All Filings</span>
+          )}
+        </div>
       </div>
 
-      {/* Input Textarea Container with Integrated Upload */}
+      {/* Input Textarea with Integrated Upload */}
       <div className="flex items-end gap-2 rounded-xl border border-border/40 bg-card/60 p-2 backdrop-blur-sm transition-colors focus-within:border-primary/40">
-        <Input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <Input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
         <Button
           type="button"
           variant="ghost"
@@ -119,7 +136,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
           className="size-8 shrink-0 rounded-lg text-muted-foreground hover:text-primary active:scale-[0.98]"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          title="Upload & Index PDF Filing Directly"
+          title="Upload & Target PDF Directly"
         >
           {isUploading ? <Loader2 className="size-4 animate-spin text-primary" /> : <Paperclip className="size-4" />}
         </Button>
@@ -129,7 +146,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask complex financial questions, footnote details, or ratio breakdowns..."
+          placeholder={selectedDocument ? `Ask questions specifically from ${selectedDocument.filename}...` : "Ask questions across all indexed reports..."}
           className="min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent p-1.5 text-xs shadow-none focus-visible:ring-0"
           disabled={disabled || isStreaming}
           rows={1}

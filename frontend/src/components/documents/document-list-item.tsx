@@ -2,10 +2,11 @@
  * @source shadcn/ui Card + Badge + Button + Skeleton (registry-fetched)
  * @icons Lucide React
  * @invariant tabular-nums on page counts and timestamps
+ * @invariant strictly < 150 lines
  */
 "use client";
 
-import { FileText, Trash2, Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { FileText, Trash2, Loader2, CheckCircle, AlertCircle, Clock, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +15,9 @@ import type { DocumentItem } from "@/lib/api";
 interface DocumentListItemProps {
   document: DocumentItem;
   isDeleting: boolean;
+  isSelected?: boolean;
   onDelete: (id: string) => void;
+  onSelect?: (doc: DocumentItem) => void;
 }
 
 const statusConfig: Record<string, { icon: typeof CheckCircle; label: string; variant: "default" | "secondary" | "destructive" }> = {
@@ -27,22 +30,40 @@ const statusConfig: Record<string, { icon: typeof CheckCircle; label: string; va
 export function DocumentListItem({
   document,
   isDeleting,
+  isSelected = false,
   onDelete,
+  onSelect,
 }: DocumentListItemProps) {
   const status = statusConfig[document.status as keyof typeof statusConfig] ??
     statusConfig.uploaded;
   const StatusIcon = status.icon;
 
   return (
-    <div className="group flex items-start gap-3 rounded-lg border border-transparent p-3 transition-all duration-200 hover:border-border/40 hover:bg-card/60">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/8 text-primary">
+    <div
+      onClick={() => onSelect?.(document)}
+      className={`group flex items-start gap-3 rounded-lg border p-3 transition-all duration-200 cursor-pointer ${
+        isSelected
+          ? "border-primary/50 bg-primary/10 shadow-sm"
+          : "border-transparent hover:border-border/40 hover:bg-card/60"
+      }`}
+    >
+      <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${
+        isSelected ? "bg-primary text-primary-foreground" : "bg-primary/8 text-primary"
+      }`}>
         <FileText className="size-4" strokeWidth={1.75} />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate text-sm font-medium leading-tight">
-          {document.filename}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-sm font-medium leading-tight">
+            {document.filename}
+          </span>
+          {isSelected && (
+            <Badge variant="default" className="h-4 px-1 text-[9px] bg-primary gap-0.5 shrink-0">
+              <Target className="size-2.5" /> Target
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Badge variant={status.variant} className="h-5 gap-1 text-[10px] tabular-nums">
             <StatusIcon
@@ -63,7 +84,10 @@ export function DocumentListItem({
         variant="ghost"
         size="icon"
         className="size-7 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive active:scale-[0.98]"
-        onClick={() => onDelete(document.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(document.id);
+        }}
         disabled={isDeleting}
         aria-label={`Delete ${document.filename}`}
       >
