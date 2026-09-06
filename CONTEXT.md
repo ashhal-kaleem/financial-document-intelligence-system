@@ -3,10 +3,11 @@
 ## Current Milestone & Status
 - **System**: Financial Document Intelligence System (FDIS)
 - **Status**: Production Full-Stack Deployed to Vercel (Serverless Python Backend + Next.js Frontend)
-- **Git Commit**: `39cb206` pushed to `origin/main` on GitHub
+- **Git Commit**: `9da15d3` pushed to `origin/main` on GitHub
+- **UI Architecture**: Clean minimal dark mode, permanent Inter font, zero wallpaper background
 - **Hosting**: 100% Free Tier, Zero-Card Serverless on Vercel Cloud
-- **GitHub Codespaces VM**: SHUT DOWN (`shiny-tribble-wrrgx46wv5wvf9999` stopped). Zero VM consumption.
-- **Local Machine**: Zero background processes / sync daemons (0% CPU/RAM consumption).
+- **GitHub Codespaces VM**: SHUT DOWN. Zero VM consumption.
+- **Local Machine**: Zero background processes (0% CPU/RAM consumption).
 
 ## Production Live URLs (Vercel Serverless)
 - **Primary Domain**: [https://financial-doc-ai.vercel.app](https://financial-doc-ai.vercel.app)
@@ -16,20 +17,19 @@
 - **Live RAG Context Endpoint**: `POST https://financial-doc-ai.vercel.app/api/v1/ask/context` (Hugging Face Inference API embeddings + Supabase pgvector)
 - **Live SSE Streaming Endpoint**: `POST https://financial-doc-ai.vercel.app/api/v1/ask/stream` (Groq LPU grounded SSE token streaming)
 
-## Major Architectural Transformation (Phase: Lightweight Vercel Serverless)
-1. **Eliminated Heavy Local PyTorch (~850MB -> ~40MB)**:
-   - Replaced `sentence-transformers` with lightweight `huggingface-hub>=0.28.0` + `numpy`.
-   - Utilizes Hugging Face Inference API (`sentence-transformers/all-MiniLM-L6-v2`) via verified serverless token `HF_TOKEN`.
-   - Generates exact 384-dimensional vector embeddings with ~0.8s latency without downloading 400MB torch weights.
-2. **Vercel Native Serverless Integration**:
-   - `frontend/api/index.py` exposes the FastAPI application directly to Vercel's Python runtime.
-   - `frontend/next.config.mjs` and `frontend/vercel.json` rewrite `/api/v1/*` directly to `api/index.py`, eliminating CORS and running full-stack under a single domain.
-   - Dual-mounted routes in `main.py` ensure both `/api/v1/...` and `/...` are seamlessly resolved.
-3. **Verified Live Endpoints**:
-   - `/api/v1/health`: Confirmed DB connection, Groq, OpenRouter, and Resend availability.
-   - `/api/v1/documents`: Confirmed document list and chunk counts.
-   - `/api/v1/ask/context`: Confirmed vector search with Hugging Face API and prompt generation.
-   - `/api/v1/ask/stream`: Confirmed token-by-token SSE streaming from Groq LPU.
-4. **Cloud VM Retired**:
-   - GitHub Codespace `shiny-tribble-wrrgx46wv5wvf9999` and local sync daemons have been stopped.
-   - System is 100% self-hosted serverless on Vercel without relying on active VMs.
+## Refinements Completed in this Turn:
+1. **Removed "Visual & Typography Studio" Completely**:
+   - Deleted [theme-customizer.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/settings/theme-customizer.tsx).
+   - Removed the Palette button and modal state from [dashboard-header.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/dashboard/dashboard-header.tsx).
+   - Removed `activeBackground`, `setActiveBackground`, `activeFont`, `setActiveFont` from [useFDISStore.ts](file:///home/shaikhfardin/Projects/Project%202/frontend/src/store/useFDISStore.ts).
+2. **Permanent Clean Inter Typography**:
+   - Set font permanently to `Inter` (`font-sans`) loaded self-hosted via `next/font/google` in [layout.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/app/layout.tsx).
+   - Cleaned [page.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/app/page.tsx) of all dynamic font conditionals.
+3. **Removed Ambient Wallpaper Backgrounds**:
+   - Removed Unsplash/Pexels image backgrounds (`hero-bg.jpg`, `wallstreet.jpg`) and overlay layers from [page.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/app/page.tsx).
+   - Background is now a pristine, modern dark surface (`bg-background text-foreground`).
+4. **Deployed & Synced**:
+   - Tested zero TypeScript errors via `npx tsc --noEmit`.
+   - Verified 100% Playbook compliance with `verify-playbook.py` (0 warnings).
+   - Committed and pushed to `main` on GitHub (`9da15d3`).
+   - Deployed live to Vercel production.
