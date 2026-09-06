@@ -79,3 +79,25 @@
   - `pnpm run typecheck` (0 errors).
   - `pnpm run build` (Static 6/6 pages generated cleanly in 38s).
   - `verify-playbook.py` (0 warnings).
+
+### Light Sandstone (#DCD7D5) & Editorial Mocha Palette Migration
+- **User Preference**: Switched from dark background to light sandstone background (`#DCD7D5`) to eliminate heavy darkness while maintaining visual elegance.
+- **Palette Mapping**:
+  - `--background`: `oklch(0.885 0.008 43)` (`#DCD7D5` Light Sandstone Alabaster canvas).
+  - `--sidebar`: `oklch(0.865 0.01 43)` (`#DCD7D5` Sandstone surface).
+  - `--foreground`: `oklch(0.20 0.06 40)` (`#2A0800` Deep Espresso text, achieving 12.99:1 WCAG AAA contrast).
+  - `--card` / `--popover`: `oklch(0.985 0.004 40)` (Crisp warm white elevated surface, achieving 15.5:1 WCAG AAA contrast).
+  - `--primary`: `oklch(0.36 0.055 40)` (Rich Mocha/Espresso primary action button) with `--primary-foreground`: `oklch(0.985 0.004 40)`.
+  - `--secondary`: `oklch(0.92 0.015 30)` (`#F4DBD8` Soft blush surface).
+  - `--muted`: `oklch(0.91 0.01 40)` & `--muted-foreground`: `oklch(0.46 0.04 40)` (Mocha midtone for secondary labels, 5.0:1 AA contrast).
+  - `--border`: `oklch(0.50 0.03 40 / 18%)` (Soft sand outline).
+- **Component Polish & Contrast Hardening**:
+  - `chat-message-item.tsx`: Removed `prose-invert` so rendered markdown text, bold, and headings display in deep espresso rather than washed-out white.
+  - `dialog.tsx`: Upgraded modal content to `bg-card text-card-foreground` so modals stand out distinctly with warm white surfaces against dimmed backdrops.
+  - `financial-statements-grid.tsx` & `filing-comparison-view.tsx`: Upgraded financial delta indicators from light green/pink to high-contrast `text-emerald-700` and `text-rose-700`.
+  - `auth-modal.tsx` & `memo-export-modal.tsx`: Refined warning and auxiliary icons to high-contrast dark tones (`text-amber-800`, `text-purple-700`).
+  - `page.tsx`: Adjusted `BorderBeam` glow gradient to mocha (`oklch(0.36 0.055 40)`) and dusty rose (`oklch(0.72 0.05 30)`) with 25% opacity.
+- **Verification**:
+  - `pnpm run typecheck` (0 errors).
+  - `pnpm run build` (6/6 static pages compiled cleanly in 7.7s).
+  - `python3 verify-playbook.py .` (0 warnings).

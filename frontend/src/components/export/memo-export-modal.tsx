@@ -110,7 +110,7 @@ Status: Grounded Passages & Vector Index Verified
             onClick={() => window.print()}
           >
             <div className="flex items-center gap-3">
-              <Printer className="size-5 text-purple-400" />
+              <Printer className="size-5 text-purple-700" />
               <div className="text-left">
                 <span className="text-xs font-semibold block">Printable Executive Briefing</span>
                 <span className="text-[10px] text-muted-foreground font-normal">Direct browser print or save to PDF</span>

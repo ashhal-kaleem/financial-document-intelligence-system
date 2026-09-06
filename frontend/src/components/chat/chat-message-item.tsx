@@ -76,7 +76,7 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
           )}
         </div>
 
-        <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed text-foreground/90">
+        <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
           {message.content}
         </div>
 

@@ -128,7 +128,7 @@ export function FinancialStatementsGrid() {
                     <td className="p-3 text-right font-mono tabular-nums">${r.fy24.toLocaleString()}</td>
                     <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">${r.fy23.toLocaleString()}</td>
                     <td className="p-3 text-right font-mono tabular-nums">
-                      <span className={`inline-flex items-center gap-1 ${isPos ? "text-emerald-400" : "text-rose-400"}`}>
+                      <span className={`inline-flex items-center gap-1 ${isPos ? "text-emerald-700" : "text-rose-700"}`}>
                         {isPos ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
                         {isPos ? "+" : ""}{pct}%
                       </span>

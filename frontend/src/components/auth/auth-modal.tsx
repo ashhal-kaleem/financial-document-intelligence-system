@@ -99,8 +99,8 @@ export function AuthModal() {
             </Button>
 
             {errorMsg && (
-              <div className="p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 flex items-start gap-2">
-                <AlertCircle className="size-4 shrink-0 text-amber-400 mt-0.5" />
+              <div className="p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-800 flex items-start gap-2">
+                <AlertCircle className="size-4 shrink-0 text-amber-700 mt-0.5" />
                 <span>{errorMsg}</span>
               </div>
             )}

@@ -2,7 +2,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Phase 1: Roasted Espresso & Dusty Rose OKLCH tokens ─── */
+/* ─── Phase 1: Warm Sandstone & Mocha Editorial OKLCH tokens ─── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -37,62 +37,63 @@
 }
 
 /*
- * Luxury Espresso & Dusty Rose Palette Mapping:
- * #2A0800 → Deep Espresso Black-Brown → oklch(0.18 0.05 40)
- * #775144 → Medium Mocha / Coffee Brown → oklch(0.47 0.055 40)
- * #C09891 → Dusty Rose / Mauve Brown → oklch(0.72 0.05 30)
- * #BEA8A7 → Light Grayish Mauve → oklch(0.75 0.026 21)
- * #F4DBD8 → Light Pinkish White / Blush → oklch(0.91 0.028 26)
+ * Warm Editorial Sandstone & Mocha Palette Mapping:
+ * #DCD7D5 → Light Sandstone Alabaster (Requested Canvas) → oklch(0.885 0.008 43)
+ * #2A0800 → Deep Espresso Black-Brown (Headings & Primary Text) → oklch(0.20 0.06 40)
+ * #FFFFFF / #FBF9F8 → Crisp Warm Card Surface → oklch(0.985 0.004 40)
+ * #775144 → Medium Mocha (Primary Action Buttons / Borders) → oklch(0.36 0.055 40)
+ * #C09891 → Dusty Rose (Warm Badges & Highlights) → oklch(0.72 0.05 30)
+ * #BEA8A7 → Light Grayish Mauve (Dividers & Subdued Elements) → oklch(0.75 0.026 21)
  */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   --radius: 0.625rem;
 
-  /* Surfaces — Deep Roasted Espresso Canvas (#2A0800) */
-  --background: oklch(0.18 0.05 40);
-  --foreground: oklch(0.91 0.028 26);
+  /* Surfaces — Light Warm Sandstone Canvas (#DCD7D5) */
+  --background: oklch(0.885 0.008 43);
+  --foreground: oklch(0.20 0.06 40);
 
-  /* Elevated Surface — Medium Mocha (#775144 blended for card depth) */
-  --card: oklch(0.24 0.04 40);
-  --card-foreground: oklch(0.91 0.028 26);
-  --popover: oklch(0.26 0.04 40);
-  --popover-foreground: oklch(0.91 0.028 26);
+  /* Elevated Surfaces — Crisp Clean White with subtle warm tint */
+  --card: oklch(0.985 0.004 40);
+  --card-foreground: oklch(0.20 0.06 40);
+  --popover: oklch(0.985 0.004 40);
+  --popover-foreground: oklch(0.20 0.06 40);
 
-  /* Primary Action — Dusty Rose Accent (#C09891) */
-  --primary: oklch(0.72 0.05 30);
-  --primary-foreground: oklch(0.18 0.05 40);
+  /* Primary Action — Rich Mocha / Deep Espresso (#775144 / #2A0800) */
+  --primary: oklch(0.36 0.055 40);
+  --primary-foreground: oklch(0.985 0.004 40);
 
-  /* Secondary Surface — Medium Mocha (#775144) */
-  --secondary: oklch(0.32 0.045 40);
-  --secondary-foreground: oklch(0.91 0.028 26);
+  /* Secondary Surface — Soft Blush Sandstone (#F4DBD8) */
+  --secondary: oklch(0.92 0.015 30);
+  --secondary-foreground: oklch(0.24 0.05 40);
 
-  /* Muted Surface & Text — Light Grayish Mauve (#BEA8A7) */
-  --muted: oklch(0.25 0.035 40);
-  --muted-foreground: oklch(0.75 0.026 21);
+  /* Muted Surface & Text — Soft Sand Tint & Mocha Foreground */
+  --muted: oklch(0.91 0.01 40);
+  --muted-foreground: oklch(0.46 0.04 40);
 
-  /* Accent Highlight — Warm Mauve Mocha Tint */
-  --accent: oklch(0.38 0.05 35);
-  --accent-foreground: oklch(0.91 0.028 26);
+  /* Accent Highlight — Soft Mauve-Sand Hover Surface */
+  --accent: oklch(0.93 0.015 30);
+  --accent-foreground: oklch(0.20 0.06 40);
 
-  /* Destructive — Deep Terracotta Red */
-  --destructive: oklch(0.58 0.18 25);
-  --destructive-foreground: oklch(0.98 0.01 26);
+  /* Destructive — Deep Crimson Terracotta */
+  --destructive: oklch(0.55 0.20 25);
+  --destructive-foreground: oklch(0.985 0.004 40);
 
-  /* Borders & Inputs — Soft Grayish Mauve Translucence (#BEA8A7) */
-  --border: oklch(0.75 0.026 21 / 18%);
-  --input: oklch(0.75 0.026 21 / 22%);
-  --ring: oklch(0.72 0.05 30);
+  /* Borders & Inputs — Soft Grayish Mauve / Sand Borders (#BEA8A7) */
+  --border: oklch(0.50 0.03 40 / 18%);
+  --input: oklch(0.50 0.03 40 / 22%);
+  --ring: oklch(0.47 0.055 40);
 
-  /* Chart Palette — Analogic Warm Mocha-Rose Tones */
-  --chart-1: oklch(0.72 0.05 30);
-  --chart-2: oklch(0.47 0.055 40);
-  --chart-3: oklch(0.80 0.035 25);
-  --chart-4: oklch(0.60 0.045 35);
+  /* Chart Palette */
+  --chart-1: oklch(0.40 0.055 40);
+  --chart-2: oklch(0.65 0.06 30);
+  --chart-3: oklch(0.55 0.05 35);
+  --chart-4: oklch(0.75 0.04 40);
 
-  /* Sidebar — Deep Espresso Canvas (#2A0800) */
-  --sidebar: oklch(0.16 0.045 40);
-  --sidebar-foreground: oklch(0.91 0.028 26);
-  --sidebar-border: oklch(0.75 0.026 21 / 15%);
+  /* Sidebar — Light Sandstone Canvas (#DCD7D5) */
+  --sidebar: oklch(0.865 0.01 43);
+  --sidebar-foreground: oklch(0.20 0.06 40);
+  --sidebar-border: oklch(0.50 0.03 40 / 15%);
 }
 
 @layer base {
@@ -104,7 +105,7 @@
   }
 }
 
-/* ─── Custom scrollbar (Warm Mocha-Rose) ─── */
+/* ─── Custom scrollbar (Light Sandstone & Mocha) ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -113,11 +114,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.47 0.055 40 / 0.45);
+  background: oklch(0.50 0.03 40 / 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.72 0.05 30 / 0.6);
+  background: oklch(0.40 0.05 40 / 0.55);
 }
 
 /* ─── Tabular numerals for financial data (Playbook Invariant) ─── */
