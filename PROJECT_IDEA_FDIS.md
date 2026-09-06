@@ -30,9 +30,6 @@ A high-accuracy, production-ready AI assistant designed for corporate financial 
    - Real-time token streaming via Server-Sent Events (SSE) on `/ask/stream`.
    - Email notifications via Resend REST API.
 
-3. **Sample Reports**:
-   - Copy or ingest samples from `/home/shaikhfardin/Downloads/data/samples/ABL_Annual_Report_2025.pdf` and `HBL_Annual_Report_2025.pdf`.
-
 Please execute strictly through `/home/shaikhfardin/templates/instructions.md` starting with Phase 0 (Research Approval Gate) and Phase 1 documentation.
 ```
 
