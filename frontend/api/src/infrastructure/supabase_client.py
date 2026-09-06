@@ -12,6 +12,7 @@ class SupabaseClient(BaseVectorStore):
         self.settings = get_settings()
         self.base_url = self.settings.SUPABASE_URL.rstrip("/")
         self.service_key = self.settings.SUPABASE_SERVICE_ROLE_KEY
+        self.bucket = self.settings.SUPABASE_STORAGE_BUCKET
         self.headers = {
             "apikey": self.service_key,
             "Authorization": f"Bearer {self.service_key}",
@@ -175,7 +176,7 @@ class SupabaseClient(BaseVectorStore):
         path = f"{document_id}/{filename}"
         async with httpx.AsyncClient(timeout=30.0) as client:
             await client.post(
-                f"{self.base_url}/storage/v1/object/documents/{path}",
+                f"{self.base_url}/storage/v1/object/{self.bucket}/{path}",
                 headers={
                     "apikey": self.service_key,
                     "Authorization": f"Bearer {self.service_key}",
@@ -184,13 +185,13 @@ class SupabaseClient(BaseVectorStore):
                 },
                 content=pdf_bytes,
             )
-        return f"{self.base_url}/storage/v1/object/public/documents/{path}"
+        return f"{self.base_url}/storage/v1/object/public/{self.bucket}/{path}"
 
     async def get_pdf_bytes(self, document_id: UUID, filename: str) -> Optional[bytes]:
         path = f"{document_id}/{filename}"
         async with httpx.AsyncClient(timeout=20.0) as client:
             res = await client.get(
-                f"{self.base_url}/storage/v1/object/documents/{path}",
+                f"{self.base_url}/storage/v1/object/{self.bucket}/{path}",
                 headers=self.headers,
             )
             if res.status_code == 200:

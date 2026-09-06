@@ -49,3 +49,17 @@
   1. Updated `GROUNDED_SYSTEM_PROMPT` in `backend/src/domain/citation.py` and `frontend/api/src/domain/citation.py` to act as an advanced Document Intelligence AI that analyzes, summarizes, and answers questions on *any* document while retaining strict grounding and exact `[1]`, `[2]` citations.
   2. Updated `user_prompt` in `backend/src/services/inference.py` and `frontend/api/src/services/inference.py` to explicitly fulfill requests to read, explain, and summarize uploaded documents.
   3. Committed and pushed commit `080a860` to GitHub `main`.
+
+### Resolution of Hardcoded Values & Critical PDF Linkage Bug
+- **Audit Findings**: Deep inspection identified 16 hardcoded areas across frontend and backend, including a critical bug where citations failed to load PDFs in the modal viewer due to missing `documentId`, static Apple FY24 data in statements/comparison/memo exports, fake dashboard KPIs, and hardcoded storage buckets.
+- **Key Changes Implemented**:
+  1. **Citation & PDF Viewer Linkage**: Added `documentId` to `Citation` interface in `store/useFDISStore.ts`, mapped `documentId` from backend citations in `components/chat/chat-interface.tsx`, and passed it through `components/citations/citation-drawer.tsx` and `components/chat/chat-message-item.tsx` to `openPdfViewer()`, eliminating the blank viewer bug.
+  2. **Removed Silent Apple Sample Fallback**: In `backend/src/api/routes/documents.py`, removed the fallback that silently served `tests/sample_apple_10k.pdf` when storage retrieval failed, ensuring proper 404 reporting for user filings.
+  3. **Dynamic Views & Exports**: Bound `financial-statements-grid.tsx`, `filing-comparison-view.tsx`, and `memo-export-modal.tsx` to the active user-uploaded documents and real timestamps instead of static Apple mock data.
+  4. **Dynamic Dashboard KPIs**: Replaced fake `$218B` / `1.2s` metrics in `kpi-strip.tsx` with live counts of uploaded documents, ready status, and total pgvector chunks.
+  5. **Dynamic Chat Header & Offline Avatars**: Made assistant model badge in `chat-message-item.tsx` reflect the selected model (GPT-4o vs Claude 3.5 Sonnet) and switched avatars to offline SVG icons.
+  6. **Backend Infrastructure Hardening**: Made Supabase storage bucket dynamic via `settings.SUPABASE_STORAGE_BUCKET`, added `MAX_UPLOAD_SIZE_BYTES` and `ALLOWED_EXTENSIONS` to `core/config.py`, and standardized the response envelope in `/api/v1/notify`.
+- **Verification**:
+  - Frontend: `pnpm run typecheck` (0 errors).
+  - Backend: `uv run --python 3.12 pytest -v` (15 passed, 0 failed).
+  - Playbook verification: `verify-playbook.py` passed with 0 warnings.

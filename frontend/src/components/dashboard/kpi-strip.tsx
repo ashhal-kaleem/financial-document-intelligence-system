@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { FileText, Brain, TrendingUp, Clock } from "lucide-react";
+import { FileText, Brain, Layers, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -81,35 +81,36 @@ export function KPIStrip() {
 
   const processed = docs?.filter((d) => d.status === "ready").length ?? 0;
   const total = docs?.length ?? 0;
+  const totalChunks = docs?.reduce((acc, d) => acc + (d.chunk_count || 0), 0) ?? 0;
 
   const metrics: KPIMetric[] = [
     {
-      label: "Total Filings",
+      label: "Uploaded Filings",
       value: total.toString(),
-      change: "+3 this week",
+      change: total > 0 ? "Active" : "Empty",
       trend: "up",
       icon: <FileText className="size-5 text-primary" strokeWidth={1.75} />,
     },
     {
-      label: "Processed",
+      label: "Processed & Ready",
       value: processed.toString(),
-      change: `${total > 0 ? Math.round((processed / total) * 100) : 0}%`,
+      change: `${total > 0 ? Math.round((processed / total) * 100) : 0}% ready`,
       trend: "up",
       icon: <Brain className="size-5 text-primary" strokeWidth={1.75} />,
     },
     {
-      label: "Avg. Revenue",
-      value: "$218B",
-      change: "+12.4%",
+      label: "Vector Chunks",
+      value: totalChunks.toString(),
+      change: totalChunks > 0 ? "pgvector" : "0 chunks",
       trend: "up",
-      icon: <TrendingUp className="size-5 text-primary" strokeWidth={1.75} />,
+      icon: <Layers className="size-5 text-primary" strokeWidth={1.75} />,
     },
     {
-      label: "Response Time",
-      value: "1.2s",
-      change: "-0.3s",
+      label: "Engine Latency",
+      value: "Sub-second",
+      change: "Accelerated",
       trend: "up",
-      icon: <Clock className="size-5 text-primary" strokeWidth={1.75} />,
+      icon: <Zap className="size-5 text-primary" strokeWidth={1.75} />,
     },
   ];
 

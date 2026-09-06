@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     PORT: int = Field(8000, description="FastAPI server port")
     HOST: str = Field("0.0.0.0", description="FastAPI server host")
     DEBUG: bool = Field(False, description="Debug mode")
+    MAX_UPLOAD_SIZE_BYTES: int = Field(25 * 1024 * 1024, description="Max PDF upload size in bytes")
+    ALLOWED_EXTENSIONS: list[str] = Field([".pdf"], description="Allowed document extensions")
 
 
 @lru_cache()

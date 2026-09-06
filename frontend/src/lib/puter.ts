@@ -19,6 +19,7 @@ export interface PuterChatMessage {
   content: string;
   citations?: any[];
   timestamp?: string;
+  model?: string;
 }
 
 export async function streamPuterChat(

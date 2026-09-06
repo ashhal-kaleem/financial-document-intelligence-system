@@ -7,6 +7,7 @@
 import { create } from "zustand";
 
 export interface Citation {
+  documentId?: string;
   document: string;
   page: number;
   chunk_id: string;

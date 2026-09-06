@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { Copy, Check, ExternalLink, Volume2, VolumeX } from "lucide-react";
+import { Copy, Check, ExternalLink, Volume2, VolumeX, Brain } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ interface ChatMessage {
   content: string;
   citations?: Citation[];
   timestamp?: string;
+  model?: string;
 }
 
 interface ChatMessageItemProps {
@@ -32,6 +33,14 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
   const [copied, setCopied] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const openPdfViewer = useFDISStore((s) => s.openPdfViewer);
+  const currentUser = useFDISStore((s) => s.currentUser);
+
+  const getModelDisplayName = (modelName?: string) => {
+    if (!modelName) return "FDIS Intelligence (Claude 3.5 Sonnet)";
+    if (modelName.toLowerCase().includes("gpt-4")) return "FDIS Intelligence (GPT-4o)";
+    if (modelName.toLowerCase().includes("claude")) return "FDIS Intelligence (Claude 3.5 Sonnet)";
+    return "FDIS Intelligence (" + (modelName || "AI") + ")";
+  };
   const isAssistant = message.role === "assistant";
 
   const handleCopy = () => {
@@ -50,18 +59,16 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
   return (
     <div className={`group flex gap-3 px-4 py-3 ${isAssistant ? "bg-card/30" : ""}`}>
       {isAssistant ? (
-        <img
-          src="https://api.dicebear.com/7.x/bottts/svg?seed=fdis-ai&backgroundColor=b6e3f4&radius=50"
-          alt="AI"
-          className="size-7 shrink-0 rounded-full border border-border/40"
-        />
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary border border-primary/25">
+          <Brain className="size-3.5 text-primary" />
+        </div>
       ) : (
-        <UserAvatar name="Fardin Shaikh" email="fardin@fdis.ai" size="sm" />
+        <UserAvatar name={currentUser?.name || "You"} email={currentUser?.email || ""} size="sm" />
       )}
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium">{isAssistant ? "FDIS Intelligence (Claude 3.5 Sonnet)" : "You"}</span>
+          <span className="text-xs font-medium">{isAssistant ? getModelDisplayName(message.model) : (currentUser?.name || "You")}</span>
           {message.timestamp && (
             <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
               {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -84,6 +91,7 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
                 onClick={() => {
                   onCitationClick?.(c);
                   openPdfViewer({
+                    documentId: c.documentId,
                     filename: c.document,
                     pageNumber: c.page,
                     chunkId: c.chunk_id,

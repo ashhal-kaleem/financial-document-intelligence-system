@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Search, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { useFDISStore } from "@/store/useFDISStore";
 
 interface StatementRow {
   item: string;
@@ -49,6 +50,7 @@ const INCOME_STATEMENT: StatementRow[] = [
 export function FinancialStatementsGrid() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("bs");
+  const selectedDocument = useFDISStore((s) => s.selectedDocument);
 
   const rows = activeTab === "bs" ? BALANCE_SHEET : INCOME_STATEMENT;
   const filtered = useMemo(() => {
@@ -78,9 +80,9 @@ export function FinancialStatementsGrid() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
         <div>
           <h2 className="text-base font-semibold tracking-tight flex items-center gap-2">
-            <DollarSign className="size-4 text-primary" /> SEC 10-K Financial Statements Explorer
+            <DollarSign className="size-4 text-primary" /> {selectedDocument ? `${selectedDocument.filename} — Statements` : "Financial Statements Explorer"}
           </h2>
-          <p className="text-xs text-muted-foreground">Standardized GAAP filings & footnotes with real-time ratio analysis</p>
+          <p className="text-xs text-muted-foreground">{selectedDocument ? `Structured financial metrics for ${selectedDocument.filename}` : "Standardized GAAP filings & footnotes (Reference benchmark)"}</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-56">

@@ -56,6 +56,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
       role: "assistant",
       content: "",
       timestamp: new Date().toISOString(),
+      model,
     };
 
     setMessages((prev) => [...prev, userMsg, initialAssistantMsg]);
@@ -66,6 +67,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
       const targetDocIds = selectedDocument ? [selectedDocument.id] : undefined;
       const contextData = await fetchAskContext(content, targetDocIds);
       const citations: Citation[] = (contextData.citations || []).map((c) => ({
+        documentId: c.document_id,
         document: c.filename,
         page: c.page,
         chunk_id: String(c.chunk_index),

@@ -11,6 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { GitCompare, ArrowRight, TrendingUp, TrendingDown, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchDocuments } from "@/lib/api";
+import { useHydrated } from "@/hooks/useHydrated";
 
 interface MetricRow {
   name: string;
@@ -30,8 +33,15 @@ const COMPARISON_DATA: MetricRow[] = [
 ];
 
 export function FilingComparisonView() {
-  const [docAName] = useState("Apple_10K_FY2023.pdf");
-  const [docBName] = useState("Apple_10K_FY2024.pdf");
+  const isHydrated = useHydrated();
+  const { data: docs = [] } = useQuery({
+    queryKey: ["documents"],
+    queryFn: fetchDocuments,
+    enabled: isHydrated,
+  });
+
+  const docAName = docs[0]?.filename || "Benchmark_Filing_A.pdf";
+  const docBName = docs[1]?.filename || (docs.length > 0 ? "(Upload 2nd document to compare)" : "Benchmark_Filing_B.pdf");
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden p-4 sm:p-6 space-y-4">

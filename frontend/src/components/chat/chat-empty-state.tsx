@@ -17,23 +17,23 @@ import { uploadDocument } from "@/lib/api";
 const suggestions = [
   {
     icon: FileText,
-    title: "Summarize Filings",
-    description: "What are the key takeaways from Apple's 10-K?",
+    title: "Document Summary",
+    description: "Summarize the executive summary and key findings",
   },
   {
     icon: TrendingUp,
-    title: "Revenue Analysis",
-    description: "Compare revenue growth across uploaded filings",
+    title: "Metric Highlights",
+    description: "Extract key metrics, financial figures, and trends",
   },
   {
     icon: Shield,
-    title: "Risk Factors",
-    description: "What are the top risk factors mentioned?",
+    title: "Risk Factors & Disclosures",
+    description: "What are the top risks, dependencies, or caveats?",
   },
   {
     icon: Brain,
-    title: "Footnote Deep Dive",
-    description: "Explain the lease obligations in footnote 12",
+    title: "Detailed Deep Dive",
+    description: "Explain the critical sections, methodologies, and footnotes",
   },
 ];
 
@@ -71,14 +71,11 @@ export function ChatEmptyState({ documentCount, onDocumentUploaded }: ChatEmptyS
         onChange={handleUpload}
       />
 
-      {/* AI Avatar — DiceBear bottts */}
+      {/* AI Avatar */}
       <div className="flex flex-col items-center gap-3 text-center">
-        <img
-          src="https://api.dicebear.com/7.x/bottts/svg?seed=fdis-ai&backgroundColor=b6e3f4&radius=50"
-          alt="FDIS AI Assistant"
-          className="size-16 rounded-full border-2 border-primary/20"
-          loading="lazy"
-        />
+        <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-lg shadow-primary/5">
+          <Brain className="size-8 text-primary" />
+        </div>
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold tracking-tight">
             Financial Intelligence

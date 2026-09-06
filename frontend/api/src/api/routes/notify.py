@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter
 from src.domain.models import NotificationRequest
 from src.services.notification import NotificationService
@@ -13,4 +14,11 @@ async def send_notification(payload: NotificationRequest):
         document_name=payload.document_name,
         summary=payload.summary,
     )
-    return {"success": bool(msg_id), "message_id": msg_id}
+    return {
+        "success": bool(msg_id),
+        "data": {"message_id": msg_id},
+        "meta": {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "path": "/api/v1/notify",
+        },
+    }

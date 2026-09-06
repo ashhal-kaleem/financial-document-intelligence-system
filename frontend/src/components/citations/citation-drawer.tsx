@@ -22,6 +22,7 @@ export function CitationDrawer() {
   const handleOpenPdf = () => {
     if (!activeCitation) return;
     openPdfViewer({
+      documentId: activeCitation.documentId,
       filename: activeCitation.document,
       pageNumber: activeCitation.page,
       chunkId: activeCitation.chunk_id,
