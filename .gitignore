@@ -61,3 +61,6 @@ Thumbs.db
 # ── Logs ─────────────────────────────────────
 *.log
 logs/
+
+# ── Agent Skills & Local Configurations ──────
+.agents/
