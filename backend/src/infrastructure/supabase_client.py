@@ -170,6 +170,56 @@ class SupabaseClient(BaseVectorStore):
                 )
             return results
 
+
+    async def upload_pdf(self, document_id: UUID, filename: str, pdf_bytes: bytes) -> str:
+        path = f"{document_id}/{filename}"
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            await client.post(
+                f"{self.base_url}/storage/v1/object/documents/{path}",
+                headers={
+                    "apikey": self.service_key,
+                    "Authorization": f"Bearer {self.service_key}",
+                    "Content-Type": "application/pdf",
+                    "x-upsert": "true",
+                },
+                content=pdf_bytes,
+            )
+        return f"{self.base_url}/storage/v1/object/public/documents/{path}"
+
+    async def get_pdf_bytes(self, document_id: UUID, filename: str) -> Optional[bytes]:
+        path = f"{document_id}/{filename}"
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            res = await client.get(
+                f"{self.base_url}/storage/v1/object/documents/{path}",
+                headers=self.headers,
+            )
+            if res.status_code == 200:
+                return res.content
+        return None
+
+    async def get_document_chunks(self, document_id: UUID) -> List[DocumentChunk]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(
+                f"{self.base_url}/rest/v1/chunks?select=id,document_id,content,source,page,chunk_index,total_chunks,metadata&document_id=eq.{document_id}&order=page.asc,chunk_index.asc",
+                headers=self.headers,
+            )
+            res.raise_for_status()
+            rows = res.json()
+            return [
+                DocumentChunk(
+                    id=r.get("id"),
+                    document_id=UUID(r["document_id"]),
+                    content=r["content"],
+                    source=r["source"],
+                    page=r["page"],
+                    chunk_index=r["chunk_index"],
+                    total_chunks=r["total_chunks"],
+                    metadata=r.get("metadata", {}),
+                    similarity=0.0,
+                )
+                for r in rows
+            ]
+
     async def ping(self) -> tuple[bool, float, Optional[str]]:
         import time
         t0 = time.perf_counter()

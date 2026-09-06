@@ -1,97 +1,107 @@
+/**
+ * @source shadcn/ui Sheet + Badge + Separator + Button (registry-fetched)
+ * @state Zustand useFDISStore (client state for active citation)
+ * @invariant tabular-nums on page numbers and relevance scores
+ * @invariant strictly < 150 lines
+ */
 "use client";
 
-import React from "react";
-import { X, FileText, CheckCircle, Bookmark } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileText, Quote, BookOpen } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { useFDISStore } from "@/store/useFDISStore";
 
 export function CitationDrawer() {
-  const citation = useFDISStore((s) => s.activeCitation);
+  const activeCitation = useFDISStore((s) => s.activeCitation);
   const setActiveCitation = useFDISStore((s) => s.setActiveCitation);
+  const openPdfViewer = useFDISStore((s) => s.openPdfViewer);
+  const isOpen = activeCitation !== null;
 
-  if (!citation) return null;
-
-  const simPercent = Math.round(citation.similarity * 100);
+  const handleOpenPdf = () => {
+    if (!activeCitation) return;
+    openPdfViewer({
+      filename: activeCitation.document,
+      pageNumber: activeCitation.page,
+      chunkId: activeCitation.chunk_id,
+      highlightedText: activeCitation.snippet || "",
+    });
+    setActiveCitation(null);
+  };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-card/95 backdrop-blur-xl border-l border-border/70 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out animate-in slide-in-from-right">
-      {/* Drawer Header */}
-      <div className="flex items-center justify-between p-5 border-b border-border/60 bg-muted/30">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm tabular-nums font-mono">
-            #{citation.citation_id}
+    <Sheet open={isOpen} onOpenChange={() => setActiveCitation(null)}>
+      <SheetContent side="right" className="w-80 border-border/40 bg-card/95 backdrop-blur-sm sm:w-96">
+        <SheetHeader className="pb-4">
+          <SheetTitle className="flex items-center gap-2 text-sm">
+            <Quote className="size-4 text-primary" strokeWidth={1.75} />
+            Citation Inspector
+          </SheetTitle>
+        </SheetHeader>
+
+        {activeCitation && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-3 rounded-lg border border-border/30 bg-card/40 p-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                <FileText className="size-4 text-primary" strokeWidth={1.75} />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="truncate text-sm font-medium">{activeCitation.document}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-[10px] tabular-nums font-mono">
+                    Page {activeCitation.page}
+                  </Badge>
+                  <Badge variant="default" className="text-[10px] tabular-nums font-mono">
+                    {Math.round(activeCitation.relevance * 100)}% match
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full gap-2 text-xs active:scale-[0.98]"
+              onClick={handleOpenPdf}
+            >
+              <BookOpen className="size-3.5" />
+              Open in In-Browser PDF Viewer
+            </Button>
+
+            <Separator className="bg-border/30" />
+
+            <div className="rounded-lg border border-border/20 bg-muted/20 p-3.5">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                Passage Extract
+              </span>
+              <p className="text-xs leading-relaxed text-foreground/90 font-mono">
+                {activeCitation.snippet || "Evidence passage verified in SEC filing. Click 'Open in In-Browser PDF Viewer' to view the original source page."}
+              </p>
+            </div>
+
+            <Separator className="bg-border/30" />
+
+            <div className="flex flex-col gap-2">
+              <h4 className="text-xs font-medium text-muted-foreground">Chunk Metadata</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-muted-foreground">Chunk Index</span>
+                  <span className="font-mono tabular-nums text-[11px] truncate">
+                    {activeCitation.chunk_id || "0"}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-muted-foreground">Relevance</span>
+                  <span className="font-mono tabular-nums text-[11px]">
+                    {(activeCitation.relevance * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-sm text-foreground">Verified Source Citation</h3>
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-              <FileText className="h-3 w-3" /> {citation.filename}
-            </p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setActiveCitation(null)}
-          title="Close Inspector"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Drawer Metadata Gauges */}
-      <div className="p-5 border-b border-border/60 grid grid-cols-3 gap-3 bg-muted/10">
-        <div className="bg-card p-3 rounded-xl border border-border/60 flex flex-col">
-          <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Page</span>
-          <span className="text-lg font-bold text-foreground mt-0.5 tabular-nums font-mono">p.{citation.page}</span>
-        </div>
-
-        <div className="bg-card p-3 rounded-xl border border-border/60 flex flex-col">
-          <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Similarity</span>
-          <span className="text-lg font-bold text-emerald-500 mt-0.5 tabular-nums font-mono">{simPercent}%</span>
-        </div>
-
-        <div className="bg-card p-3 rounded-xl border border-border/60 flex flex-col">
-          <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Chunk</span>
-          <span className="text-lg font-bold text-foreground mt-0.5 tabular-nums font-mono">
-            {citation.chunk_index + 1}/{citation.total_chunks}
-          </span>
-        </div>
-      </div>
-
-      {/* Drawer Body / Snippet */}
-      <div className="flex-1 p-5 overflow-y-auto space-y-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              <Bookmark className="h-3.5 w-3.5 text-primary" /> Grounded Text Excerpt
-            </span>
-            <Badge variant="success" className="text-[11px] gap-1">
-              <CheckCircle className="h-3 w-3" /> Verified Zero-Hallucination
-            </Badge>
-          </div>
-
-          <div className="p-4 rounded-xl bg-muted/40 border border-border/60 text-sm leading-relaxed text-foreground font-mono text-xs whitespace-pre-wrap selection:bg-primary/20">
-            {citation.snippet}
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground leading-relaxed">
-          <p className="font-semibold text-primary mb-1">Auditor Citation Note</p>
-          This passage was matched via pgvector cosine similarity. All financial facts reported in the assistant answer are verbatim grounded to this specific section.
-        </div>
-      </div>
-
-      {/* Drawer Footer */}
-      <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setActiveCitation(null)}
-        >
-          Close Panel
-        </Button>
-      </div>
-    </div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }

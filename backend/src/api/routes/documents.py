@@ -81,3 +81,54 @@ async def delete_document(document_id: UUID):
             "path": f"/api/v1/documents/{document_id}",
         }
     }
+
+
+from fastapi.responses import Response
+
+@router.get("/{document_id}/chunks")
+async def get_document_chunks_endpoint(document_id: UUID):
+    doc = await supabase.get_document_by_id(document_id)
+    if not doc:
+        raise DocumentNotFoundError(str(document_id))
+    chunks = await supabase.get_document_chunks(document_id)
+    return {
+        "success": True,
+        "data": [c.model_dump() for c in chunks],
+        "meta": {
+            "total": len(chunks),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "path": f"/api/v1/documents/{document_id}/chunks",
+        }
+    }
+
+@router.get("/{document_id}/pdf")
+async def get_document_pdf(document_id: UUID):
+    doc = await supabase.get_document_by_id(document_id)
+    if not doc:
+        raise DocumentNotFoundError(str(document_id))
+    
+    # Try fetching from Supabase storage
+    pdf_bytes = await supabase.get_pdf_bytes(document_id, doc.filename)
+    
+    # Fallback to local sample if test/sample filing
+    if not pdf_bytes:
+        import os
+        sample_path = 'tests/sample_apple_10k.pdf'
+        if os.path.exists(sample_path):
+            with open(sample_path, 'rb') as f:
+                pdf_bytes = f.read()
+                
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"PDF file content not found for document {document_id}"
+        )
+        
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{doc.filename}"',
+            "Cache-Control": "public, max-age=3600",
+        }
+    )

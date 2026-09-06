@@ -84,6 +84,12 @@ class DocumentIngestionService:
         created_doc = await self.supabase.create_document(doc)
 
         try:
+            # 1b. Upload raw PDF to Supabase storage
+            try:
+                await self.supabase.upload_pdf(doc_id, filename, pdf_bytes)
+            except Exception as e:
+                logger.warning(f"Could not upload PDF bytes to storage: {e}")
+
             # 2. Extract text & tables
             page_count, pages_data = self.extract_pdf_content(pdf_bytes, filename)
 

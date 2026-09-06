@@ -1,43 +1,23 @@
-# Workspace State & Context Memory (CONTEXT.md)
+# CONTEXT.md — Living Workspace Memory & Active State Tracker
 
-> **Project**: Financial Document Intelligence System (FDIS)  
-> **Master Protocol**: `/home/shaikhfardin/templates/instructions.md`  
-> **Active Phase**: Phase 6 — Production Deployment, Observability & GTM Complete  
-> **Last Updated**: 2026-09-06
+## Current Milestone & Status
+- **System**: Financial Document Intelligence System (FDIS)
+- **Status**: Production-Ready / Fully Verified
+- **Backend**: FastAPI 4-Tier Clean Architecture on `http://localhost:8000` (Healthy, 15/15 unit tests passing)
+- **Frontend**: Next.js 15.2.0 + React 19 + Tailwind CSS v4 on `http://localhost:3000` (0 errors, 0 warnings, verified via Playwright)
 
----
-
-## 📍 Current Phase & Focus
-- **Active Phase**: Production Ready & Fully Verified
-- **Status**: Backend (FastAPI 4-Tier) & Frontend (Next.js 16 + React 19 + Tailwind v4 OKLCH) running live.
-- **Verification**: End-to-end PDF ingestion, Supabase pgvector retrieval, Groq streaming, interactive citations, and drawer verification completed.
-
----
-
-## 📋 Features Built & Verified
-
-- [x] **Phase 0**: Research & Disconfirmation Gate approved
-- [x] **Phase 1**: Infrastructure reachability verified (Supabase pgvector 0.8.2, Groq qwen3.8-27b, OpenRouter, Resend)
-- [x] **Phase 2**: Architecture approved (Approach 3: Pragmatic 4-Tier Clean Architecture)
-- [x] **Phase 3**: Single-Source-of-Truth documentation setup complete (`docs/PRD.md`, `docs/architecture.md`, `docs/api-docs.md`, `docs/deployment.md`, `docs/TEST.md`, `AGENTS.md`)
-- [x] **Phase 4.1**: Backend core & dependencies setup via `uv` (FastAPI 0.141, PyMuPDF 1.28, sentence-transformers 6.0, Pydantic v2)
-- [x] **Phase 4.2**: PyMuPDF extraction with table awareness, memory cleanup (`fitz.TOOLS.store_shrink(100)`), and recursive financial chunking (512 char target, 64 overlap)
-- [x] **Phase 4.3**: Supabase pgvector cosine retrieval via optimized `match_chunks` RPC with document B-tree index scan
-- [x] **Phase 4.4**: Groq LPU sub-second streaming on `/api/v1/ask/stream` with transparent OpenRouter fallback and inline `[X]` citations
-- [x] **Phase 4.5**: Next.js 16 + React 19 + Tailwind CSS v4 OKLCH Frontend with 5 UI states, document drawer, and interactive citation inspector
-- [x] **Phase 5**: Multi-lens review, client secret leak audit (`0 secrets exposed`), and live Playwright browser verification
-
----
-
-## 🐞 Bug Log & Resolutions
-- **Issue**: `ivfflat` index filtered query with `document_id = ANY(...)` returned 0 rows due to single-probe cluster partitioning.
-  - **Fix**: Updated `match_chunks` stored procedure in Supabase PostgreSQL to use B-tree index scan when filtering by `p_document_ids`. Verified 100% match accuracy.
-- **Issue**: `UUID` serialization error in SSE streaming citations payload.
-  - **Fix**: Added `mode="json"` to `c.model_dump()` in `src/services/inference.py`.
-
-- **Issue**: Structural Invariant Drift (Playbook Rules & Template Specifications deviation).
-  - **Fix**: Researched via Exa AI (`Constraint Decay: The Fragility of LLM Agents in Backend Code Generation`). Updated Master Global Templates (`AGENTS_template.md`, `instructions.md`, `docs/TEST_template.md`, `docs/api-docs_template.md`) with explicit enforcement gates. Created and executed `templates/scripts/verify-playbook.py`.
-  - **Refactored**:
-    - Backend: Unified response envelopes (`UnifiedResponse[T]`, `ResponseMeta`), RFC 9457 validation errors, live database probe with latency tracking (`/api/v1/health`), SSE client disconnect defense (`request.is_disconnected()`), multi-model fallback array (`models: [...]`).
-    - Frontend: State separation (TanStack Query for server state, Zustand `useFDISStore` for UI state), elimination of raw `<button>` in favor of accessible `@/components/ui/button`, `tabular-nums font-mono` for financial numbers, and Skeleton mirror loading states.
-  - **Verification**: `python3 /home/shaikhfardin/templates/scripts/verify-playbook.py .` returned **0 violations (PASS)**. `uv run pytest -v` (13/13 PASS). `pnpm run typecheck` (0 errors).
+## Key Fixes Applied in This Iteration
+1. **Resolved Dev Server 500 & Webpack Runtime Chunk Mismatch**:
+   - Cleared stale `.next` cache generated between `next build` and `next dev`.
+   - Re-compiled fresh dev server with HTTP 200 OK across all routes.
+2. **Eliminated Backend `net::ERR_CONNECTION_REFUSED`**:
+   - Launched FastAPI backend daemon process on port 8000. Verified health endpoint (`/api/v1/health`) and document listing (`/api/v1/documents`).
+3. **Resolved React 19 Hydration Mismatch**:
+   - Added `suppressHydrationWarning` to `<html lang="en">` in `frontend/src/app/layout.tsx` to handle `next-themes` client-side class injections.
+4. **Prevented Third-Party Puter Sign-in Popups**:
+   - Replaced unauthenticated `puter.kv` with client-side browser `localStorage` in `frontend/src/lib/puter.ts` for chat history persistence.
+   - Silenced Puter ASCII banner in console with `puter.quiet = true`.
+5. **Fixed Favicon 404**:
+   - Added `frontend/src/app/icon.svg` from SVG assets.
+6. **Automated End-to-End Verification**:
+   - Headless Chromium interaction script verified zero console errors across sidebar, statements tab, comparison tab, theme studio, API hub, and Google authentication modal.

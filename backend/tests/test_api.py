@@ -29,3 +29,15 @@ def test_root_endpoint():
     data = response.json()
     assert data["success"] is True
     assert "Financial Document Intelligence System" in data["data"]["service"]
+
+def test_document_chunks_not_found():
+    import uuid
+    random_id = str(uuid.uuid4())
+    response = client.get(f"/api/v1/documents/{random_id}/chunks")
+    assert response.status_code == 404
+
+def test_document_pdf_not_found():
+    import uuid
+    random_id = str(uuid.uuid4())
+    response = client.get(f"/api/v1/documents/{random_id}/pdf")
+    assert response.status_code == 404

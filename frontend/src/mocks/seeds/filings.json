@@ -1,0 +1,56 @@
+[
+  {
+    "id": "d65f1141-44b2-4985-abef-17d5b4459dd9",
+    "filename": "Amazon_10K_Filing.pdf",
+    "page_count": 58,
+    "chunk_count": 309,
+    "status": "ready",
+    "is_sample": false,
+    "created_at": "2025-11-15T00:00:00Z"
+  },
+  {
+    "id": "3455cee6-73b9-42e0-8386-eda9d7673d96",
+    "filename": "Amazon_10K_Filing.pdf",
+    "page_count": 148,
+    "chunk_count": 654,
+    "status": "ready",
+    "is_sample": true,
+    "created_at": "2025-11-15T00:00:00Z"
+  },
+  {
+    "id": "0c49e8bd-6ada-4ecd-bac8-5947ba6bdad0",
+    "filename": "Microsoft_FY2025_10K.pdf",
+    "page_count": 154,
+    "chunk_count": 807,
+    "status": "ready",
+    "is_sample": false,
+    "created_at": "2025-11-15T00:00:00Z"
+  },
+  {
+    "id": "08d8f4ec-0d7a-49e0-8e18-5fe62e802d70",
+    "filename": "Microsoft_FY2025_10K.pdf",
+    "page_count": 137,
+    "chunk_count": 279,
+    "status": "ready",
+    "is_sample": false,
+    "created_at": "2025-11-15T00:00:00Z"
+  },
+  {
+    "id": "aea6b2ea-45a4-4054-bddf-8cc0e7d26ca0",
+    "filename": "Amazon_10K_Filing.pdf",
+    "page_count": 170,
+    "chunk_count": 310,
+    "status": "ready",
+    "is_sample": true,
+    "created_at": "2025-11-15T00:00:00Z"
+  },
+  {
+    "id": "befc9021-0315-46f8-9022-bcf679e1c4ad",
+    "filename": "Microsoft_FY2025_10K.pdf",
+    "page_count": 162,
+    "chunk_count": 614,
+    "status": "ready",
+    "is_sample": true,
+    "created_at": "2025-11-15T00:00:00Z"
+  }
+]

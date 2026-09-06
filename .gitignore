@@ -65,6 +65,5 @@ logs/
 # ── Agent Skills & Local Configurations ──────
 .agents/
 
-# Playwright MCP artifacts
+# ── Playwright MCP artifacts ─────────────────
 .playwright-mcp/
-

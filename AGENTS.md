@@ -11,7 +11,7 @@
 - **Core Architecture**: 4-Tier Clean Architecture (FastAPI Backend + Next.js 16 / React 19 Frontend).
 - **Detailed Specs**: Read `docs/architecture.md`, `docs/PRD.md`, and `docs/api-docs.md`.
 - **Active Memory & Progress**: Read `CONTEXT.md` before starting work; update it before completing any session.
-- **Systematic Feature Delivery**: Follow `systematic-build.md` for all phased delivery.
+- **Systematic Feature Delivery**: Follow `systematic-build.md` for all phased delivery via the `systematic-builder` Subagent (enforces Evidence Contract and zero-stub completions).
 
 ---
 
@@ -44,6 +44,20 @@
 └── CHANGELOG.md               # Version history
 ```
 
+### 🧭 Subagent & Context Activation Matrix
+Before executing any task, determine domain and inspect the designated playbook:
+
+| Workload Domain | Active Subagent | Target Directory | Mandatory Inspection Command |
+|---|---|---|---|
+| **Frontend / UI / Styling** | `frontend-engineer` | `frontend/` | `cat /home/shaikhfardin/templates/playbooks/frontend/00-frontend-orchestrator.md | head -n 60` |
+| **Backend / APIs / RAG** | `backend-engineer` | `backend/` | `cat /home/shaikhfardin/templates/playbooks/backend/00-backend-orchestrator.md | head -n 60` |
+| **Cloud / Tests / Dev Server** | `codespace-operator` | Cloud VM | `gh codespace list` & `ps aux | grep dev-sync.sh` |
+| **Feature Milestones / Tasks** | `systematic-builder` | `/` | `cat systematic-build.md | head -n 60` |
+| **Research / Comparisons** | `research-specialist` | Scratch | `cat /home/shaikhfardin/templates/playbooks/research/00-research-orchestrator.md | head -n 60` |
+| **Git / PRs / Releases** | `github-orchestrator` | `/` | `cat /home/shaikhfardin/templates/playbooks/dev/01-github-orchestrator.md | head -n 60` |
+
+---
+
 ### 🏛️ Core Architectural & Security Invariants
 1. **Strict One-Way Dependency Flow**:
    $$\text{Client / Routes} \longrightarrow \text{Services} \longrightarrow \text{Domain Core} \longrightarrow \text{Infrastructure}$$
@@ -72,6 +86,10 @@ Every component in FDIS must strictly follow the companion playbooks (`templates
    - Operations taking >200ms (PDF parsing, OCR, chunking, vector embeddings) must never block the HTTP route thread. Return `HTTP 202 Accepted` with a job/document ID and execute via `BackgroundTasks` or async task queues.
 5. **Deterministic Database Transactions (`02 & 06`)**:
    - Zero raw SQL without migrations. Tests must use transactional rollbacks leaving zero database residues.
+6. **Always Async I/O (`00 & 01`)**:
+   - In async routes and services, never use blocking synchronous calls (`time.sleep()`, `requests.get()`, synchronous `open()`). Always use `asyncio.sleep`, `httpx.AsyncClient`, or `aiofiles`.
+7. **No Direct Route-to-Database Queries (`00 & 01`)**:
+   - Route handlers are strictly forbidden from executing raw SQL queries or calling database models/sessions directly. Routes must delegate 100% of data access to the Service/Repository layer.
 
 #### 🎨 Frontend Invariants (`playbooks/frontend/`):
 1. **Strict State Ownership Boundary (`00 & 07`)**:
@@ -112,6 +130,7 @@ For resource-constrained or low-spec local laptops (preventing CPU throttling, R
   - Exposes port `3000` (Frontend) and `8000` (Backend) with auto-HTTPS port forwarding.
   - Automatically runs background installation (`uv sync` and `pnpm install`) on boot via `postCreateCommand`.
 - **Laptop Resource Benefit**: Local machine CPU and RAM usage remains near 0%; all builds, dev servers, and heavy tests execute in the cloud VM.
+- **Dedicated Subagent (`codespace-operator`)**: Use for executing cloud tests, typechecks, dev servers, and port forwarding while maintaining 0% laptop load.
 
 ---
 

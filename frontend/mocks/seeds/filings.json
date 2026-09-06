@@ -1,0 +1,10 @@
+[
+  {"id":"doc-001","company":"Apple Inc.","ticker":"AAPL","filing_type":"10-K","fiscal_year":2024,"total_revenue":"$394.3B","net_income":"$97.0B","status":"Processed","uploaded_at":"2024-11-15T09:23:00Z","pages":187},
+  {"id":"doc-002","company":"Microsoft Corporation","ticker":"MSFT","filing_type":"10-Q","fiscal_year":2024,"total_revenue":"$62.0B","net_income":"$22.3B","status":"Processed","uploaded_at":"2024-10-22T14:05:00Z","pages":62},
+  {"id":"doc-003","company":"Alphabet Inc.","ticker":"GOOGL","filing_type":"10-K","fiscal_year":2024,"total_revenue":"$307.4B","net_income":"$73.8B","status":"Processing","uploaded_at":"2024-12-01T08:45:00Z","pages":245},
+  {"id":"doc-004","company":"Amazon.com Inc.","ticker":"AMZN","filing_type":"8-K","fiscal_year":2024,"total_revenue":"$574.8B","net_income":"$30.4B","status":"Processed","uploaded_at":"2024-09-30T16:12:00Z","pages":28},
+  {"id":"doc-005","company":"NVIDIA Corporation","ticker":"NVDA","filing_type":"10-K","fiscal_year":2024,"total_revenue":"$60.9B","net_income":"$29.8B","status":"Pending","uploaded_at":"2024-11-28T11:30:00Z","pages":198},
+  {"id":"doc-006","company":"Tesla Inc.","ticker":"TSLA","filing_type":"DEF 14A","fiscal_year":2024,"total_revenue":"$96.8B","net_income":"$15.0B","status":"Processed","uploaded_at":"2024-08-15T10:00:00Z","pages":156},
+  {"id":"doc-007","company":"JPMorgan Chase & Co.","ticker":"JPM","filing_type":"10-Q","fiscal_year":2024,"total_revenue":"$41.3B","net_income":"$12.9B","status":"Failed","uploaded_at":"2024-07-22T13:45:00Z","pages":89},
+  {"id":"doc-008","company":"Meta Platforms Inc.","ticker":"META","filing_type":"10-K","fiscal_year":2024,"total_revenue":"$134.9B","net_income":"$39.1B","status":"Processed","uploaded_at":"2024-10-05T09:15:00Z","pages":212}
+]
