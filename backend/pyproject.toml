@@ -10,7 +10,7 @@ dependencies = [
     "pydantic>=2.8.0",
     "pydantic-settings>=2.4.0",
     "pymupdf>=1.25.0",
-    "sentence-transformers>=3.0.0",
+    "huggingface-hub>=0.28.0",
     "httpx>=0.27.0",
     "python-multipart>=0.0.9",
 ]

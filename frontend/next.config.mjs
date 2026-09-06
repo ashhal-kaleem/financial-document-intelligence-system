@@ -4,8 +4,18 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/v1/:path*',
+        destination:
+          process.env.NODE_ENV === 'development'
+            ? 'http://127.0.0.1:8000/api/v1/:path*'
+            : '/api/index.py',
+      },
+      {
         source: '/api/backend/:path*',
-        destination: 'http://127.0.0.1:8000/api/v1/:path*',
+        destination:
+          process.env.NODE_ENV === 'development'
+            ? 'http://127.0.0.1:8000/api/v1/:path*'
+            : '/api/index.py',
       },
     ];
   },
