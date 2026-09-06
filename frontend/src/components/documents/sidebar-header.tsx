@@ -1,23 +1,23 @@
 /**
  * @source shadcn/ui Button + Input (registry-fetched)
  * @icons Lucide React
+ * @invariant strictly < 150 lines
+ * @invariant zero raw button primitives
  */
 "use client";
 
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface SidebarHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onUploadClick: () => void;
 }
 
 export function SidebarHeader({
   searchQuery,
   onSearchChange,
-  onUploadClick,
 }: SidebarHeaderProps) {
   return (
     <div className="flex flex-col gap-3 border-b border-border/40 p-4">
@@ -33,15 +33,6 @@ export function SidebarHeader({
             aria-label="Filter filings"
           >
             <Filter className="size-3.5" strokeWidth={1.75} />
-          </Button>
-          <Button
-            variant="default"
-            size="icon"
-            className="size-7 active:scale-[0.98] transition-transform duration-75"
-            onClick={onUploadClick}
-            aria-label="Upload document"
-          >
-            <Plus className="size-3.5" strokeWidth={2} />
           </Button>
         </div>
       </div>

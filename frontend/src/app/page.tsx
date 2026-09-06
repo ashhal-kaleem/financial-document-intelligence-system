@@ -89,9 +89,6 @@ export default function Home() {
           isError={isError}
           onRetryFetch={() => refetch()}
           onDeleteDocument={(id) => deleteMutation.mutate(id)}
-          onDocumentUploaded={() => {
-            queryClient.invalidateQueries({ queryKey: ["documents"] });
-          }}
           deletingId={deletingId}
         />
 
@@ -102,11 +99,8 @@ export default function Home() {
                 <KPIStrip />
               </div>
               <div className="flex-1 overflow-hidden">
-                <ChatInterface
+                <ChatInterface onDocumentUploaded={() => queryClient.invalidateQueries({ queryKey: ["documents"] })}
                   documentCount={documents.length}
-                  onDocumentUploaded={() => {
-                    queryClient.invalidateQueries({ queryKey: ["documents"] });
-                  }}
                 />
               </div>
             </>

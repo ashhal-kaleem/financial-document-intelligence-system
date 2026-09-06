@@ -3,6 +3,8 @@
  * @animation Lottie empty-docs.json (LottieFiles)
  * @icons Lucide React
  * @invariant 5 mandatory UI states: Ideal, Loading, Empty, Error, Degraded
+ * @invariant strictly < 150 lines
+ * @invariant zero raw button primitives
  */
 "use client";
 
@@ -11,7 +13,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { SidebarHeader } from "./sidebar-header";
 import { DocumentListItem, DocumentListItemSkeleton } from "./document-list-item";
-import { DocumentUploadZone } from "./document-upload-zone";
 import { EmptyDocsAnimation } from "@/components/ui/lottie-player";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import type { DocumentItem } from "@/lib/api";
@@ -22,7 +23,6 @@ interface DocumentSidebarProps {
   isError: boolean;
   onRetryFetch: () => void;
   onDeleteDocument: (id: string) => void;
-  onDocumentUploaded: () => void;
   deletingId?: string;
 }
 
@@ -32,11 +32,9 @@ export function DocumentSidebar({
   isError,
   onRetryFetch,
   onDeleteDocument,
-  onDocumentUploaded,
   deletingId,
 }: DocumentSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showUpload, setShowUpload] = useState(false);
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return documents;
@@ -51,19 +49,7 @@ export function DocumentSidebar({
       <SidebarHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onUploadClick={() => setShowUpload(!showUpload)}
       />
-
-      {showUpload && (
-        <div className="border-b border-border/40 p-3">
-          <DocumentUploadZone
-            onSuccess={() => {
-              setShowUpload(false);
-              onDocumentUploaded();
-            }}
-          />
-        </div>
-      )}
 
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-0.5 p-2">
@@ -95,23 +81,16 @@ export function DocumentSidebar({
             </div>
           )}
 
-          {/* State 3: Empty — Lottie animation + CTA */}
+          {/* State 3: Empty — Lottie animation */}
           {!isLoading && !isError && filtered.length === 0 && (
             <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
               <EmptyDocsAnimation className="size-24 opacity-60" />
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium">No filings yet</p>
                 <p className="text-xs text-muted-foreground">
-                  Upload your first SEC filing to get started
+                  Use the upload button in the chat box to index SEC filings
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setShowUpload(true)}
-                className="active:scale-[0.98] transition-transform duration-75"
-              >
-                Upload Filing
-              </Button>
             </div>
           )}
 

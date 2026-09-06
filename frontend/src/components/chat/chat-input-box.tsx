@@ -1,6 +1,6 @@
 /**
  * @source shadcn/ui Textarea + Button + Badge + Input (registry-fetched)
- * @engine Puter.js Multi-Model Selector (Claude 3.5 Sonnet / GPT-4o / DeepSeek V3)
+ * @engine Multi-Model Selector (Claude 3.5 Sonnet / GPT-4o / DeepSeek V3)
  * @icons Lucide React
  * @invariant active:scale-[0.98] on buttons
  * @invariant strictly < 150 lines
@@ -8,7 +8,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Send, Loader2, Sparkles, Cpu, Paperclip, CheckCircle2 } from "lucide-react";
+import { Send, Loader2, Cpu, Paperclip, CheckCircle2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +23,9 @@ interface ChatInputBoxProps {
 }
 
 const PUTER_MODELS = [
-  { id: "claude-3-5-sonnet", label: "Claude 3.5 Sonnet", badge: "Puter AI" },
-  { id: "gpt-4o", label: "GPT-4o", badge: "Puter AI" },
-  { id: "deepseek-chat", label: "DeepSeek V3", badge: "Puter AI" },
+  { id: "claude-3-5-sonnet", label: "Claude 3.5 Sonnet" },
+  { id: "gpt-4o", label: "GPT-4o" },
+  { id: "deepseek-chat", label: "DeepSeek V3" },
 ];
 
 export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocumentUploaded }: ChatInputBoxProps) {
@@ -74,7 +74,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
 
   return (
     <div className="border-t border-border/40 bg-card/20 p-4 space-y-2">
-      {/* Model Selection & Status Bar */}
+      {/* Model Selection Bar - Clean & Tag-Free */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-1.5">
           <Cpu className="size-3 text-primary" />
@@ -96,13 +96,9 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
           </div>
         </div>
 
-        {uploadSuccess ? (
+        {uploadSuccess && (
           <Badge variant="outline" className="text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
             <CheckCircle2 className="size-2.5 mr-1" /> Indexed {uploadSuccess}
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-[10px] font-mono text-primary/80 border-primary/20 bg-primary/5 hidden sm:inline-flex">
-            <Sparkles className="size-2.5 mr-1" /> Puter AI Copilot
           </Badge>
         )}
       </div>
