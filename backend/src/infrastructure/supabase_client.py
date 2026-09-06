@@ -132,7 +132,7 @@ class SupabaseClient(BaseVectorStore):
     async def match_chunks(
         self,
         query_embedding: List[float],
-        match_threshold: float = 0.60,
+        match_threshold: float = 0.05,
         match_count: int = 5,
         document_ids: Optional[List[UUID]] = None,
     ) -> List[DocumentChunk]:

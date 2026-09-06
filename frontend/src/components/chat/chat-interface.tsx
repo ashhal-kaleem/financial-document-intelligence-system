@@ -18,15 +18,16 @@ import { streamPuterChat, loadChatHistory, saveChatHistory, PuterChatMessage } f
 
 interface ChatInterfaceProps {
   documentCount: number;
+  onDocumentUploaded?: () => void;
 }
 
-export function ChatInterface({ documentCount }: ChatInterfaceProps) {
+export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<PuterChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const setActiveCitation = useFDISStore((s) => s.setActiveCitation);
 
-  // Restore persistent conversation from Puter.kv on mount
+  // Restore persistent conversation from localStorage on mount
   useEffect(() => {
     loadChatHistory().then((history) => {
       if (history && history.length > 0) setMessages(history);
@@ -80,7 +81,7 @@ export function ChatInterface({ documentCount }: ChatInterfaceProps) {
           fullContent += token;
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)));
         });
-      } catch (puterErr) {
+      } catch {
         // Fallback to backend stream if Puter encounters client error
         await streamQuestion(content, [], undefined, (event: StreamEventPayload) => {
           if (event.event === "token" && event.token) {
@@ -90,7 +91,7 @@ export function ChatInterface({ documentCount }: ChatInterfaceProps) {
         });
       }
 
-      // 3. Persist conversation into Puter KV store
+      // 3. Persist conversation into local storage
       setMessages((current) => {
         saveChatHistory(current);
         return current;
@@ -113,7 +114,7 @@ export function ChatInterface({ documentCount }: ChatInterfaceProps) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {messages.length === 0 ? (
-        <ChatEmptyState documentCount={documentCount} />
+        <ChatEmptyState documentCount={documentCount} onDocumentUploaded={onDocumentUploaded} />
       ) : (
         <ScrollArea className="flex-1" ref={scrollRef}>
           <div className="flex flex-col">
@@ -132,7 +133,12 @@ export function ChatInterface({ documentCount }: ChatInterfaceProps) {
         </ScrollArea>
       )}
 
-      <ChatInputBox onSend={handleSend} isStreaming={isStreaming} disabled={documentCount === 0} />
+      <ChatInputBox
+        onSend={handleSend}
+        isStreaming={isStreaming}
+        disabled={documentCount === 0}
+        onDocumentUploaded={onDocumentUploaded}
+      />
     </div>
   );
 }

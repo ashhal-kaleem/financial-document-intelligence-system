@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSIONS: int = Field(384, description="Vector dimension size")
     CHUNK_SIZE: int = Field(512, description="Target characters per chunk")
     CHUNK_OVERLAP: int = Field(64, description="Overlap characters between chunks")
-    SIMILARITY_THRESHOLD: float = Field(0.40, description="Minimum cosine similarity threshold")
+    SIMILARITY_THRESHOLD: float = Field(0.05, description="Minimum cosine similarity threshold")
     TOP_K_MATCHES: int = Field(5, description="Number of vector matches to retrieve")
 
     # Server Configuration

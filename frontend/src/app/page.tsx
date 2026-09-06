@@ -16,7 +16,6 @@ import { CitationDrawer } from "@/components/citations/citation-drawer";
 import { PdfViewerModal } from "@/components/pdf/pdf-viewer-modal";
 import { FinancialStatementsGrid } from "@/components/financials/financial-statements-grid";
 import { FilingComparisonView } from "@/components/comparison/filing-comparison-view";
-import { ApiHubModal } from "@/components/settings/api-hub-modal";
 import { MemoExportModal } from "@/components/export/memo-export-modal";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { BorderBeam } from "@/components/ui/border-beam";
@@ -103,7 +102,12 @@ export default function Home() {
                 <KPIStrip />
               </div>
               <div className="flex-1 overflow-hidden">
-                <ChatInterface documentCount={documents.length} />
+                <ChatInterface
+                  documentCount={documents.length}
+                  onDocumentUploaded={() => {
+                    queryClient.invalidateQueries({ queryKey: ["documents"] });
+                  }}
+                />
               </div>
             </>
           )}
@@ -117,7 +121,6 @@ export default function Home() {
 
       {/* Modals & Overlays */}
       <PdfViewerModal />
-      <ApiHubModal />
       <MemoExportModal />
       <AuthModal />
     </div>

@@ -63,8 +63,6 @@ interface FDISState {
   isUploadOpen: boolean;
   setUploadOpen: (open: boolean) => void;
 
-  isApiHubOpen: boolean;
-  setApiHubOpen: (open: boolean) => void;
 
   isExportModalOpen: boolean;
   setExportModalOpen: (open: boolean) => void;
@@ -110,8 +108,6 @@ export const useFDISStore = create<FDISState>((set) => ({
   isUploadOpen: false,
   setUploadOpen: (open) => set({ isUploadOpen: open }),
 
-  isApiHubOpen: false,
-  setApiHubOpen: (open) => set({ isApiHubOpen: open }),
 
   isExportModalOpen: false,
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),

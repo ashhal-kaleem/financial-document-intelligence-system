@@ -30,6 +30,16 @@ class RetrievalService:
             match_count=k,
             document_ids=document_ids,
         )
+
+        # Fallback to top-k matches with 0.0 threshold if strict threshold filtered all passages
+        if not chunks:
+            chunks = await self.supabase.match_chunks(
+                query_embedding=query_embedding,
+                match_threshold=0.0,
+                match_count=k,
+                document_ids=document_ids,
+            )
+
         return chunks
 
     def build_citations(self, chunks: List[DocumentChunk]) -> List[Citation]:

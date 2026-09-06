@@ -1,12 +1,18 @@
 /**
- * @source shadcn/ui Card (registry-fetched)
+ * @source shadcn/ui Card + Button + Input (registry-fetched)
  * @icons Lucide React
  * @avatar DiceBear API (bottts style for AI assistant)
+ * @invariant strictly < 150 lines
+ * @invariant zero raw button primitives
  */
 "use client";
 
-import { Brain, FileText, TrendingUp, Shield } from "lucide-react";
+import { useRef, useState } from "react";
+import { Brain, FileText, TrendingUp, Shield, Upload, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { uploadDocument } from "@/lib/api";
 
 const suggestions = [
   {
@@ -33,11 +39,38 @@ const suggestions = [
 
 interface ChatEmptyStateProps {
   documentCount: number;
+  onDocumentUploaded?: () => void;
 }
 
-export function ChatEmptyState({ documentCount }: ChatEmptyStateProps) {
+export function ChatEmptyState({ documentCount, onDocumentUploaded }: ChatEmptyStateProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || file.type !== "application/pdf") return;
+    setIsUploading(true);
+    try {
+      await uploadDocument(file);
+      onDocumentUploaded?.();
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-12">
+      <Input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={handleUpload}
+      />
+
       {/* AI Avatar — DiceBear bottts */}
       <div className="flex flex-col items-center gap-3 text-center">
         <img
@@ -56,6 +89,18 @@ export function ChatEmptyState({ documentCount }: ChatEmptyStateProps) {
               : "Upload SEC filings to start asking questions with verifiable citations."}
           </p>
         </div>
+
+        {documentCount === 0 && (
+          <Button
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="gap-2 text-xs font-medium active:scale-[0.98] mt-1"
+          >
+            {isUploading ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
+            {isUploading ? "Indexing Filing..." : "Upload Financial Filing (PDF)"}
+          </Button>
+        )}
       </div>
 
       {/* Suggestion grid */}
