@@ -40,6 +40,8 @@ export default function Home() {
     enabled: isHydrated,
   });
 
+  const safeDocs = documents || [];
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       setDeletingId(id);
@@ -66,7 +68,7 @@ export default function Home() {
 
       <div className="flex-1 flex overflow-hidden z-10">
         <DocumentSidebar
-          documents={documents}
+          documents={safeDocs}
           isLoading={!isHydrated || isLoading}
           isError={isError}
           onRetryFetch={() => refetch()}
@@ -83,7 +85,7 @@ export default function Home() {
               <div className="flex-1 overflow-hidden">
                 <ChatInterface
                   onDocumentUploaded={() => queryClient.invalidateQueries({ queryKey: ["documents"] })}
-                  documentCount={documents.length}
+                  documentCount={safeDocs.length}
                 />
               </div>
             </>

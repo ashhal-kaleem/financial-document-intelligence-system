@@ -19,7 +19,7 @@ import { useFDISStore } from "@/store/useFDISStore";
 import type { DocumentItem } from "@/lib/api";
 
 interface DocumentSidebarProps {
-  documents: DocumentItem[];
+  documents?: DocumentItem[];
   isLoading: boolean;
   isError: boolean;
   onRetryFetch: () => void;
@@ -28,7 +28,7 @@ interface DocumentSidebarProps {
 }
 
 export function DocumentSidebar({
-  documents,
+  documents = [],
   isLoading,
   isError,
   onRetryFetch,
@@ -39,13 +39,18 @@ export function DocumentSidebar({
   const selectedDocument = useFDISStore((s) => s.selectedDocument);
   const setSelectedDocument = useFDISStore((s) => s.setSelectedDocument);
 
+  const safeDocs = documents || [];
+
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return documents;
+    if (!searchQuery.trim()) return safeDocs;
     const q = searchQuery.toLowerCase();
-    return documents.filter((d) =>
+    return safeDocs.filter((d) =>
       d.filename.toLowerCase().includes(q)
     );
-  }, [documents, searchQuery]);
+  }, [safeDocs, searchQuery]);
+
+  const docCount = safeDocs.length;
+  const filteredCount = filtered.length;
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-border/40 bg-sidebar lg:w-80">
@@ -57,7 +62,7 @@ export function DocumentSidebar({
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-0.5 p-2">
           {/* Global Search Scope Switcher */}
-          {!isLoading && !isError && documents.length > 0 && (
+          {!isLoading && !isError && docCount > 0 && (
             <div className="mb-1 flex items-center justify-between px-2 py-1">
               <span className="text-[11px] font-medium text-muted-foreground">Query Scope</span>
               <Button
@@ -69,7 +74,7 @@ export function DocumentSidebar({
                 onClick={() => setSelectedDocument(null)}
               >
                 <Layers className="size-2.5" />
-                All Filings ({documents.length})
+                All Filings ({docCount})
               </Button>
             </div>
           )}
@@ -103,7 +108,7 @@ export function DocumentSidebar({
           )}
 
           {/* State 3: Empty — Lottie animation */}
-          {!isLoading && !isError && filtered.length === 0 && (
+          {!isLoading && !isError && filteredCount === 0 && (
             <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
               <EmptyDocsAnimation className="size-24 opacity-60" />
               <div className="flex flex-col gap-0.5">
