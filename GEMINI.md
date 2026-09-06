@@ -45,3 +45,6 @@ Instead of built-in file and inspection tools, ALWAYS execute native Linux termi
 7. **Bounded Reflection & Saturation Rule (EXSEARCH Standard)**:
    - Evaluate what was proven vs what gap remains after each search.
    - Max 3 search iterations per sub-question; stop immediately when 2 consecutive searches return redundant evidence.
+8. **Metacognitive Self-Audit & Proposal Gate**:
+   - Actively monitor retrieval quality during research. If a systemic limitation or missing search operator pattern is detected, formulate a diagnosis.
+   - Never silently mutate master templates. Present a surgical proposal to the user and encode the rule into `instructions.md` and `search.md` only upon explicit confirmation ("update kardo").
