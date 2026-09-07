@@ -1,145 +1,361 @@
-/**
- * @source shadcn/ui Tabs + Button + Input + Badge + ScrollArea (registry-fetched)
- * @data SEC 10-K Consolidated Statements & Ratios Engine
- * @invariant tabular-nums font-mono on all currency and ratios
- * @invariant strictly < 150 lines
- */
 "use client";
 
-import { useState, useMemo } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Search, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
-import { useFDISStore } from "@/store/useFDISStore";
-
-interface StatementRow {
-  item: string;
-  fy24: number;
-  fy23: number;
-  isTotal?: boolean;
-}
-
-const BALANCE_SHEET: StatementRow[] = [
-  { item: "Cash & Cash Equivalents", fy24: 29943, fy23: 29965 },
-  { item: "Marketable Securities (Current)", fy24: 35219, fy23: 31590 },
-  { item: "Accounts Receivable, Net", fy24: 29501, fy23: 29508 },
-  { item: "Inventories", fy24: 6511, fy23: 6331 },
-  { item: "Total Current Assets", fy24: 101174, fy23: 97394, isTotal: true },
-  { item: "Property, Plant & Equipment, Net", fy24: 43715, fy23: 43715 },
-  { item: "Total Assets", fy24: 352583, fy23: 352583, isTotal: true },
-  { item: "Accounts Payable", fy24: 62158, fy23: 62611 },
-  { item: "Commercial Paper & Short-Term Debt", fy24: 9962, fy23: 9822 },
-  { item: "Total Current Liabilities", fy24: 145308, fy23: 145308, isTotal: true },
-  { item: "Long-Term Debt", fy24: 95400, fy23: 98959 },
-  { item: "Total Shareholders' Equity", fy24: 62146, fy23: 62146, isTotal: true },
-];
-
-const INCOME_STATEMENT: StatementRow[] = [
-  { item: "Total Net Sales / Revenue", fy24: 391035, fy23: 383285, isTotal: true },
-  { item: "Cost of Sales", fy24: 210352, fy23: 214137 },
-  { item: "Gross Margin", fy24: 180683, fy23: 169148, isTotal: true },
-  { item: "Research & Development", fy24: 31370, fy23: 29915 },
-  { item: "Selling, General & Administrative", fy24: 25421, fy23: 24932 },
-  { item: "Operating Income (EBIT)", fy24: 123216, fy23: 114301, isTotal: true },
-  { item: "Net Income", fy24: 93736, fy23: 96995, isTotal: true },
-];
+import { cn } from "@/lib/utils";
+import React from "react";
+import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
+import {
+  IconBoxAlignRightFilled,
+  IconClipboardCopy,
+  IconFileBroken,
+  IconSignature,
+  IconTableColumn,
+} from "@tabler/icons-react";
+import { motion } from "motion/react";
 
 export function FinancialStatementsGrid() {
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("bs");
-  const selectedDocument = useFDISStore((s) => s.selectedDocument);
-
-  const rows = activeTab === "bs" ? BALANCE_SHEET : INCOME_STATEMENT;
-  const filtered = useMemo(() => {
-    return rows.filter((r) => r.item.toLowerCase().includes(search.toLowerCase()));
-  }, [rows, search]);
-
-  const exportCsv = () => {
-    const headers = "Line Item,FY24 ($M),FY23 ($M),YoY Delta ($M),Change (%)\n";
-    const body = filtered
-      .map((r) => {
-        const delta = r.fy24 - r.fy23;
-        const pct = ((delta / r.fy23) * 100).toFixed(1);
-        return `"${r.item}",${r.fy24},${r.fy23},${delta},${pct}%`;
-      })
-      .join("\n");
-    const blob = new Blob([headers + body], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `SEC_10K_${activeTab.toUpperCase()}_Statements.csv`;
-    a.click();
-  };
-
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden p-4 sm:p-6 space-y-4">
-      {/* Top Header & Search */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h2 className="text-base font-semibold tracking-tight flex items-center gap-2">
-            <DollarSign className="size-4 text-primary" /> {selectedDocument ? `${selectedDocument.filename} — Statements` : "Financial Statements Explorer"}
-          </h2>
-          <p className="text-xs text-muted-foreground">{selectedDocument ? `Structured financial metrics for ${selectedDocument.filename}` : "Standardized GAAP filings & footnotes (Reference benchmark)"}</p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-56">
-            <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Filter line items..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-xs bg-card/40"
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={exportCsv} className="h-8 gap-1.5 text-xs active:scale-[0.98]">
-            <Download className="size-3.5" /> Export CSV
-          </Button>
-        </div>
-      </div>
-
-      {/* Financial Statement Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="w-fit bg-card/60 border border-border/30 h-8 p-0.5">
-          <TabsTrigger value="bs" className="text-xs px-3 h-7">Balance Sheet</TabsTrigger>
-          <TabsTrigger value="is" className="text-xs px-3 h-7">Income Statement</TabsTrigger>
-        </TabsList>
-
-        <ScrollArea className="flex-1 mt-3 border border-border/30 rounded-lg bg-card/20">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead className="border-b border-border/30 bg-card/40 sticky top-0">
-              <tr>
-                <th className="p-3 font-semibold text-muted-foreground">GAAP Line Item</th>
-                <th className="p-3 text-right font-semibold text-muted-foreground font-mono">FY2024 ($M)</th>
-                <th className="p-3 text-right font-semibold text-muted-foreground font-mono">FY2023 ($M)</th>
-                <th className="p-3 text-right font-semibold text-muted-foreground font-mono">YoY Variance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/20">
-              {filtered.map((r) => {
-                const diff = r.fy24 - r.fy23;
-                const pct = ((diff / r.fy23) * 100).toFixed(1);
-                const isPos = diff >= 0;
-                return (
-                  <tr key={r.item} className={`hover:bg-muted/10 ${r.isTotal ? "font-semibold bg-muted/5" : ""}`}>
-                    <td className="p-3">{r.item}</td>
-                    <td className="p-3 text-right font-mono tabular-nums">${r.fy24.toLocaleString()}</td>
-                    <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">${r.fy23.toLocaleString()}</td>
-                    <td className="p-3 text-right font-mono tabular-nums">
-                      <span className={`inline-flex items-center gap-1 ${isPos ? "text-emerald-700" : "text-rose-700"}`}>
-                        {isPos ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-                        {isPos ? "+" : ""}{pct}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </ScrollArea>
-      </Tabs>
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <BentoGrid className="max-w-4xl mx-auto md:auto-rows-[20rem]">
+        {items.map((item, i) => (
+          <BentoGridItem
+            key={i}
+            title={item.title}
+            description={item.description}
+            header={item.header}
+            className={cn("[&>p:text-lg]", item.className)}
+            icon={item.icon}
+          />
+        ))}
+      </BentoGrid>
     </div>
   );
 }
+
+export const BentoGridThirdDemo = FinancialStatementsGrid;
+
+const SkeletonOne = () => {
+  const variants = {
+    initial: {
+      x: 0,
+    },
+    animate: {
+      x: 10,
+      rotate: 5,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  };
+  const variantsSecond = {
+    initial: {
+      x: 0,
+    },
+    animate: {
+      x: -10,
+      rotate: -5,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  };
+
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="animate"
+      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-col space-y-2"
+    >
+      <motion.div
+        variants={variants}
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-white dark:bg-black"
+      >
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 shrink-0" />
+        <div className="w-full bg-gray-100 h-4 rounded-full dark:bg-neutral-900" />
+      </motion.div>
+      <motion.div
+        variants={variantsSecond}
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 w-3/4 ml-auto bg-white dark:bg-black"
+      >
+        <div className="w-full bg-gray-100 h-4 rounded-full dark:bg-neutral-900" />
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 shrink-0" />
+      </motion.div>
+      <motion.div
+        variants={variants}
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-white dark:bg-black"
+      >
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 shrink-0" />
+        <div className="w-full bg-gray-100 h-4 rounded-full dark:bg-neutral-900" />
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const SkeletonTwo = () => {
+  const variants = {
+    initial: {
+      width: 0,
+    },
+    animate: {
+      width: "100%",
+      transition: {
+        duration: 0.2,
+      },
+    },
+    hover: {
+      width: ["0%", "100%"],
+      transition: {
+        duration: 2,
+      },
+    },
+  };
+  const arr = new Array(6).fill(0);
+  return (
+    <motion.div
+      initial="initial"
+      animate="animate"
+      whileHover="hover"
+      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-col space-y-2"
+    >
+      {arr.map((_, i) => (
+        <motion.div
+          key={"skelenton-two" + i}
+          variants={variants}
+          style={{
+            maxWidth: Math.random() * (100 - 40) + 40 + "%",
+          }}
+          className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center space-x-2 bg-neutral-100 dark:bg-black w-full h-4"
+        />
+      ))}
+    </motion.div>
+  );
+};
+
+const SkeletonThree = () => {
+  const variants = {
+    initial: {
+      backgroundPosition: "0 50%",
+    },
+    animate: {
+      backgroundPosition: ["0, 50%", "100% 50%", "0 50%"],
+    },
+  };
+  return (
+    <motion.div
+      initial="initial"
+      animate="animate"
+      variants={variants}
+      transition={{
+        duration: 5,
+        repeat: Infinity,
+        repeatType: "reverse",
+      }}
+      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] rounded-lg bg-dot-black/[0.2] flex-col space-y-2"
+      style={{
+        background: "linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)",
+        backgroundSize: "400% 400%",
+      }}
+    >
+      <motion.div className="h-full w-full rounded-lg" />
+    </motion.div>
+  );
+};
+
+const SkeletonFour = () => {
+  const first = {
+    initial: {
+      x: 20,
+      rotate: -5,
+    },
+    hover: {
+      x: 0,
+      rotate: 0,
+    },
+  };
+  const second = {
+    initial: {
+      x: -20,
+      rotate: 5,
+    },
+    hover: {
+      x: 0,
+      rotate: 0,
+    },
+  };
+  return (
+    <motion.div
+      initial="initial"
+      animate="animate"
+      whileHover="hover"
+      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-row space-x-2"
+    >
+      <motion.div
+        variants={first}
+        className="h-full w-1/3 rounded-2xl bg-white p-4 dark:bg-black dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center"
+      >
+        <img
+          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop"
+          alt="avatar"
+          height="100"
+          width="100"
+          className="rounded-full h-10 w-10 object-cover"
+        />
+        <p className="sm:text-sm text-xs text-center font-semibold text-neutral-500 mt-4">
+          Just code in Vanilla Javascript
+        </p>
+        <p className="border border-red-500 bg-red-100 dark:bg-red-900/20 text-red-600 text-xs rounded-full px-2 py-0.5 mt-4">
+          Delusional
+        </p>
+      </motion.div>
+      <motion.div className="h-full relative z-20 w-1/3 rounded-2xl bg-white p-4 dark:bg-black dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center">
+        <img
+          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+          alt="avatar"
+          height="100"
+          width="100"
+          className="rounded-full h-10 w-10 object-cover"
+        />
+        <p className="sm:text-sm text-xs text-center font-semibold text-neutral-500 mt-4">
+          Tailwind CSS is cool, you know
+        </p>
+        <p className="border border-green-500 bg-green-100 dark:bg-green-900/20 text-green-600 text-xs rounded-full px-2 py-0.5 mt-4">
+          Sensible
+        </p>
+      </motion.div>
+      <motion.div
+        variants={second}
+        className="h-full w-1/3 rounded-2xl bg-white p-4 dark:bg-black dark:border-white/[0.1] border border-neutral-200 flex flex-col items-center justify-center"
+      >
+        <img
+          src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&h=100&fit=crop"
+          alt="avatar"
+          height="100"
+          width="100"
+          className="rounded-full h-10 w-10 object-cover"
+        />
+        <p className="sm:text-sm text-xs text-center font-semibold text-neutral-500 mt-4">
+          I love angular, RSC, and Redux.
+        </p>
+        <p className="border border-orange-500 bg-orange-100 dark:bg-orange-900/20 text-orange-600 text-xs rounded-full px-2 py-0.5 mt-4">
+          Helpless
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const SkeletonFive = () => {
+  const variants = {
+    initial: {
+      x: 0,
+    },
+    animate: {
+      x: 10,
+      rotate: 5,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  };
+  const variantsSecond = {
+    initial: {
+      x: 0,
+    },
+    animate: {
+      x: -10,
+      rotate: -5,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  };
+
+  return (
+    <motion.div
+      initial="initial"
+      whileHover="animate"
+      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-col space-y-2"
+    >
+      <motion.div
+        variants={variants}
+        className="flex flex-row rounded-2xl border border-neutral-100 dark:border-white/[0.2] p-2 items-start space-x-2 bg-white dark:bg-black"
+      >
+        <img
+          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop"
+          alt="avatar"
+          height="100"
+          width="100"
+          className="rounded-full h-10 w-10 object-cover"
+        />
+        <p className="text-xs text-neutral-500">
+          There are a lot of cool framerworks out there like React, Angular,
+          Vue, Svelte that can make your life ....
+        </p>
+      </motion.div>
+      <motion.div
+        variants={variantsSecond}
+        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center justify-end space-x-2 w-3/4 ml-auto bg-white dark:bg-black"
+      >
+        <p className="text-xs text-neutral-500">Use PHP.</p>
+        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 shrink-0" />
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const items = [
+  {
+    title: "AI Content Generation",
+    description: (
+      <span className="text-sm">
+        Experience the power of AI in generating unique content.
+      </span>
+    ),
+    header: <SkeletonOne />,
+    className: "md:col-span-1",
+    icon: <IconClipboardCopy className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Automated Proofreading",
+    description: (
+      <span className="text-sm">
+        Let AI handle the proofreading of your documents.
+      </span>
+    ),
+    header: <SkeletonTwo />,
+    className: "md:col-span-1",
+    icon: <IconFileBroken className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Contextual Suggestions",
+    description: (
+      <span className="text-sm">
+        Get AI-powered suggestions based on your writing context.
+      </span>
+    ),
+    header: <SkeletonThree />,
+    className: "md:col-span-1",
+    icon: <IconSignature className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Sentiment Analysis",
+    description: (
+      <span className="text-sm">
+        Understand the sentiment of your text with AI analysis.
+      </span>
+    ),
+    header: <SkeletonFour />,
+    className: "md:col-span-2",
+    icon: <IconTableColumn className="h-4 w-4 text-neutral-500" />,
+  },
+  {
+    title: "Text Summarization",
+    description: (
+      <span className="text-sm">
+        Summarize your lengthy documents with AI technology.
+      </span>
+    ),
+    header: <SkeletonFive />,
+    className: "md:col-span-1",
+    icon: <IconBoxAlignRightFilled className="h-4 w-4 text-neutral-500" />,
+  },
+];

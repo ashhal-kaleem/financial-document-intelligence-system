@@ -101,3 +101,31 @@
   - `pnpm run typecheck` (0 errors).
   - `pnpm run build` (6/6 static pages compiled cleanly in 7.7s).
   - `python3 verify-playbook.py .` (0 warnings).
+
+### Milestone: Financial 3D Perspective Cards Integration
+- Created [3d-card.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/ui/3d-card.tsx) primitive (`CardContainer`, `CardBody`, `CardItem`, `useMouseEnter`).
+- Implemented [financial-3d-cards.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/financials/financial-3d-cards.tsx) dedicated to FDIS financial metrics:
+  - **Net Profit (FY24)**: `$93.74B` (+12.4% YoY)
+  - **Debt-to-Equity**: `0.64x` (Conservative Leverage)
+  - **Operating Cash Flow**: `$108.81B` (+16.2% YoY)
+- Replaced generic demo in [3d-card-demo-2.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/3d-card-demo-2.tsx) with Financial 3D Cards.
+- Embedded `<Financial3DCards />` live into [financial-statements-grid.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/financials/financial-statements-grid.tsx).
+- Invariant audits verified: `tsc --noEmit` passed (0 errors), `verify-playbook.py` passed (0 warnings), strictly < 150 lines (131 lines).
+
+### Milestone: NumberTicker Component Direct Replacement & Invariant Verification
+- Created [number-ticker.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/ui/number-ticker.tsx) with spring physics (`damping: 60`, `stiffness: 100`), `tabular-nums`, and Intl currency formatting support.
+- Fully replaced static metrics in [financial-3d-cards.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/financials/financial-3d-cards.tsx) and [3d-card-demo-2.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/3d-card-demo-2.tsx) with dynamic `<NumberTicker />` on load:
+  * Net Profit: `$0.00B` -> `$93.74B`
+  * Debt-to-Equity: `0.00x` -> `0.64x`
+  * Operating Cash Flow: `$0.00B` -> `$108.81B`
+  * YoY Variance: `0.0%` -> `+12.4% YoY` / `+16.2% YoY`
+- Integrated `<NumberTicker />` directly into [financial-statements-grid.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/financials/financial-statements-grid.tsx) for all balance sheet line items (FY24, FY23, YoY %).
+- Created [number-ticker-demo.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/ui/number-ticker-demo.tsx) exhibiting `$124.5M` and `+14.2% YoY` smoothly counting up.
+- Audit & Verification: `tsc --noEmit` passed (0 errors), `verify-playbook.py` passed (0 warnings), strictly < 150 lines (136 lines).
+
+### Milestone: BentoGrid Component Direct Replacement
+- Installed `@tabler/icons-react` and `motion` dependencies.
+- Added [bento-grid.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/ui/bento-grid.tsx) primitive.
+- Directly replaced [financial-statements-grid.tsx](file:///home/shaikhfardin/Projects/Project%202/frontend/src/components/financials/financial-statements-grid.tsx) in-place with `BentoGridThirdDemo` (zero wrappers).
+- All 14 Playbook Invariants verified (`verify-playbook.py` passed with 0 warnings).
+- TypeScript verification passed with 0 errors (`tsc --noEmit`).
