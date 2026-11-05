@@ -1,4 +1,6 @@
+import os
 import time
+import re
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 import httpx
@@ -6,6 +8,7 @@ from fastapi import Depends, Request
 from src.core.config import get_settings
 from src.core.errors import FDISException
 
+_UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 _CACHE_TTL_SECONDS = 60
 _token_cache: Dict[str, Tuple[float, "AuthUser"]] = {}
 
@@ -38,14 +41,25 @@ async def _verify_with_supabase(token: str) -> Optional[AuthUser]:
     data = res.json()
     if not data.get("id"):
         return None
-    return AuthUser(id=str(data["id"]), email=data.get("email"))
+    user_id = str(data["id"])
+    if not _UUID_RE.fullmatch(user_id):
+        return None
+    return AuthUser(id=user_id, email=data.get("email"))
+
+
+def auth_bypass_enabled() -> bool:
+    """Fail closed: the dev bypass needs AUTH_REQUIRED=false AND DEBUG=true AND no hosting-platform env."""
+    s = get_settings()
+    if s.AUTH_REQUIRED or not s.DEBUG:
+        return False
+    return not any(os.environ.get(v) for v in ("RENDER", "VERCEL", "VERCEL_ENV", "FLY_APP_NAME", "K_SERVICE"))
 
 
 LOCAL_DEV_USER = AuthUser(id="00000000-0000-0000-0000-000000000000", email="dev@localhost")
 
 
 async def get_current_user(request: Request) -> AuthUser:
-    if not get_settings().AUTH_REQUIRED:
+    if auth_bypass_enabled():
         return LOCAL_DEV_USER
     header = request.headers.get("authorization", "")
     scheme, _, token = header.partition(" ")

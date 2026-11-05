@@ -3,7 +3,7 @@ import logging
 from typing import AsyncGenerator, Dict, List, Optional
 from uuid import UUID
 from src.core.config import get_settings
-from src.domain.citation import GROUNDED_SYSTEM_PROMPT, create_citations_from_chunks
+from src.domain.citation import GROUNDED_SYSTEM_PROMPT, NOT_COVERED_ANSWER, create_citations_from_chunks
 from src.domain.models import Citation, DocumentChunk
 from src.infrastructure.groq_client import GroqClient
 from src.services.retrieval import RetrievalService
@@ -28,7 +28,7 @@ class InferenceService:
                 {"role": "system", "content": GROUNDED_SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": f"The user asked: '{question}'. However, no relevant passages were found in the uploaded documents. Respond explaining that the provided document passages do not contain information to answer this question.",
+                    "content": f"No relevant passages were found in the uploaded documents for the user's question. Reply with exactly this sentence and nothing else: {NOT_COVERED_ANSWER}",
                 },
             ]
 
@@ -95,6 +95,12 @@ Provide an accurate, comprehensive, and grounded answer strictly citing relevant
             "stage": "generating",
             "detail": "Streaming grounded response from Groq LPU...",
         }
+
+        if not chunks:
+            # Nothing relevant retrieved: answer with a fixed sentence. The model is never asked to guess.
+            yield {"event": "token", "token": NOT_COVERED_ANSWER}
+            yield {"event": "done", "finish_reason": "not_covered", "total_tokens": 1, "citations_count": 0}
+            return
 
         messages = self.build_rag_prompt(question, chunks, citations)
         

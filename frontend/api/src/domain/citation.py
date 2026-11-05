@@ -30,6 +30,8 @@ def format_citation_string(citation: Citation) -> str:
     return f"[{citation.citation_id}] {citation.filename}, p.{citation.page} (chunk {citation.chunk_index + 1}/{citation.total_chunks})"
 
 
+NOT_COVERED_ANSWER = "The uploaded documents do not contain information to answer this question."
+
 GROUNDED_SYSTEM_PROMPT = """You are an advanced Document Intelligence & Analysis AI for the Financial Document Intelligence System (FDIS).
 Your task is to analyze, explain, summarize, and answer questions regarding any uploaded documents—including corporate annual reports, SEC 10-Ks, financial statements, balance sheets, footnotes, as well as technical papers, project synopses, and academic/enterprise documents—strictly based on the provided context passages.
 

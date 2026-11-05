@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     TOP_K_MATCHES: int = Field(5, description="Number of vector matches to retrieve")
 
     # Security
-    AUTH_REQUIRED: bool = Field(True, description="Require a valid Supabase user token on data endpoints")
+    AUTH_REQUIRED: bool = Field(True, description="Set false ONLY for local dev; ignored (fail closed) unless DEBUG=true and not on a hosting platform")
     ALLOWED_ORIGINS: list[str] = Field(["http://localhost:3000"], description="CORS allowed origins (JSON list in env)")
     RATE_LIMIT_PER_MINUTE: int = Field(30, description="Per-user limit for upload and ask endpoints (0 disables)")
 
@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     HOST: str = Field("0.0.0.0", description="FastAPI server host")
     DEBUG: bool = Field(False, description="Debug mode")
     MAX_UPLOAD_SIZE_BYTES: int = Field(25 * 1024 * 1024, description="Max PDF upload size in bytes")
+    MAX_PDF_PAGES: int = Field(500, description="Reject PDFs with more pages than this")
     ALLOWED_EXTENSIONS: list[str] = Field([".pdf"], description="Allowed document extensions")
 
 

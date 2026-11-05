@@ -36,6 +36,9 @@ class DocumentIngestionService:
             if page_count == 0:
                 raise InvalidPDFError("The PDF document contains 0 pages.")
 
+            if page_count > self.settings.MAX_PDF_PAGES:
+                raise InvalidPDFError(f"PDF has {page_count} pages; the limit is {self.settings.MAX_PDF_PAGES}.")
+
             for page_idx in range(page_count):
                 page = doc[page_idx]
                 page_num = page_idx + 1

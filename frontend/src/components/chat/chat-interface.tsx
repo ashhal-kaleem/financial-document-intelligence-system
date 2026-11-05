@@ -6,8 +6,8 @@ import { ChatInputBox } from "./chat-input-box";
 import { ChatSidebar } from "@/components/shell/app-chrome";
 import { Orb } from "@/components/shell/orbs";
 import { useFDISStore, Citation } from "@/store/useFDISStore";
-import { fetchAskContext, streamQuestion, StreamEventPayload } from "@/lib/api";
-import { streamPuterChat, loadChatHistory, saveChatHistory, PuterChatMessage } from "@/lib/puter";
+import { streamQuestion, StreamEventPayload } from "@/lib/api";
+import { loadChatHistory, saveChatHistory, ChatMessage } from "@/lib/chat-history";
 import { Clock, GitCompareArrows, CheckCircle2, MoreHorizontal } from "lucide-react";
 
 interface ChatInterfaceProps {
@@ -22,7 +22,7 @@ const QUICK_ACTIONS = [
 ];
 
 export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<PuterChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -46,38 +46,32 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
   }, [messages, scrollToBottom]);
 
   const handleSend = useCallback(async (content: string) => {
-    const userMsg: PuterChatMessage = { id: `user-${Date.now()}`, role: "user", content, timestamp: new Date().toISOString() };
+    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content, timestamp: new Date().toISOString() };
     const assistantId = `assistant-${Date.now()}`;
     setMessages((prev) => [...prev, userMsg, { id: assistantId, role: "assistant", content: "", timestamp: new Date().toISOString() }]);
     setIsStreaming(true);
 
     try {
       const targetDocIds = selectedDocument ? [selectedDocument.id] : undefined;
-      const contextData = await fetchAskContext(content, targetDocIds);
-      const citations: Citation[] = (contextData.citations || []).map((c) => ({
-        documentId: c.document_id,
-        document: c.filename,
-        page: c.page,
-        chunk_id: String(c.chunk_index),
-        relevance: c.similarity,
-        snippet: c.snippet,
-      }));
-      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, citations } : m)));
-
       let fullContent = "";
-      try {
-        await streamPuterChat(contextData.messages, "claude-3-5-sonnet", (token) => {
-          fullContent += token;
+      await streamQuestion(content, targetDocIds || [], undefined, (event: StreamEventPayload) => {
+        if (event.event === "citations") {
+          const citations: Citation[] = (event.citations || []).map((c) => ({
+            documentId: c.document_id,
+            document: c.filename,
+            page: c.page,
+            chunk_id: String(c.chunk_index),
+            relevance: c.similarity,
+            snippet: c.snippet,
+          }));
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, citations } : m)));
+        } else if (event.event === "token" && event.token) {
+          fullContent += event.token;
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)));
-        });
-      } catch {
-        await streamQuestion(content, targetDocIds || [], undefined, (event: StreamEventPayload) => {
-          if (event.event === "token" && event.token) {
-            fullContent += event.token;
-            setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)));
-          }
-        });
-      }
+        } else if (event.event === "error") {
+          throw new Error(event.detail || "stream error");
+        }
+      });
       setMessages((current) => {
         saveChatHistory(current);
         return current;

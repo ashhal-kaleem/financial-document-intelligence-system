@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timezone
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
@@ -6,13 +7,26 @@ from src.infrastructure.supabase_client import SupabaseClient
 
 router = APIRouter(tags=["Health"])
 
+_PING_TTL_SECONDS = 30
+_ping_cache: dict = {"at": 0.0, "value": None}
+
+
+async def _cached_ping(supabase: SupabaseClient):
+    """Hosting probes hit /health often; reuse the DB result for a short time."""
+    now = time.monotonic()
+    if _ping_cache["value"] is not None and now - _ping_cache["at"] < _PING_TTL_SECONDS:
+        return _ping_cache["value"]
+    value = await supabase.ping()
+    _ping_cache.update(at=now, value=value)
+    return value
+
 @router.get("/health")
 async def health_check():
     settings = get_settings()
     supabase = SupabaseClient()
     
     # Real live probe to Supabase PostgREST endpoint
-    db_ok, latency_ms, db_error = await supabase.ping()
+    db_ok, latency_ms, db_error = await _cached_ping(supabase)
 
     overall_status = "healthy" if db_ok else "unhealthy"
     http_status = status.HTTP_200_OK if db_ok else status.HTTP_503_SERVICE_UNAVAILABLE
