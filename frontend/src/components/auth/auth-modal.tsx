@@ -97,7 +97,7 @@ export function AuthModal() {
                 Demo access
               </button>
               <div className="mt-5">
-                <AvatarCircle name={null} className="size-8 text-[10px]" />
+                <AvatarCircle name="Srkia Ash" className="size-8 text-[10px]" />
               </div>
             </>
           )}
