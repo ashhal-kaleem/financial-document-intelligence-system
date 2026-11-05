@@ -45,7 +45,7 @@ export function ProfileChip({ family, expanded = true }: { family: string; expan
       )}
       style={{ border: "1px solid var(--fam-line)" }}
     >
-      <AvatarCircle name={currentUser ? name : null} className="size-7 text-[10px]" />
+      <AvatarCircle name={name} className="size-7 text-[10px]" />
       {expanded && <span className="text-xs font-medium fam-ink truncate max-w-[110px]">{name}</span>}
     </button>
   );
