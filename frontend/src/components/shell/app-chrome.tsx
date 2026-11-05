@@ -255,7 +255,7 @@ export function ChatSidebar({ history, onPick }: { history: string[]; onPick: (q
           onClick={() => setAuthModalOpen(true)}
           className="flex w-full items-center gap-2.5 rounded-xl bg-white p-2 transition-shadow hover:shadow-md"
         >
-          <AvatarCircle name={currentUser?.name} className="size-7 text-[10px]" />
+          <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-7 text-[10px]" />
           <span className="flex-1 truncate text-left text-[12px] font-medium text-[#0A0A0A]">{currentUser?.name || "Srkia Ash"}</span>
           <LogOut className="size-3.5 text-[#A999C4]" />
         </button>
