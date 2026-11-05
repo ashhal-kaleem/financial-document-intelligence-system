@@ -58,8 +58,9 @@ export function InsightsScreen() {
             <span className="flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-[11px] fam-mut" style={{ border: "1px solid var(--fam-line)" }}>
               <Search className="size-3.5" /> Search filings
             </span>
-            <AvatarCircle name={currentUser?.name} className="size-8 text-[10px]" />
+            <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-8 text-[10px]" />
             <span className="text-[12px] font-medium fam-ink">{currentUser?.name || "Srkia Ash"}</span>
+            {!currentUser && <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ border: "1px solid var(--fam-line)" }}>Demo</span>}
           </div>
         </div>
 
