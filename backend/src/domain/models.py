@@ -12,6 +12,7 @@ class Document(BaseModel):
     status: str = "uploaded"  # uploaded, processing, ready, error
     error_message: Optional[str] = None
     is_sample: bool = False
+    owner_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -44,8 +45,3 @@ class AskRequest(BaseModel):
     document_ids: Optional[List[UUID]] = Field(default=None, description="Optional document filter")
     model: Optional[str] = Field(default=None, description="Optional model override")
 
-
-class NotificationRequest(BaseModel):
-    recipient: str
-    document_name: str
-    summary: str

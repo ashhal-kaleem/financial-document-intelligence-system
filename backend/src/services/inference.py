@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import AsyncGenerator, Dict, List, Optional
 from uuid import UUID
 from src.core.config import get_settings
@@ -6,6 +7,8 @@ from src.domain.citation import GROUNDED_SYSTEM_PROMPT, create_citations_from_ch
 from src.domain.models import Citation, DocumentChunk
 from src.infrastructure.groq_client import GroqClient
 from src.services.retrieval import RetrievalService
+
+logger = logging.getLogger(__name__)
 
 
 class InferenceService:
@@ -56,6 +59,7 @@ Provide an accurate, comprehensive, and grounded answer strictly citing relevant
         question: str,
         document_ids: Optional[List[UUID]] = None,
         model: Optional[str] = None,
+        owner_id: Optional[str] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Orchestrates full RAG streaming pipeline:
@@ -75,6 +79,7 @@ Provide an accurate, comprehensive, and grounded answer strictly citing relevant
         chunks = await self.retrieval.retrieve_relevant_chunks(
             query=question,
             document_ids=document_ids,
+            owner_id=owner_id,
         )
         citations = self.retrieval.build_citations(chunks)
 
@@ -99,7 +104,8 @@ Provide an accurate, comprehensive, and grounded answer strictly citing relevant
                 token_count += 1
                 yield {"event": "token", "token": token}
         except Exception as e:
-            yield {"event": "error", "detail": str(e)}
+            logger.exception("LLM streaming failed")
+            yield {"event": "error", "detail": "The answer service failed. Please try again."}
 
         yield {
             "event": "done",

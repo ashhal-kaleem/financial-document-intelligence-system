@@ -17,14 +17,9 @@ export function AuthModal() {
     setErrorMsg(null);
     const { error } = await signInWithGoogle();
     if (error) {
-      setErrorMsg("Google sign-in is not enabled yet. Use demo access below.");
+      setErrorMsg("Google sign-in could not start. Try again in a moment.");
       setLoading(false);
     }
-  };
-
-  const handleDemoSignIn = () => {
-    setCurrentUser({ id: "demo-" + Date.now(), name: "Srkia Ash" });
-    setAuthModalOpen(false);
   };
 
   const handleSignOut = async () => {
@@ -87,15 +82,6 @@ export function AuthModal() {
                   <AlertCircle className="mt-0.5 size-3.5 shrink-0" /> {errorMsg}
                 </p>
               )}
-              <div className="my-4 flex w-full items-center gap-3 text-[10px] fam-mut">
-                <span className="h-px flex-1 bg-[#EDF2F7]" /> OR <span className="h-px flex-1 bg-[#EDF2F7]" />
-              </div>
-              <button
-                onClick={handleDemoSignIn}
-                className="w-full rounded-full bg-[#1C1F2E] py-3 text-[13px] font-medium text-white transition-transform active:scale-[0.98]"
-              >
-                Demo access
-              </button>
               <div className="mt-5">
                 <AvatarCircle name="Srkia Ash" className="size-8 text-[10px]" />
               </div>

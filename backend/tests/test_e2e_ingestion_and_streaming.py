@@ -3,6 +3,10 @@ from src.services.ingestion import DocumentIngestionService
 from src.services.inference import InferenceService
 from src.infrastructure.supabase_client import SupabaseClient
 
+TEST_OWNER = "00000000-0000-0000-0000-0000000000aa"
+
+pytestmark = pytest.mark.live  # needs real Supabase/Groq/HF keys; skipped unless RUN_LIVE_TESTS=1
+
 
 @pytest.mark.asyncio
 async def test_live_ingestion_and_streaming_roundtrip():
@@ -17,7 +21,7 @@ async def test_live_ingestion_and_streaming_roundtrip():
     doc = await ingestion_service.ingest_document(
         filename="sample_apple_10k.pdf",
         pdf_bytes=pdf_bytes,
-        is_sample=True,
+        owner_id=TEST_OWNER,
     )
 
     assert doc.status == "ready"
@@ -72,4 +76,4 @@ async def test_live_ingestion_and_streaming_roundtrip():
 
     finally:
         # Cleanup test document from database
-        await supabase.delete_document(doc.id)
+        await supabase.delete_document(doc.id, TEST_OWNER)

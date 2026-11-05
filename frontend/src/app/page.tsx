@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChatInterface } from "@/components/chat/chat-interface";
 import { CitationDrawer } from "@/components/citations/citation-drawer";
@@ -16,6 +16,7 @@ import { InsightsScreen } from "@/components/screens/insights-screen";
 import { TopNav, CircleRail, LabeledRail, MobileTabNav, SampleDataTag } from "@/components/shell/app-chrome";
 import { fetchDocuments, deleteDocument } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
+import { supabase } from "@/lib/supabase";
 import { useFDISStore } from "@/store/useFDISStore";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,23 @@ export default function Home() {
   const isHydrated = useHydrated();
   const queryClient = useQueryClient();
   const [, setDeletingId] = useState<string | undefined>(undefined);
-  const { activeTab } = useFDISStore();
+  const { activeTab, setCurrentUser } = useFDISStore();
+
+  // Keep the UI user and cached documents in step with the real Supabase session.
+  useEffect(() => {
+    const apply = (user: { id: string; email?: string; user_metadata?: Record<string, any> } | null | undefined) =>
+      setCurrentUser(
+        user
+          ? { id: user.id, email: user.email, name: user.user_metadata?.full_name || user.email, avatarUrl: user.user_metadata?.avatar_url }
+          : null
+      );
+    supabase.auth.getSession().then(({ data }) => apply(data.session?.user));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      apply(session?.user);
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [setCurrentUser, queryClient]);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["documents"],

@@ -1,24 +1,39 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+import logging
+import os
+import re
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from src.core.auth import AuthUser, get_current_user
 from src.core.config import get_settings
+from src.core.rate_limit import rate_limited_user
 from src.core.errors import DocumentNotFoundError, InvalidPDFError
 from src.infrastructure.supabase_client import SupabaseClient
 from src.services.ingestion import DocumentIngestionService
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+def safe_filename(name: str) -> str:
+    """Strip any path and unsafe characters; the name goes into storage paths and headers."""
+    base = os.path.basename((name or "").replace("\\", "/"))
+    base = re.sub(r"[^A-Za-z0-9._ -]", "_", base).strip(" .")
+    return (base or "document.pdf")[:150]
+
 settings = get_settings()
 supabase = SupabaseClient()
 ingestion_service = DocumentIngestionService(supabase)
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def upload_document(file: UploadFile = File(...)):
-    if not any(file.filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
+async def upload_document(file: UploadFile = File(...), user: AuthUser = Depends(rate_limited_user)):
+    filename = safe_filename(file.filename or "")
+    if not any(filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
         supported = ", ".join(ext.lstrip(".").upper() for ext in settings.ALLOWED_EXTENSIONS)
         raise InvalidPDFError(f"Only {supported} documents are supported.")
 
-    pdf_bytes = await file.read()
+    pdf_bytes = await file.read(settings.MAX_UPLOAD_SIZE_BYTES + 1)
     if len(pdf_bytes) == 0:
         raise InvalidPDFError("Uploaded PDF file is empty.")
 
@@ -26,10 +41,14 @@ async def upload_document(file: UploadFile = File(...)):
         max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
         raise InvalidPDFError(f"File size exceeds maximum allowable {max_mb}MB limit.")
 
+    if not pdf_bytes.startswith(b"%PDF"):
+        raise InvalidPDFError("File content is not a PDF.")
+
     try:
         doc = await ingestion_service.ingest_document(
-            filename=file.filename,
+            filename=filename,
             pdf_bytes=pdf_bytes,
+            owner_id=user.id,
         )
         return {
             "success": True,
@@ -39,15 +58,18 @@ async def upload_document(file: UploadFile = File(...)):
                 "path": "/api/v1/documents",
             }
         }
-    except Exception as exc:
+    except InvalidPDFError:
+        raise
+    except Exception:
+        logger.exception("Document ingestion failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to ingest document: {str(exc)}",
+            detail="Failed to ingest document.",
         )
 
 @router.get("")
-async def list_documents():
-    docs = await supabase.get_documents()
+async def list_documents(user: AuthUser = Depends(get_current_user)):
+    docs = await supabase.get_documents(user.id)
     return {
         "success": True,
         "data": [d.model_dump() for d in docs],
@@ -59,8 +81,8 @@ async def list_documents():
     }
 
 @router.get("/{document_id}")
-async def get_document(document_id: UUID):
-    doc = await supabase.get_document_by_id(document_id)
+async def get_document(document_id: UUID, user: AuthUser = Depends(get_current_user)):
+    doc = await supabase.get_document_by_id(document_id, user.id)
     if not doc:
         raise DocumentNotFoundError(str(document_id))
     return {
@@ -73,8 +95,8 @@ async def get_document(document_id: UUID):
     }
 
 @router.delete("/{document_id}")
-async def delete_document(document_id: UUID):
-    success = await supabase.delete_document(document_id)
+async def delete_document(document_id: UUID, user: AuthUser = Depends(get_current_user)):
+    success = await supabase.delete_document(document_id, user.id)
     if not success:
         raise DocumentNotFoundError(str(document_id))
     return {
@@ -90,8 +112,8 @@ async def delete_document(document_id: UUID):
 from fastapi.responses import Response
 
 @router.get("/{document_id}/chunks")
-async def get_document_chunks_endpoint(document_id: UUID):
-    doc = await supabase.get_document_by_id(document_id)
+async def get_document_chunks_endpoint(document_id: UUID, user: AuthUser = Depends(get_current_user)):
+    doc = await supabase.get_document_by_id(document_id, user.id)
     if not doc:
         raise DocumentNotFoundError(str(document_id))
     chunks = await supabase.get_document_chunks(document_id)
@@ -106,8 +128,8 @@ async def get_document_chunks_endpoint(document_id: UUID):
     }
 
 @router.get("/{document_id}/pdf")
-async def get_document_pdf(document_id: UUID):
-    doc = await supabase.get_document_by_id(document_id)
+async def get_document_pdf(document_id: UUID, user: AuthUser = Depends(get_current_user)):
+    doc = await supabase.get_document_by_id(document_id, user.id)
     if not doc:
         raise DocumentNotFoundError(str(document_id))
     
@@ -132,7 +154,7 @@ async def get_document_pdf(document_id: UUID):
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'inline; filename="{doc.filename}"',
-            "Cache-Control": "public, max-age=3600",
+            "Content-Disposition": f'inline; filename="{safe_filename(doc.filename)}"',
+            "Cache-Control": "private, max-age=3600",
         }
     )

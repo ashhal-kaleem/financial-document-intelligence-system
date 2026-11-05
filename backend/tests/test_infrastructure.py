@@ -5,6 +5,7 @@ from src.infrastructure.groq_client import GroqClient
 from src.infrastructure.resend_client import ResendClient
 
 
+@pytest.mark.live
 def test_embedding_client_dimensions():
     client = EmbeddingClient()
     texts = ["Operating cash flow reached $118 billion in 2024.", "Total liabilities $290B."]

@@ -29,6 +29,7 @@ class SupabaseClient(BaseVectorStore):
                 "chunk_count": doc.chunk_count,
                 "status": doc.status,
                 "is_sample": doc.is_sample,
+                "owner_id": doc.owner_id,
                 "created_at": doc.created_at.isoformat(),
             }
             res = await client.post(
@@ -66,20 +67,26 @@ class SupabaseClient(BaseVectorStore):
             )
             return res.status_code in (200, 204)
 
-    async def get_documents(self) -> List[Document]:
+    @staticmethod
+    def _visible_filter(owner_id: str) -> str:
+        """PostgREST filter: documents the user owns, plus shared read-only samples."""
+        return f"or=(owner_id.eq.{owner_id},is_sample.eq.true)"
+
+    async def get_documents(self, owner_id: str) -> List[Document]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(
-                f"{self.base_url}/rest/v1/documents?order=created_at.desc",
+                f"{self.base_url}/rest/v1/documents?order=created_at.desc&{self._visible_filter(owner_id)}",
                 headers=self.headers,
             )
             res.raise_for_status()
             data = res.json()
             return [Document(**item) for item in data]
 
-    async def get_document_by_id(self, doc_id: UUID) -> Optional[Document]:
+    async def get_document_by_id(self, doc_id: UUID, owner_id: str) -> Optional[Document]:
+        """Returns the document only if the user owns it or it is a shared sample."""
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(
-                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}",
+                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&{self._visible_filter(owner_id)}",
                 headers=self.headers,
             )
             res.raise_for_status()
@@ -88,18 +95,35 @@ class SupabaseClient(BaseVectorStore):
                 return Document(**data[0])
             return None
 
-    async def delete_document(self, doc_id: UUID) -> bool:
+    async def delete_document(self, doc_id: UUID, owner_id: str) -> bool:
+        """Deletes only a document owned by the user (shared samples are never deletable)."""
         async with httpx.AsyncClient(timeout=15.0) as client:
+            owned = await client.get(
+                f"{self.base_url}/rest/v1/documents?select=id&id=eq.{doc_id}&owner_id=eq.{owner_id}&is_sample=eq.false",
+                headers=self.headers,
+            )
+            owned.raise_for_status()
+            if not owned.json():
+                return False
             # Delete chunks first (or let CASCADE handle it)
             await client.delete(
                 f"{self.base_url}/rest/v1/chunks?document_id=eq.{doc_id}",
                 headers=self.headers,
             )
             res = await client.delete(
-                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}",
+                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&owner_id=eq.{owner_id}",
                 headers=self.headers,
             )
             return res.status_code in (200, 204)
+
+    async def get_visible_document_ids(self, owner_id: str) -> List[UUID]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(
+                f"{self.base_url}/rest/v1/documents?select=id&{self._visible_filter(owner_id)}",
+                headers=self.headers,
+            )
+            res.raise_for_status()
+            return [UUID(r["id"]) for r in res.json()]
 
     async def insert_chunks_batch(self, chunks: List[DocumentChunk], batch_size: int = 50) -> bool:
         if not chunks:

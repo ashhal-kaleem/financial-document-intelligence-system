@@ -28,6 +28,11 @@ export async function signOutUser(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+export async function getAccessToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
 export async function getSessionUser() {
   const { data } = await supabase.auth.getUser();
   return data?.user || null;

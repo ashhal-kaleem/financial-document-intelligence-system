@@ -43,10 +43,27 @@ export interface StreamEventPayload {
   citations_count?: number;
 }
 
+import { getAccessToken } from "@/lib/supabase";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+export class AuthRequiredError extends Error {
+  constructor() {
+    super("Sign in to continue.");
+    this.name = "AuthRequiredError";
+  }
+}
+
+/** Authorization header from the live Supabase session. Throws if nobody is signed in. */
+async function authHeaders(extra: Record<string, string> = {}): Promise<Record<string, string>> {
+  const token = await getAccessToken();
+  if (!token) throw new AuthRequiredError();
+  return { ...extra, Authorization: `Bearer ${token}` };
+}
+
 export async function fetchDocuments(): Promise<DocumentItem[]> {
-  const res = await fetch(`${API_BASE}/documents`, { cache: "no-store" });
+  if (!(await getAccessToken())) return [];
+  const res = await fetch(`${API_BASE}/documents`, { cache: "no-store", headers: await authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch documents.");
   const json = await res.json();
   return json.data || [];
@@ -55,7 +72,7 @@ export async function fetchDocuments(): Promise<DocumentItem[]> {
 export async function uploadDocument(file: File): Promise<DocumentItem> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch(`${API_BASE}/documents`, { method: "POST", body: formData });
+  const res = await fetch(`${API_BASE}/documents`, { method: "POST", body: formData, headers: await authHeaders() });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.error?.message || err?.detail || "Upload failed.");
@@ -65,16 +82,19 @@ export async function uploadDocument(file: File): Promise<DocumentItem> {
 }
 
 export async function deleteDocument(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE", headers: await authHeaders() });
   return res.ok;
 }
 
-export function getDocumentPdfUrl(documentId: string): string {
-  return `${API_BASE}/documents/${documentId}/pdf`;
+/** Fetches the PDF with the user's token and returns a local blob URL (iframes cannot send headers). */
+export async function fetchDocumentPdfBlobUrl(documentId: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/documents/${documentId}/pdf`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error("Could not load this document.");
+  return URL.createObjectURL(await res.blob());
 }
 
 export async function fetchDocumentChunks(documentId: string): Promise<DocumentChunkItem[]> {
-  const res = await fetch(`${API_BASE}/documents/${documentId}/chunks`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/documents/${documentId}/chunks`, { cache: "no-store", headers: await authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch chunks.");
   const json = await res.json();
   return json.data || [];
@@ -86,7 +106,7 @@ export async function fetchAskContext(
 ): Promise<{ messages: Array<{ role: string; content: string }>; citations: CitationItem[]; chunks_count: number }> {
   const res = await fetch(`${API_BASE}/ask/context`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ question, document_ids: documentIds && documentIds.length > 0 ? documentIds : null }),
   });
   if (!res.ok) throw new Error("Failed to fetch ask context.");
@@ -103,7 +123,7 @@ export async function streamQuestion(
 ): Promise<void> {
   const response = await fetch(`${API_BASE}/ask/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
+    headers: await authHeaders({ "Content-Type": "application/json", Accept: "text/event-stream" }),
     body: JSON.stringify({ question, document_ids: documentIds.length > 0 ? documentIds : null, model: model || null }),
     signal,
   });

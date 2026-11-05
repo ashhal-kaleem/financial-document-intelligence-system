@@ -1,7 +1,27 @@
+import pytest
 from fastapi.testclient import TestClient
 from src.api.main import app
 
+from src.core.auth import AuthUser, get_current_user
+from src.api.routes import documents as documents_route
+
 client = TestClient(app)
+USER = AuthUser(id="11111111-1111-1111-1111-111111111111")
+
+
+@pytest.fixture(autouse=True)
+def signed_in():
+    """Most tests run as a signed-in user; security tests clear the override."""
+    app.dependency_overrides[get_current_user] = lambda: USER
+    yield
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def no_db(monkeypatch):
+    async def none(*a, **k):
+        return None
+    monkeypatch.setattr(documents_route.supabase, "get_document_by_id", none)
 
 def test_health_endpoint():
     response = client.get("/api/v1/health")

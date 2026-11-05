@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 import pymupdf
 from src.core.config import get_settings
@@ -71,13 +71,14 @@ class DocumentIngestionService:
             # Crucial invariant: release MuPDF internal cache
             pymupdf.TOOLS.store_shrink(100)
 
-    async def ingest_document(self, filename: str, pdf_bytes: bytes, is_sample: bool = False) -> Document:
+    async def ingest_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None, is_sample: bool = False) -> Document:
         doc_id = uuid4()
         doc = Document(
             id=doc_id,
             filename=filename,
             status="processing",
             is_sample=is_sample,
+            owner_id=owner_id,
         )
 
         # 1. Create document entry in database
@@ -137,8 +138,8 @@ class DocumentIngestionService:
             await self.supabase.update_document_status(
                 document_id=doc_id,
                 status="error",
-                error_message=str(exc),
+                error_message="Ingestion failed. Check the file and try again.",
             )
             created_doc.status = "error"
-            created_doc.error_message = str(exc)
+            created_doc.error_message = "Ingestion failed. Check the file and try again."
             raise

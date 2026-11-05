@@ -19,9 +19,17 @@ class RetrievalService:
         match_threshold: Optional[float] = None,
         top_k: Optional[int] = None,
         document_ids: Optional[List[UUID]] = None,
+        owner_id: Optional[str] = None,
     ) -> List[DocumentChunk]:
         threshold = match_threshold if match_threshold is not None else self.settings.SIMILARITY_THRESHOLD
         k = top_k or self.settings.TOP_K_MATCHES
+
+        if owner_id is not None:
+            # Restrict search to documents this user may see; ignore ids they cannot access.
+            visible = set(await self.supabase.get_visible_document_ids(owner_id))
+            document_ids = [d for d in document_ids if d in visible] if document_ids else list(visible)
+            if not document_ids:
+                return []
 
         query_embedding = self.embedding_client.embed_query(query)
         chunks = await self.supabase.match_chunks(
@@ -31,14 +39,8 @@ class RetrievalService:
             document_ids=document_ids,
         )
 
-        # Fallback to top-k matches with 0.0 threshold if strict threshold filtered all passages
-        if not chunks:
-            chunks = await self.supabase.match_chunks(
-                query_embedding=query_embedding,
-                match_threshold=0.0,
-                match_count=k,
-                document_ids=document_ids,
-            )
+        # No fallback to a 0.0 threshold: if nothing is relevant enough, return nothing so the
+        # prompt tells the model to say the documents do not cover the question.
 
         return chunks
 

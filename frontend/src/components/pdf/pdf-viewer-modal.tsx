@@ -6,13 +6,13 @@
  */
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFDISStore } from "@/store/useFDISStore";
-import { getDocumentPdfUrl } from "@/lib/api";
+import { fetchDocumentPdfBlobUrl } from "@/lib/api";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, ExternalLink, FileText, CheckCircle2 } from "lucide-react";
 
 export function PdfViewerModal() {
@@ -21,10 +21,29 @@ export function PdfViewerModal() {
   const [zoom, setZoom] = useState<number>(100);
 
   const page = pdfViewer.pageNumber || currentPage;
-  const pdfUrl = useMemo(() => {
-    if (!pdfViewer.documentId) return "";
-    return `${getDocumentPdfUrl(pdfViewer.documentId)}#page=${page}&zoom=${zoom}`;
-  }, [pdfViewer.documentId, page, zoom]);
+  const [blobUrl, setBlobUrl] = useState<string>("");
+  const [loadError, setLoadError] = useState<string>("");
+
+  useEffect(() => {
+    if (!pdfViewer.isOpen || !pdfViewer.documentId) return;
+    let revoked = false;
+    let created = "";
+    setBlobUrl("");
+    setLoadError("");
+    fetchDocumentPdfBlobUrl(pdfViewer.documentId)
+      .then((url) => {
+        if (revoked) return URL.revokeObjectURL(url);
+        created = url;
+        setBlobUrl(url);
+      })
+      .catch((e: Error) => !revoked && setLoadError(e.message));
+    return () => {
+      revoked = true;
+      if (created) URL.revokeObjectURL(created);
+    };
+  }, [pdfViewer.isOpen, pdfViewer.documentId]);
+
+  const pdfUrl = useMemo(() => (blobUrl ? `${blobUrl}#page=${page}&zoom=${zoom}` : ""), [blobUrl, page, zoom]);
 
   if (!pdfViewer.isOpen) return null;
 
@@ -97,7 +116,7 @@ export function PdfViewerModal() {
             ) : (
               <div className="text-center p-6 space-y-2">
                 <FileText className="size-10 text-muted-foreground/40 mx-auto animate-pulse" />
-                <p className="text-xs text-muted-foreground">Streaming document stream...</p>
+                <p className="text-xs text-muted-foreground">{loadError || "Loading document..."}</p>
               </div>
             )}
           </div>

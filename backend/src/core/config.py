@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     SIMILARITY_THRESHOLD: float = Field(0.05, description="Minimum cosine similarity threshold")
     TOP_K_MATCHES: int = Field(5, description="Number of vector matches to retrieve")
 
+    # Security
+    AUTH_REQUIRED: bool = Field(True, description="Require a valid Supabase user token on data endpoints")
+    ALLOWED_ORIGINS: list[str] = Field(["http://localhost:3000"], description="CORS allowed origins (JSON list in env)")
+    RATE_LIMIT_PER_MINUTE: int = Field(30, description="Per-user limit for upload and ask endpoints (0 disables)")
+
     # Server Configuration
     PORT: int = Field(8000, description="FastAPI server port")
     HOST: str = Field("0.0.0.0", description="FastAPI server host")
