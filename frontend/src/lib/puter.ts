@@ -6,11 +6,24 @@
  */
 "use client";
 
-import { puter } from "@heyputer/puter.js";
-
-// Suppress Puter banner in console
-if (typeof window !== "undefined") {
-  (puter as any).quiet = true;
+// Puter is a browser-only SDK. Lazy-load it so the module never enters the
+// server bundle (a top-level import breaks production SSR with
+// "TypeError: handler is not a function").
+type Puter = (typeof import("@heyputer/puter.js"))["puter"];
+let puterPromise: Promise<Puter> | null = null;
+function getPuter(): Promise<Puter> {
+  if (!puterPromise) {
+    puterPromise = import("@heyputer/puter.js").then((m) => {
+      const p = m.puter as Puter;
+      try {
+        (p as any).quiet = true;
+      } catch {
+        // non-fatal
+      }
+      return p;
+    });
+  }
+  return puterPromise;
 }
 
 export interface PuterChatMessage {
@@ -29,6 +42,7 @@ export async function streamPuterChat(
 ): Promise<string> {
   let fullText = "";
   try {
+    const puter = await getPuter();
     const stream = await puter.ai.chat(messages, {
       model: model || "claude-3-5-sonnet",
       stream: true,
@@ -43,7 +57,8 @@ export async function streamPuterChat(
     }
   } catch (err: any) {
     // Graceful fallback to non-streaming if provider stream fails
-    const res = (await puter.ai.chat(messages, { model: model || "claude-3-5-sonnet" })) as any;
+    const puter2 = await getPuter();
+    const res = (await puter2.ai.chat(messages, { model: model || "claude-3-5-sonnet" })) as any;
     let content = "";
     if (typeof res === "string") {
       content = res;
@@ -63,7 +78,8 @@ export async function streamPuterChat(
 export async function speakFinancialBriefing(text: string): Promise<HTMLAudioElement | null> {
   try {
     const cleanText = text.replace(/\[\d+\]/g, "").slice(0, 500);
-    const audio = await puter.ai.txt2speech(cleanText, {
+    const puter3 = await getPuter();
+    const audio = await puter3.ai.txt2speech(cleanText, {
       engine: "openai",
       voice: "alloy",
     });
