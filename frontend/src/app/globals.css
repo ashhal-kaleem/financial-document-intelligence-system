@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+/* ─── FDIS UI Redesign v8 - measured from selected references ───
+   Families:
+   ref1  Overview        green / white top-nav
+   ref6  Q&A chat shell  lilac sidebar + white card
+   ref7  Answer / SignIn minimal warm-orb card on #F9FAFC
+   ref5  Documents       green analytics, top-nav
+   ref3  Statements      dense green dashboard, left rail
+   ref4  Comparison      orange, left rail
+   ref2  Insights        pastel dashboard, left sidebar
+*/
 
-/* ─── Phase 1: Warm Sandstone & Mocha Editorial OKLCH tokens ─── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -23,10 +31,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
@@ -36,64 +40,41 @@
   --radius-xl: calc(var(--radius) * 1.4);
 }
 
-/*
- * Warm Editorial Sandstone & Mocha Palette Mapping:
- * #DCD7D5 → Light Sandstone Alabaster (Requested Canvas) → oklch(0.885 0.008 43)
- * #2A0800 → Deep Espresso Black-Brown (Headings & Primary Text) → oklch(0.20 0.06 40)
- * #FFFFFF / #FBF9F8 → Crisp Warm Card Surface → oklch(0.985 0.004 40)
- * #775144 → Medium Mocha (Primary Action Buttons / Borders) → oklch(0.36 0.055 40)
- * #C09891 → Dusty Rose (Warm Badges & Highlights) → oklch(0.72 0.05 30)
- * #BEA8A7 → Light Grayish Mauve (Dividers & Subdued Elements) → oklch(0.75 0.026 21)
- */
 :root {
   color-scheme: light;
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  /* Surfaces — Light Warm Sandstone Canvas (#DCD7D5) */
-  --background: oklch(0.885 0.008 43);
-  --foreground: oklch(0.20 0.06 40);
+  /* Neutral app shell (ref1 family) */
+  --background: #ECECEA;
+  --foreground: #111714;
+  --card: #FFFFFF;
+  --card-foreground: #111714;
+  --popover: #FFFFFF;
+  --popover-foreground: #111714;
 
-  /* Elevated Surfaces — Crisp Clean White with subtle warm tint */
-  --card: oklch(0.985 0.004 40);
-  --card-foreground: oklch(0.20 0.06 40);
-  --popover: oklch(0.985 0.004 40);
-  --popover-foreground: oklch(0.20 0.06 40);
+  /* Primary - deep green (ref1) */
+  --primary: #0C3B2E;
+  --primary-foreground: #FFFFFF;
 
-  /* Primary Action — Rich Mocha / Deep Espresso (#775144 / #2A0800) */
-  --primary: oklch(0.36 0.055 40);
-  --primary-foreground: oklch(0.985 0.004 40);
+  --secondary: #E9F6E4;
+  --secondary-foreground: #0C3B2E;
 
-  /* Secondary Surface — Soft Blush Sandstone (#F4DBD8) */
-  --secondary: oklch(0.92 0.015 30);
-  --secondary-foreground: oklch(0.24 0.05 40);
+  --muted: #F2F2F0;
+  --muted-foreground: #6B7263;
 
-  /* Muted Surface & Text — Soft Sand Tint & Mocha Foreground */
-  --muted: oklch(0.91 0.01 40);
-  --muted-foreground: oklch(0.46 0.04 40);
+  --accent: #DDFBC0;
+  --accent-foreground: #0C3B2E;
 
-  /* Accent Highlight — Soft Mauve-Sand Hover Surface */
-  --accent: oklch(0.93 0.015 30);
-  --accent-foreground: oklch(0.20 0.06 40);
+  --destructive: #D64541;
+  --destructive-foreground: #FFFFFF;
 
-  /* Destructive — Deep Crimson Terracotta */
-  --destructive: oklch(0.55 0.20 25);
-  --destructive-foreground: oklch(0.985 0.004 40);
+  --border: #11171414;
+  --input: #1117141f;
+  --ring: #0C3B2E66;
 
-  /* Borders & Inputs — Soft Grayish Mauve / Sand Borders (#BEA8A7) */
-  --border: oklch(0.50 0.03 40 / 18%);
-  --input: oklch(0.50 0.03 40 / 22%);
-  --ring: oklch(0.47 0.055 40);
-
-  /* Chart Palette */
-  --chart-1: oklch(0.40 0.055 40);
-  --chart-2: oklch(0.65 0.06 30);
-  --chart-3: oklch(0.55 0.05 35);
-  --chart-4: oklch(0.75 0.04 40);
-
-  /* Sidebar — Light Sandstone Canvas (#DCD7D5) */
-  --sidebar: oklch(0.865 0.01 43);
-  --sidebar-foreground: oklch(0.20 0.06 40);
-  --sidebar-border: oklch(0.50 0.03 40 / 15%);
+  --sidebar: #F2F2F3;
+  --sidebar-foreground: #171A17;
+  --sidebar-border: #1117140f;
 }
 
 @layer base {
@@ -105,23 +86,69 @@
   }
 }
 
-/* ─── Custom scrollbar (Light Sandstone & Mocha) ─── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* v8 family palettes (hex tokens from measured references) */
+.v8-green  { --fam-canvas:#ECECEA; --fam-ink:#111714; --fam-sub:#6B7263; --fam-mut:#9AA294;
+             --fam-accent:#AEF359; --fam-accent-soft:#DDFBC0; --fam-deep:#0C3B2E; --fam-mid:#1E5C45;
+             --fam-tint:#E9F6E4; --fam-line:#EBEFEB; --fam-pos:#1F8A4C; --fam-neg:#D64541; }
+.v8-lilac  { --fam-canvas:#C6BBD3; --fam-ink:#0A0A0A; --fam-sub:#6E6A78; --fam-mut:#A999C4;
+             --fam-accent:#C9B6F2; --fam-accent-soft:#EDE6FF; --fam-deep:#141414; --fam-mid:#6D5BD0;
+             --fam-tint:#F1EDF8; --fam-line:#ECE8F6; --fam-pos:#1F8A4C; --fam-neg:#D64541; }
+.v8-orange { --fam-canvas:#EAEAEA; --fam-ink:#23201B; --fam-sub:#76716A; --fam-mut:#A6A19A;
+             --fam-accent:#F06423; --fam-accent-soft:#FDEBE1; --fam-deep:#2C2C25; --fam-mid:#EC7148;
+             --fam-tint:#FDEBE1; --fam-line:#EBEAE6; --fam-pos:#2E9E4F; --fam-neg:#D64541; }
+.v8-pastel { --fam-canvas:#EBEAF5; --fam-ink:#22242E; --fam-sub:#8A8FA3; --fam-mut:#B4B9C8;
+             --fam-accent:#B99FEC; --fam-accent-soft:#F1EDF8; --fam-deep:#22242E; --fam-mid:#6FA8EF;
+             --fam-tint:#F1EDF8; --fam-line:#EEEFF5; --fam-pos:#2FA67A; --fam-neg:#E15B64; }
+.v8-min    { --fam-canvas:#F9FAFC; --fam-ink:#1A1A1A; --fam-sub:#8A93A3; --fam-mut:#B7BEC9;
+             --fam-accent:#FB976C; --fam-accent-soft:#FED4D6; --fam-deep:#1C1F2E; --fam-mid:#F4641E;
+             --fam-tint:#F1F5F9; --fam-line:#EDF2F7; --fam-pos:#1F8A4C; --fam-neg:#D64541; }
+
+.fam-canvas { background-color: var(--fam-canvas); }
+.fam-ink { color: var(--fam-ink); }
+.fam-sub { color: var(--fam-sub); }
+.fam-mut { color: var(--fam-mut); }
+.fam-card { background-color: #FFFFFF; }
+.fam-deep-bg { background-color: var(--fam-deep); }
+.fam-accent-bg { background-color: var(--fam-accent); }
+.fam-tint-bg { background-color: var(--fam-tint); }
+.fam-line-border { border-color: var(--fam-line); }
+
+/* Orbs - measured radial profiles */
+.orb-purple {
+  background:
+    radial-gradient(closest-side, #FFFFFFD9 0%, #EFE9FFA6 38%, #DCCDFC59 62%, #CBB8FA1A 100%);
+  position: relative;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+.orb-purple::before {
+  content: ""; position: absolute; inset: 6% 2% 10% -4%; border-radius: 9999px;
+  background: radial-gradient(closest-side, #F4EEFFB3 0%, #DCCDFC66 55%, #CBB8FA14 100%);
 }
-::-webkit-scrollbar-thumb {
-  background: oklch(0.50 0.03 40 / 0.35);
-  border-radius: 9999px;
+.orb-purple::after {
+  content: ""; position: absolute; left: -6%; top: 30%; width: 72%; height: 60%; border-radius: 9999px;
+  background: radial-gradient(closest-side, #9B7FE873 0%, #9B7FE800 75%);
+  filter: blur(6px);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.40 0.05 40 / 0.55);
+.orb-warm {
+  background: radial-gradient(closest-side, #FFB67C 0%, #FB976CD9 42%, #F2606E4D 72%, #F2606E00 100%);
+  position: relative;
+}
+.orb-warm::before {
+  content: ""; position: absolute; left: 16%; top: 6%; width: 62%; height: 52%; border-radius: 9999px;
+  background: radial-gradient(closest-side, #FFD169E6 0%, #FFAE5C59 55%, #FFAE5C00 100%);
+}
+.orb-warm::after {
+  content: ""; position: absolute; left: 6%; top: 6%; width: 88%; height: 88%; border-radius: 9999px;
+  border: none;
+  background: conic-gradient(from 60deg, #EE4E26BF 0deg 190deg, transparent 190deg 360deg);
+  filter: blur(10px); opacity: .55;
+}
+.orb-green {
+  background: radial-gradient(closest-side, #EAFBD2 0%, #AEF359 55%, #8FD96A 100%);
 }
 
-/* ─── Tabular numerals for financial data (Playbook Invariant) ─── */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1117142e; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #1117144d; }
+
+.tabular-nums { font-variant-numeric: tabular-nums; }

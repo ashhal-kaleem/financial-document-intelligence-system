@@ -36,7 +36,7 @@ export interface AuthUser {
   avatarUrl?: string;
 }
 
-export type DashboardTab = "chat" | "statements" | "comparison";
+export type DashboardTab = "overview" | "chat" | "documents" | "statements" | "comparison" | "insights";
 
 interface FDISState {
   activeCitation: Citation | null;
@@ -95,7 +95,7 @@ export const useFDISStore = create<FDISState>((set) => ({
   isAuthModalOpen: false,
   setAuthModalOpen: (open) => set({ isAuthModalOpen: open }),
 
-  activeTab: "chat",
+  activeTab: "overview",
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   isSidebarCollapsed: false,

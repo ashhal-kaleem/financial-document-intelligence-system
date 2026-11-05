@@ -1,74 +1,46 @@
-/**
- * @source shadcn/ui Textarea + Button + Badge + Input (registry-fetched)
- * @engine Multi-Model Selector (Claude 3.5 Sonnet / GPT-4o / DeepSeek V3)
- * @icons Lucide React
- * @invariant active:scale-[0.98] on buttons
- * @invariant strictly < 150 lines
- */
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Send, Loader2, Cpu, Paperclip, CheckCircle2, FileText, X } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { ArrowUp, Loader2, Paperclip, Mic, Sparkles, X, FileText } from "lucide-react";
 import { uploadDocument } from "@/lib/api";
 import { useFDISStore } from "@/store/useFDISStore";
+import { cn } from "@/lib/utils";
 
 interface ChatInputBoxProps {
-  onSend: (message: string, model?: string) => void;
+  onSend: (message: string) => void;
   isStreaming: boolean;
   disabled?: boolean;
   onDocumentUploaded?: () => void;
+  draft: string;
+  setDraft: (v: string) => void;
+  hero?: boolean;
 }
 
-const PUTER_MODELS = [
-  { id: "claude-3-5-sonnet", label: "Claude 3.5 Sonnet" },
-  { id: "gpt-4o", label: "GPT-4o" },
-  { id: "deepseek-chat", label: "DeepSeek V3" },
-];
-
-export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocumentUploaded }: ChatInputBoxProps) {
-  const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState("claude-3-5-sonnet");
+export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocumentUploaded, draft, setDraft, hero = false }: ChatInputBoxProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const selectedDocument = useFDISStore((s) => s.selectedDocument);
   const setSelectedDocument = useFDISStore((s) => s.setSelectedDocument);
 
   const handleSubmit = useCallback(() => {
-    const trimmed = input.trim();
+    const trimmed = draft.trim();
     if (!trimmed || isStreaming) return;
-    onSend(trimmed, selectedModel);
-    setInput("");
-    textareaRef.current?.focus();
-  }, [input, isStreaming, onSend, selectedModel]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    },
-    [handleSubmit]
-  );
+    onSend(trimmed);
+    setDraft("");
+  }, [draft, isStreaming, onSend, setDraft]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || file.type !== "application/pdf") return;
     setIsUploading(true);
-    setUploadSuccess(null);
+    setUploadNote(null);
     try {
       const doc = await uploadDocument(file);
-      setUploadSuccess(doc.filename);
       setSelectedDocument({ id: doc.id, filename: doc.filename });
+      setUploadNote(`Indexed ${doc.filename}`);
       onDocumentUploaded?.();
-      setTimeout(() => setUploadSuccess(null), 4000);
+      setTimeout(() => setUploadNote(null), 4000);
     } catch (err) {
       console.error("Upload error:", err);
     } finally {
@@ -78,88 +50,65 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
   };
 
   return (
-    <div className="border-t border-border/40 bg-card/20 p-4 space-y-2">
-      {/* Controls & Model Selection Bar */}
-      <div className="flex items-center justify-between px-1 text-[11px]">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Cpu className="size-3 text-primary" />
-          <span className="font-medium text-muted-foreground">Model:</span>
-          {PUTER_MODELS.map((m) => (
-            <Button
-              key={m.id}
-              variant={selectedModel === m.id ? "secondary" : "ghost"}
-              size="sm"
-              className={`h-5 px-2 text-[10px] active:scale-[0.98] ${
-                selectedModel === m.id ? "bg-primary/15 text-primary border border-primary/30" : "text-muted-foreground"
-              }`}
-              onClick={() => setSelectedModel(m.id)}
-            >
-              {m.label}
-            </Button>
-          ))}
-        </div>
-
-        {/* Active Document Scope or Upload Banner */}
-        <div className="flex items-center gap-1.5">
-          {uploadSuccess && (
-            <Badge variant="outline" className="h-5 text-[10px] font-mono text-primary border-primary/30 bg-primary/10">
-              <CheckCircle2 className="size-2.5 mr-1" /> Indexed {uploadSuccess}
-            </Badge>
-          )}
-          {selectedDocument ? (
-            <Badge variant="outline" className="h-5 gap-1 text-[10px] font-mono text-primary border-primary/30 bg-primary/10">
-              <FileText className="size-2.5" />
-              <span className="max-w-[120px] truncate">{selectedDocument.filename}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-3.5 ml-0.5 p-0 hover:text-destructive"
-                onClick={() => setSelectedDocument(null)}
-                title="Switch to Search All Documents"
-              >
-                <X className="size-2.5" />
-              </Button>
-            </Badge>
-          ) : (
-            <span className="text-[10px] text-muted-foreground font-mono">Scope: All Filings</span>
-          )}
-        </div>
-      </div>
-
-      {/* Input Textarea with Integrated Upload */}
-      <div className="flex items-end gap-2 rounded-xl border border-border/40 bg-card/60 p-2 backdrop-blur-sm transition-colors focus-within:border-primary/40">
-        <Input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8 shrink-0 rounded-lg text-muted-foreground hover:text-primary active:scale-[0.98]"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          title="Upload & Target PDF Directly"
-        >
-          {isUploading ? <Loader2 className="size-4 animate-spin text-primary" /> : <Paperclip className="size-4" />}
-        </Button>
-
-        <Textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={selectedDocument ? `Ask questions specifically from ${selectedDocument.filename}...` : "Ask questions across all indexed reports..."}
-          className="min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent p-1.5 text-xs shadow-none focus-visible:ring-0"
+    <div className={cn("w-full", hero && "max-w-3xl")}>
+      <div
+        className="rounded-[22px] bg-white p-2.5"
+        style={{ border: "1px solid #ECE8F6", boxShadow: hero ? "0 12px 40px #4C1D9514" : "0 6px 20px #4C1D9508" }}
+      >
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder={selectedDocument ? `Ask about ${selectedDocument.filename}...` : "Ask about your filings..."}
+          rows={hero ? 2 : 1}
           disabled={disabled || isStreaming}
-          rows={1}
+          className="max-h-32 w-full resize-none bg-transparent px-3 py-2 text-[13.5px] text-[#0A0A0A] placeholder:text-[#A999C4] focus:outline-none"
         />
-        <Button
-          size="icon"
-          className="size-8 shrink-0 rounded-lg active:scale-[0.98] transition-transform duration-75"
-          onClick={handleSubmit}
-          disabled={!input.trim() || isStreaming || disabled}
-          aria-label="Send message"
-        >
-          {isStreaming ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-        </Button>
+        <div className="flex items-center justify-between px-1.5 pb-0.5">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-3 py-1.5 text-[11px] font-medium text-[#6D5BD0]">
+              <Sparkles className="size-3" /> Deep analysis
+            </span>
+            {selectedDocument && (
+              <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-2.5 py-1.5 text-[10px] font-medium text-[#6D5BD0]">
+                <FileText className="size-3" />
+                <span className="max-w-[130px] truncate">{selectedDocument.filename}</span>
+                <button onClick={() => setSelectedDocument(null)} aria-label="Clear document scope">
+                  <X className="size-3" />
+                </button>
+              </span>
+            )}
+            {uploadNote && <span className="text-[10px] text-[#1F8A4C]">{uploadNote}</span>}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex size-9 items-center justify-center rounded-full text-[#A999C4] transition-colors hover:bg-[#F1EDF8] active:scale-[0.95]"
+              aria-label="Attach a PDF filing"
+            >
+              {isUploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
+            </button>
+            <button className="flex size-9 items-center justify-center rounded-full text-[#A999C4] transition-colors hover:bg-[#F1EDF8] active:scale-[0.95]" aria-label="Voice input">
+              <Mic className="size-4" />
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!draft.trim() || isStreaming || disabled}
+              className="flex size-9 items-center justify-center rounded-full text-white transition-all active:scale-[0.95] disabled:opacity-40"
+              style={{ background: "radial-gradient(closest-side,#C9B6F2,#A284EC)" }}
+              aria-label="Send message"
+            >
+              {isStreaming ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

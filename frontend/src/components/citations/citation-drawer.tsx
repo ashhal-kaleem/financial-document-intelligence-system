@@ -53,9 +53,6 @@ export function CitationDrawer() {
                   <Badge variant="secondary" className="text-[10px] tabular-nums font-mono">
                     Page {activeCitation.page}
                   </Badge>
-                  <Badge variant="default" className="text-[10px] tabular-nums font-mono">
-                    {Math.round(activeCitation.relevance * 100)}% match
-                  </Badge>
                 </div>
               </div>
             </div>
@@ -81,25 +78,6 @@ export function CitationDrawer() {
               </p>
             </div>
 
-            <Separator className="bg-border/30" />
-
-            <div className="flex flex-col gap-2">
-              <h4 className="text-xs font-medium text-muted-foreground">Chunk Metadata</h4>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted-foreground">Chunk Index</span>
-                  <span className="font-mono tabular-nums text-[11px] truncate">
-                    {activeCitation.chunk_id || "0"}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted-foreground">Relevance</span>
-                  <span className="font-mono tabular-nums text-[11px]">
-                    {(activeCitation.relevance * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </SheetContent>
