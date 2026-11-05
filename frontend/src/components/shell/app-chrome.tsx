@@ -46,8 +46,8 @@ export function ProfileChip({ family, expanded = true }: { family: string; expan
       style={{ border: "1px solid var(--fam-line)" }}
     >
       <AvatarCircle name={name} className="size-7 text-[10px]" />
-      {expanded && <span className="text-xs font-medium fam-ink truncate max-w-[110px]">{name}</span>}
-      {expanded && !currentUser && <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ background: "var(--fam-tint)" }}>Demo</span>}
+      {expanded && <span className="hidden sm:inline text-xs font-medium fam-ink truncate max-w-[110px]">{name}</span>}
+      {expanded && !currentUser && <span className="hidden sm:inline rounded-full px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ background: "var(--fam-tint)" }}>Demo</span>}
     </button>
   );
 }
@@ -82,8 +82,8 @@ export function LogoMark({ family, dark = false }: { family: string; dark?: bool
 export function TopNav({ family, greeting }: { family: string; greeting?: boolean }) {
   const { activeTab, setActiveTab, currentUser } = useFDISStore();
   return (
-    <header className={cn("flex items-center justify-between gap-4 px-8 pt-6 pb-2", `v8-${family}`)}>
-      <div className="flex items-center gap-3 min-w-[180px]">
+    <header className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-8 pt-6 pb-2", `v8-${family}`)}>
+      <div className="flex items-center gap-3 min-w-0 md:min-w-[180px]">
         {greeting ? (
           <>
             <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-9 text-xs" />
@@ -93,7 +93,7 @@ export function TopNav({ family, greeting }: { family: string; greeting?: boolea
           <LogoMark family={family} />
         )}
       </div>
-      <nav className="hidden md:flex items-center gap-1">
+      <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto md:order-none md:w-auto md:overflow-visible">
         {NAV_ITEMS.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -111,7 +111,7 @@ export function TopNav({ family, greeting }: { family: string; greeting?: boolea
           );
         })}
       </nav>
-      <div className="flex items-center gap-2.5 min-w-[180px] justify-end">
+      <div className="flex items-center gap-2.5 min-w-0 md:min-w-[180px] justify-end">
         <BellButton family={family} />
         <ProfileChip family={family} />
       </div>
