@@ -3,14 +3,25 @@
  * @client Browser Supabase Client for Authentication & Row Level Security
  * @invariant Strictly < 150 lines
  */
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://aluzqooagiymysssnhkg.supabase.co";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "public-anon-key-not-configured";
+// No hardcoded project: sign-in works only when these are set (see frontend/.env.example).
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const isAuthConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+let client: SupabaseClient | null = null;
+/** The browser client, or null when Supabase is not configured. */
+export function getSupabase(): SupabaseClient | null {
+  if (!isAuthConfigured) return null;
+  if (!client) client = createClient(supabaseUrl as string, supabaseAnonKey as string);
+  return client;
+}
 
 export async function signInWithGoogle(): Promise<{ error: Error | null }> {
+  const supabase = getSupabase();
+  if (!supabase) return { error: new Error("Sign-in is not configured for this deployment.") };
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -25,15 +36,15 @@ export async function signInWithGoogle(): Promise<{ error: Error | null }> {
 }
 
 export async function signOutUser(): Promise<void> {
-  await supabase.auth.signOut();
+  await getSupabase()?.auth.signOut();
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = (await getSupabase()?.auth.getSession()) ?? { data: null };
   return data?.session?.access_token || null;
 }
 
 export async function getSessionUser() {
-  const { data } = await supabase.auth.getUser();
+  const { data } = (await getSupabase()?.auth.getUser()) ?? { data: null };
   return data?.user || null;
 }

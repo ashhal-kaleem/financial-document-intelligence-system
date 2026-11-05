@@ -48,19 +48,19 @@ export function InsightsScreen() {
 
       <main className="flex flex-1 flex-col gap-4 overflow-y-auto rounded-tl-[26px] bg-[#FDFDFE] p-6" style={{ boxShadow: "-8px 0 30px #6C6A8C14" }}>
         {/* header */}
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-[22px] font-semibold tracking-tight fam-ink">Hi {(currentUser?.name || "Srkia Ash").split(" ")[0]},</h2>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-[20px] sm:text-[22px] font-semibold tracking-tight fam-ink">Hi {(currentUser?.name || "Guest").split(" ")[0]},</h2>
             <p className="text-[12px] fam-sub">Welcome back!</p>
           </div>
-          <div className="flex items-center gap-2.5">
-            <span className="rounded-full bg-white px-3.5 py-2 text-[11px] fam-sub" style={{ border: "1px solid var(--fam-line)" }}>Nov 3, 2026</span>
-            <span className="flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-[11px] fam-mut" style={{ border: "1px solid var(--fam-line)" }}>
+          <div className="flex shrink-0 items-center gap-2.5">
+            <span className="hidden rounded-full bg-white px-3.5 py-2 text-[11px] fam-sub sm:inline" style={{ border: "1px solid var(--fam-line)" }}>Nov 3, 2026</span>
+            <span className="hidden items-center gap-2 rounded-full bg-white px-3.5 py-2 text-[11px] fam-mut md:flex" style={{ border: "1px solid var(--fam-line)" }}>
               <Search className="size-3.5" /> Search filings
             </span>
-            <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-8 text-[10px]" />
-            <span className="text-[12px] font-medium fam-ink">{currentUser?.name || "Srkia Ash"}</span>
-            {!currentUser && <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ border: "1px solid var(--fam-line)" }}>Demo</span>}
+            <AvatarCircle name={currentUser?.name || "Guest"} className="size-8 text-[10px]" />
+            <span className="hidden max-w-[140px] truncate text-[12px] font-medium fam-ink sm:inline">{currentUser?.name || "Guest"}</span>
+            {!currentUser && <span className="hidden rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ border: "1px solid var(--fam-line)" }}>Signed out</span>}
           </div>
         </div>
 

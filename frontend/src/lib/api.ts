@@ -3,7 +3,7 @@ export interface DocumentItem {
   filename: string;
   page_count: number;
   chunk_count: number;
-  status: "uploaded" | "processing" | "ready" | "error";
+  status: "uploaded" | "queued" | "processing" | "ready" | "error";
   error_message?: string | null;
   is_sample?: boolean;
   created_at: string;

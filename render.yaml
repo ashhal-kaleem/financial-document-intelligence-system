@@ -24,6 +24,10 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: INGESTION_MODE
+        value: queue
+      - key: ALLOWED_ORIGINS
+        sync: false
       - key: SIMILARITY_THRESHOLD
         value: "0.05"
       - key: TOP_K_MATCHES

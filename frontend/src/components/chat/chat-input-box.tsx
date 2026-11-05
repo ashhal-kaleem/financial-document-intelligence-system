@@ -38,11 +38,12 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
     try {
       const doc = await uploadDocument(file);
       setSelectedDocument({ id: doc.id, filename: doc.filename });
-      setUploadNote(`Indexed ${doc.filename}`);
+      setUploadNote(doc.status === "ready" ? `Indexed ${doc.filename}` : `Uploaded ${doc.filename}. Indexing in the background; answers need it to finish.`);
       onDocumentUploaded?.();
       setTimeout(() => setUploadNote(null), 4000);
     } catch (err) {
-      console.error("Upload error:", err);
+      setUploadNote(err instanceof Error ? err.message : "Upload failed.");
+      setTimeout(() => setUploadNote(null), 6000);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

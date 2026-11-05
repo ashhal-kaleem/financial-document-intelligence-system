@@ -45,8 +45,21 @@ class Settings(BaseSettings):
     HOST: str = Field("0.0.0.0", description="FastAPI server host")
     DEBUG: bool = Field(False, description="Debug mode")
     MAX_UPLOAD_SIZE_BYTES: int = Field(25 * 1024 * 1024, description="Max PDF upload size in bytes")
+    INGESTION_MODE: str = Field("inline", description="inline = process inside the upload request; queue = store, return 202, a background worker processes (needs a long-running host)")
+    WORKER_POLL_SECONDS: float = Field(5.0, description="Queue poll interval")
+    JOB_STALE_SECONDS: int = Field(600, description="A claimed job older than this is retried")
+    JOB_MAX_ATTEMPTS: int = Field(3, description="Attempts before a job is marked error")
     MAX_PDF_PAGES: int = Field(500, description="Reject PDFs with more pages than this")
     ALLOWED_EXTENSIONS: list[str] = Field([".pdf"], description="Allowed document extensions")
+
+
+def effective_ingestion_mode(settings: "Settings" = None) -> str:
+    """queue needs a long-running process. On serverless (Vercel) a queued job would never run, so use inline."""
+    import os
+    s = settings or get_settings()
+    if s.INGESTION_MODE == "queue" and not os.environ.get("VERCEL"):
+        return "queue"
+    return "inline"
 
 
 @lru_cache()

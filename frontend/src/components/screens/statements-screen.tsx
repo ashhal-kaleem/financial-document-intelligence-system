@@ -48,9 +48,9 @@ export function StatementsScreen() {
             <Bell className="size-4" />
           </button>
           <div className="flex items-center gap-2 rounded-full bg-white py-1 pl-3 pr-1.5">
-            <span className="text-[12px] font-medium fam-ink">{currentUser?.name || "Srkia Ash"}</span>
+            <span className="text-[12px] font-medium fam-ink">{currentUser?.name || "Guest"}</span>
             {!currentUser && <span className="rounded-full bg-[#E7F5DA] px-1.5 py-0.5 text-[9px] font-semibold text-[#4C8A2E]">Demo</span>}
-            <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-7 text-[10px]" />
+            <AvatarCircle name={currentUser?.name || "Guest"} className="size-7 text-[10px]" />
           </div>
         </div>
       </div>

@@ -13,6 +13,12 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --frozen
       - run: uv run pytest -q   # live tests are skipped without RUN_LIVE_TESTS=1
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv run --python 3.12 --with pgserver --with psycopg2-binary python scripts/test_migrations.py
   vercel-copy-in-sync:
     runs-on: ubuntu-latest
     steps:

@@ -1,6 +1,7 @@
 """Integration-style tests with Supabase, embeddings and the LLM replaced by fakes.
 They prove our code's behavior (scoping, filters, batching, fail-closed switches), not the
 behavior of the real hosted services."""
+import asyncio
 import httpx
 import pytest
 from uuid import UUID, uuid4
@@ -131,6 +132,9 @@ class FakeIngestStore:
     async def insert_chunks_batch(self, chunks):
         self.chunks = chunks
 
+    async def delete_chunks(self, doc_id):
+        self.deleted = doc_id
+
     async def update_document_status(self, document_id, status, **kw):
         self.status = (status, kw)
 
@@ -200,3 +204,105 @@ async def test_token_with_non_uuid_user_id_is_rejected(monkeypatch):
     real = httpx.AsyncClient
     monkeypatch.setattr(auth.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler)))
     assert await auth._verify_with_supabase("tok") is None
+
+
+# ---- durable queue ----
+from fastapi.testclient import TestClient
+from src.api.main import app
+from src.api.routes import documents as documents_route
+from src.core.auth import AuthUser, get_current_user
+from src.domain.models import Document
+from src.services.worker import IngestionWorker
+
+
+class QueueStore(FakeIngestStore):
+    def __init__(self, pdf=None, fail_upload=False):
+        super().__init__()
+        self.pdf, self.fail_upload, self.queue, self.statuses = pdf, fail_upload, [], []
+
+    async def upload_pdf(self, *a):
+        if self.fail_upload:
+            raise RuntimeError("storage down")
+
+    async def get_pdf_bytes(self, doc_id, filename):
+        return self.pdf
+
+    async def update_document_status(self, document_id, status, **kw):
+        self.statuses.append((status, kw))
+
+    async def fail_stale_documents(self, *a):
+        return 0
+
+    async def claim_next_document(self, *a):
+        return self.queue.pop(0) if self.queue else None
+
+
+@pytest.mark.asyncio
+async def test_enqueue_creates_queued_row_and_stores_pdf():
+    store = QueueStore()
+    svc = DocumentIngestionService(supabase_client=store)
+    doc = await svc.enqueue_document("r.pdf", b"%PDF-x", owner_id=OWNER)
+    assert doc.status == "queued" and store.doc.owner_id == OWNER
+
+
+@pytest.mark.asyncio
+async def test_enqueue_marks_error_when_storage_fails():
+    store = QueueStore(fail_upload=True)
+    svc = DocumentIngestionService(supabase_client=store)
+    with pytest.raises(RuntimeError):
+        await svc.enqueue_document("r.pdf", b"%PDF-x", owner_id=OWNER)
+    assert store.statuses[-1][0] == "error"
+
+
+@pytest.mark.asyncio
+async def test_worker_processes_claimed_job_and_idles_when_empty():
+    store = QueueStore(pdf=create_sample_financial_pdf_bytes())
+    svc = DocumentIngestionService(supabase_client=store)
+    svc.embedding_client = type("E", (), {"embed_texts": lambda self, t: [[0.1] * 384 for _ in t]})()
+    worker = IngestionWorker(svc)
+    assert await worker.run_once() is False
+    store.queue.append(Document(filename="r.pdf", status="processing", owner_id=OWNER))
+    assert await worker.run_once() is True
+    assert store.statuses[-1][0] == "ready" and store.chunks
+
+
+@pytest.mark.asyncio
+async def test_worker_marks_error_when_stored_pdf_missing():
+    store = QueueStore(pdf=None)
+    worker = IngestionWorker(DocumentIngestionService(supabase_client=store))
+    store.queue.append(Document(filename="r.pdf", status="processing", owner_id=OWNER))
+    await worker.run_once()
+    assert store.statuses[-1][0] == "error"
+
+
+@pytest.mark.asyncio
+async def test_worker_survives_a_failing_iteration():
+    store = QueueStore()
+
+    async def boom(*a):
+        raise RuntimeError("db down")
+    store.fail_stale_documents = boom
+    worker = IngestionWorker(DocumentIngestionService(supabase_client=store))
+    worker.settings = type("S", (), {"WORKER_POLL_SECONDS": 0.01, "JOB_STALE_SECONDS": 1, "JOB_MAX_ATTEMPTS": 1})()
+    worker.start()
+    await asyncio.sleep(0.05)
+    assert not worker._task.done()  # loop kept running after the error
+    await worker.stop()
+
+
+def test_queue_mode_upload_returns_202_and_serverless_falls_back_inline(monkeypatch):
+    app.dependency_overrides[get_current_user] = lambda: AuthUser(id=OWNER)
+    s = get_settings()
+    monkeypatch.setattr(s, "INGESTION_MODE", "queue")
+    monkeypatch.delenv("VERCEL", raising=False)
+
+    async def fake_enqueue(**kw):
+        return Document(filename=kw["filename"], status="queued", owner_id=kw["owner_id"])
+    monkeypatch.setattr(documents_route.ingestion_service, "enqueue_document", fake_enqueue)
+    res = TestClient(app).post("/api/v1/documents", files={"file": ("r.pdf", b"%PDF-1.4 x", "application/pdf")})
+    assert res.status_code == 202 and res.json()["data"]["status"] == "queued"
+
+    from src.core.config import effective_ingestion_mode
+    monkeypatch.setenv("VERCEL", "1")
+    assert effective_ingestion_mode() == "inline"
+    app.dependency_overrides.clear()

@@ -129,7 +129,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
             <Orb kind="purple" className="size-36" />
             <div className="text-center">
               <p className="bg-gradient-to-r from-[#6D5BD0] to-[#A284EC] bg-clip-text text-[15px] font-semibold text-transparent">
-                Hello, {(currentUser?.name || "Srkia Ash").split(" ")[0]}
+                Hello, {(currentUser?.name || "Guest").split(" ")[0]}
               </p>
               <h2 className="mt-1 text-[30px] font-medium tracking-tight text-[#0A0A0A]">How can I help with your filings?</h2>
             </div>

@@ -125,6 +125,36 @@ class SupabaseClient(BaseVectorStore):
             res.raise_for_status()
             return [UUID(r["id"]) for r in res.json()]
 
+    async def delete_chunks(self, doc_id: UUID) -> None:
+        """Clears a document's chunks so a retried job never duplicates them."""
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.delete(
+                f"{self.base_url}/rest/v1/chunks?document_id=eq.{doc_id}",
+                headers=self.headers,
+            )
+            res.raise_for_status()
+
+    async def claim_next_document(self, stale_seconds: int, max_attempts: int) -> Optional[Document]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                f"{self.base_url}/rest/v1/rpc/claim_next_document",
+                headers=self.headers,
+                json={"p_stale_seconds": stale_seconds, "p_max_attempts": max_attempts},
+            )
+            res.raise_for_status()
+            rows = res.json()
+            return Document(**rows[0]) if rows else None
+
+    async def fail_stale_documents(self, stale_seconds: int, max_attempts: int) -> int:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                f"{self.base_url}/rest/v1/rpc/fail_stale_documents",
+                headers=self.headers,
+                json={"p_stale_seconds": stale_seconds, "p_max_attempts": max_attempts},
+            )
+            res.raise_for_status()
+            return int(res.json() or 0)
+
     async def insert_chunks_batch(self, chunks: List[DocumentChunk], batch_size: int = 50) -> bool:
         if not chunks:
             return True
@@ -199,7 +229,7 @@ class SupabaseClient(BaseVectorStore):
     async def upload_pdf(self, document_id: UUID, filename: str, pdf_bytes: bytes) -> str:
         path = f"{document_id}/{filename}"
         async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(
+            res = await client.post(
                 f"{self.base_url}/storage/v1/object/{self.bucket}/{path}",
                 headers={
                     "apikey": self.service_key,
@@ -209,6 +239,7 @@ class SupabaseClient(BaseVectorStore):
                 },
                 content=pdf_bytes,
             )
+            res.raise_for_status()
         return f"{self.base_url}/storage/v1/object/public/{self.bucket}/{path}"
 
     async def get_pdf_bytes(self, document_id: UUID, filename: str) -> Optional[bytes]:

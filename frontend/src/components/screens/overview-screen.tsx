@@ -40,7 +40,7 @@ export function OverviewScreen() {
                 </span>
               ))}
                           </div>
-            <div className="text-right">
+            <div className="hidden text-right sm:block">
               <p className="text-[10px] fam-mut">Document</p>
               <p className="max-w-[96px] sm:max-w-[220px] truncate text-[12px] font-medium fam-ink">{latest?.filename || "AAPL_10K_FY2024.pdf"}</p>
             </div>
@@ -50,16 +50,16 @@ export function OverviewScreen() {
             <span className="text-[64px] leading-none font-medium tracking-tight fam-ink tabular-nums">{pagesReady}</span>
             <Eye className="mb-2 size-4 fam-mut" />
           </div>
-          <div className="mt-8 flex items-center gap-2.5 pr-16">
+          <div className="mt-8 flex flex-wrap items-center gap-2 pr-[4.25rem] sm:gap-2.5 sm:pr-16">
             <button
               onClick={() => setActiveTab("chat")}
-              className="rounded-full bg-[#0C3B2E] px-5 py-2.5 text-[13px] font-medium text-white transition-transform active:scale-[0.98]"
+              className="whitespace-nowrap rounded-full bg-[#0C3B2E] px-4 py-2.5 text-[12px] sm:px-5 sm:text-[13px] font-medium text-white transition-transform active:scale-[0.98]"
             >
               Ask a Question
             </button>
             <button
               onClick={() => setUploadOpen(true)}
-              className="rounded-full bg-white px-5 py-2.5 text-[13px] font-medium fam-ink transition-transform active:scale-[0.98]"
+              className="whitespace-nowrap rounded-full bg-white px-4 py-2.5 text-[12px] font-medium fam-ink sm:px-5 sm:text-[13px] transition-transform active:scale-[0.98]"
               style={{ border: "1px solid var(--fam-line)" }}
             >
               Upload Filing

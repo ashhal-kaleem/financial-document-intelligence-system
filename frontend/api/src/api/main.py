@@ -5,7 +5,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from src.api.routes import ask, documents, health
-from src.core.config import get_settings
+from src.services.worker import IngestionWorker
+from contextlib import asynccontextmanager
+from src.core.config import effective_ingestion_mode, get_settings
 from src.core.errors import (
     FDISException,
     fdis_exception_handler,
@@ -15,7 +17,20 @@ from src.core.errors import (
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+worker = IngestionWorker(documents.ingestion_service)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if effective_ingestion_mode() == "queue":
+        logger.info("Ingestion worker started (queue mode)")
+        worker.start()
+    yield
+    await worker.stop()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Financial Document Intelligence System (FDIS) API",
     description="Enterprise API for sub-second, strictly grounded financial document Q&A",
     version="1.0.0",

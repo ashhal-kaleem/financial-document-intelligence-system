@@ -5,7 +5,6 @@ import { X, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
 import { useFDISStore } from "@/store/useFDISStore";
 import { signInWithGoogle, signOutUser } from "@/lib/supabase";
 import { Orb } from "@/components/shell/orbs";
-import { AvatarCircle } from "@/components/shell/app-chrome";
 
 export function AuthModal() {
   const { isAuthModalOpen, setAuthModalOpen, currentUser, setCurrentUser } = useFDISStore();
@@ -82,9 +81,6 @@ export function AuthModal() {
                   <AlertCircle className="mt-0.5 size-3.5 shrink-0" /> {errorMsg}
                 </p>
               )}
-              <div className="mt-5">
-                <AvatarCircle name="Srkia Ash" className="size-8 text-[10px]" />
-              </div>
             </>
           )}
         </div>

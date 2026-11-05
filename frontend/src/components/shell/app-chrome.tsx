@@ -35,7 +35,7 @@ export function AvatarCircle({ name, className }: { name?: string | null; classN
 
 export function ProfileChip({ family, expanded = true }: { family: string; expanded?: boolean }) {
   const { currentUser, setAuthModalOpen } = useFDISStore();
-  const name = currentUser?.name || "Srkia Ash";
+  const name = currentUser?.name || "Guest";
   return (
     <button
       onClick={() => setAuthModalOpen(true)}
@@ -47,7 +47,7 @@ export function ProfileChip({ family, expanded = true }: { family: string; expan
     >
       <AvatarCircle name={name} className="size-7 text-[10px]" />
       {expanded && <span className="hidden sm:inline text-xs font-medium fam-ink truncate max-w-[110px]">{name}</span>}
-      {expanded && !currentUser && <span className="hidden sm:inline rounded-full px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ background: "var(--fam-tint)" }}>Demo</span>}
+      {expanded && !currentUser && <span className="hidden sm:inline rounded-full px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ background: "var(--fam-tint)" }}>Signed out</span>}
     </button>
   );
 }
@@ -112,8 +112,8 @@ export function TopNav({ family, greeting }: { family: string; greeting?: boolea
       <div className="flex items-center gap-3 min-w-0 md:min-w-[180px]">
         {greeting ? (
           <>
-            <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-9 text-xs" />
-            <span className="text-lg font-medium fam-ink">Hello, {(currentUser?.name || "Srkia Ash").split(" ")[0]}</span>
+            <AvatarCircle name={currentUser?.name || "Guest"} className="size-9 text-xs" />
+            <span className="text-lg font-medium fam-ink">Hello, {(currentUser?.name || "Guest").split(" ")[0]}</span>
           </>
         ) : (
           <LogoMark family={family} />
@@ -281,8 +281,8 @@ export function ChatSidebar({ history, onPick }: { history: string[]; onPick: (q
           onClick={() => setAuthModalOpen(true)}
           className="flex w-full items-center gap-2.5 rounded-xl bg-white p-2 transition-shadow hover:shadow-md"
         >
-          <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-7 text-[10px]" />
-          <span className="flex-1 truncate text-left text-[12px] font-medium text-[#0A0A0A]">{currentUser?.name || "Srkia Ash"}</span>
+          <AvatarCircle name={currentUser?.name || "Guest"} className="size-7 text-[10px]" />
+          <span className="flex-1 truncate text-left text-[12px] font-medium text-[#0A0A0A]">{currentUser?.name || "Guest"}</span>
           <LogOut className="size-3.5 text-[#A999C4]" />
         </button>
       </div>

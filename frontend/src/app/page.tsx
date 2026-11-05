@@ -16,7 +16,7 @@ import { InsightsScreen } from "@/components/screens/insights-screen";
 import { TopNav, CircleRail, LabeledRail, MobileTabNav, SampleDataTag } from "@/components/shell/app-chrome";
 import { fetchDocuments, deleteDocument } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { useFDISStore } from "@/store/useFDISStore";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +49,8 @@ export default function Home() {
           ? { id: user.id, email: user.email, name: user.user_metadata?.full_name || user.email, avatarUrl: user.user_metadata?.avatar_url }
           : null
       );
+    const supabase = getSupabase();
+    if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => apply(data.session?.user));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       apply(session?.user);
@@ -61,6 +63,9 @@ export default function Home() {
     queryKey: ["documents"],
     queryFn: fetchDocuments,
     enabled: isHydrated,
+    // Queued and processing documents finish in the background: keep checking until they settle.
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((d) => d.status === "queued" || d.status === "processing") ? 4000 : false,
   });
 
   const deleteMutation = useMutation({

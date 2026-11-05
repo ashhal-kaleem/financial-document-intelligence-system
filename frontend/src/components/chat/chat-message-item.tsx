@@ -37,7 +37,7 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
         <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-[#141414] px-4 py-3 text-[13px] leading-relaxed text-white">
           {message.content}
         </div>
-        <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-8 shrink-0 text-[10px]" />
+        <AvatarCircle name={currentUser?.name || "Guest"} className="size-8 shrink-0 text-[10px]" />
       </div>
     );
   }

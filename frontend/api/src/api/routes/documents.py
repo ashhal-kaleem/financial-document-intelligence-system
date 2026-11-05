@@ -4,9 +4,9 @@ from uuid import UUID
 import logging
 import os
 import re
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from src.core.auth import AuthUser, get_current_user
-from src.core.config import get_settings
+from src.core.config import effective_ingestion_mode, get_settings
 from src.core.rate_limit import rate_limited_user
 from src.core.errors import DocumentNotFoundError, InvalidPDFError
 from src.infrastructure.supabase_client import SupabaseClient
@@ -27,7 +27,7 @@ supabase = SupabaseClient()
 ingestion_service = DocumentIngestionService(supabase)
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def upload_document(file: UploadFile = File(...), user: AuthUser = Depends(rate_limited_user)):
+async def upload_document(response: Response, file: UploadFile = File(...), user: AuthUser = Depends(rate_limited_user)):
     filename = safe_filename(file.filename or "")
     if not any(filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
         supported = ", ".join(ext.lstrip(".").upper() for ext in settings.ALLOWED_EXTENSIONS)
@@ -44,12 +44,20 @@ async def upload_document(file: UploadFile = File(...), user: AuthUser = Depends
     if not pdf_bytes.startswith(b"%PDF"):
         raise InvalidPDFError("File content is not a PDF.")
 
+    queued = effective_ingestion_mode() == "queue"
     try:
-        doc = await ingestion_service.ingest_document(
-            filename=filename,
-            pdf_bytes=pdf_bytes,
-            owner_id=user.id,
-        )
+        if queued:
+            doc = await ingestion_service.enqueue_document(
+                filename=filename, pdf_bytes=pdf_bytes, owner_id=user.id
+            )
+        else:
+            doc = await ingestion_service.ingest_document(
+                filename=filename,
+                pdf_bytes=pdf_bytes,
+                owner_id=user.id,
+            )
+        if queued:
+            response.status_code = status.HTTP_202_ACCEPTED
         return {
             "success": True,
             "data": doc.model_dump(),
@@ -109,7 +117,6 @@ async def delete_document(document_id: UUID, user: AuthUser = Depends(get_curren
     }
 
 
-from fastapi.responses import Response
 
 @router.get("/{document_id}/chunks")
 async def get_document_chunks_endpoint(document_id: UUID, user: AuthUser = Depends(get_current_user)):

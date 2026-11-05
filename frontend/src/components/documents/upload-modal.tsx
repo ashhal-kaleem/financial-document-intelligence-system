@@ -45,7 +45,7 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
           </button>
         </div>
         <h2 className="mt-4 text-center text-[18px] font-semibold fam-ink">Upload a filing</h2>
-        <p className="mt-1 text-center text-[12px] fam-sub">PDF only. It will be indexed and ready to query.</p>
+        <p className="mt-1 text-center text-[12px] fam-sub">PDF only. Large filings are indexed in the background.</p>
 
         <label
           onDragOver={(e) => { e.preventDefault(); setIsDragActive(true); }}
