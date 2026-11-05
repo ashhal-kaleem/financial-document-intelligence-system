@@ -78,6 +78,32 @@ export function LogoMark({ family, dark = false }: { family: string; dark?: bool
   );
 }
 
+
+/** Scrollable tab row shown below md for shells whose sidebar collapses (chat, insights). */
+export function MobileTabNav({ family }: { family: string }) {
+  const { activeTab, setActiveTab } = useFDISStore();
+  return (
+    <nav className={cn("flex md:hidden w-full items-center gap-1 overflow-x-auto px-4 pt-3 pb-1", `v8-${family}`)}>
+      {NAV_ITEMS.map((item) => {
+        const active = activeTab === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={cn(
+              "shrink-0 rounded-full px-4 py-2 text-[13px] transition-all active:scale-[0.98]",
+              active ? "font-semibold fam-ink" : "fam-sub"
+            )}
+            style={active ? { backgroundColor: "var(--fam-accent)" } : undefined}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 /** Top navigation bar used by ref1 / ref5 / ref4 / ref3-family headers. */
 export function TopNav({ family, greeting }: { family: string; greeting?: boolean }) {
   const { activeTab, setActiveTab, currentUser } = useFDISStore();

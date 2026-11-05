@@ -13,7 +13,7 @@ import { DocumentsScreen } from "@/components/screens/documents-screen";
 import { StatementsScreen } from "@/components/screens/statements-screen";
 import { ComparisonScreen } from "@/components/screens/comparison-screen";
 import { InsightsScreen } from "@/components/screens/insights-screen";
-import { TopNav, CircleRail, LabeledRail, SampleDataTag } from "@/components/shell/app-chrome";
+import { TopNav, CircleRail, LabeledRail, MobileTabNav, SampleDataTag } from "@/components/shell/app-chrome";
 import { fetchDocuments, deleteDocument } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useFDISStore } from "@/store/useFDISStore";
@@ -72,7 +72,10 @@ export default function Home() {
 
       {activeTab === "chat" && (
         <AppFrame family="lilac">
-          <ChatInterface documentCount={documents.length} onDocumentUploaded={refreshDocs} />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <MobileTabNav family="lilac" />
+            <ChatInterface documentCount={documents.length} onDocumentUploaded={refreshDocs} />
+          </div>
         </AppFrame>
       )}
 
@@ -115,7 +118,10 @@ export default function Home() {
       {activeTab === "insights" && (
         <AppFrame family="pastel">
           <SampleDataTag demo={documents.length === 0} />
-          <InsightsScreen />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <MobileTabNav family="pastel" />
+            <InsightsScreen />
+          </div>
         </AppFrame>
       )}
 

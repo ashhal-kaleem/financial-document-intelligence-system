@@ -42,7 +42,7 @@ export function OverviewScreen() {
                           </div>
             <div className="text-right">
               <p className="text-[10px] fam-mut">Document</p>
-              <p className="max-w-[220px] truncate text-[12px] font-medium fam-ink">{latest?.filename || "AAPL_10K_FY2024.pdf"}</p>
+              <p className="max-w-[130px] sm:max-w-[220px] truncate text-[12px] font-medium fam-ink">{latest?.filename || "AAPL_10K_FY2024.pdf"}</p>
             </div>
           </div>
           <p className="mt-8 text-[12px] fam-sub">Pages Ready to Query</p>
@@ -50,7 +50,7 @@ export function OverviewScreen() {
             <span className="text-[64px] leading-none font-medium tracking-tight fam-ink tabular-nums">{pagesReady}</span>
             <Eye className="mb-2 size-4 fam-mut" />
           </div>
-          <div className="mt-8 flex items-center gap-2.5">
+          <div className="mt-8 flex items-center gap-2.5 pr-16">
             <button
               onClick={() => setActiveTab("chat")}
               className="rounded-full bg-[#0C3B2E] px-5 py-2.5 text-[13px] font-medium text-white transition-transform active:scale-[0.98]"
@@ -66,7 +66,7 @@ export function OverviewScreen() {
             </button>
             <button
               aria-label="More actions"
-              className="flex size-10 items-center justify-center rounded-full bg-white fam-sub transition-colors hover:fam-ink"
+              className="hidden sm:flex size-10 items-center justify-center rounded-full bg-white fam-sub transition-colors hover:fam-ink"
               style={{ border: "1px solid var(--fam-line)" }}
             >
               <MoreHorizontal className="size-4" />
