@@ -155,6 +155,44 @@ class SupabaseClient(BaseVectorStore):
             res.raise_for_status()
             return int(res.json() or 0)
 
+    async def _rpc_bool(self, fn: str, payload: Dict[str, Any], timeout: float = 30.0) -> bool:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            res = await client.post(f"{self.base_url}/rest/v1/rpc/{fn}", headers=self.headers, json=payload)
+            res.raise_for_status()
+            return bool(res.json())
+
+    # Fenced worker writes: each returns False if the worker no longer holds `attempt`.
+    async def heartbeat_document(self, doc_id: UUID, attempt: int) -> bool:
+        return await self._rpc_bool("heartbeat_document", {"p_id": str(doc_id), "p_attempt": attempt})
+
+    async def clear_chunks_fenced(self, doc_id: UUID, attempt: int) -> bool:
+        return await self._rpc_bool("clear_chunks_fenced", {"p_id": str(doc_id), "p_attempt": attempt})
+
+    async def insert_chunks_fenced(self, doc_id: UUID, attempt: int, chunks: List[DocumentChunk], batch_size: int = 100) -> bool:
+        for i in range(0, len(chunks), batch_size):
+            rows = [
+                {
+                    "content": c.content, "source": c.source, "page": c.page,
+                    "chunk_index": c.chunk_index, "total_chunks": c.total_chunks,
+                    "metadata": c.metadata,
+                    "embedding": "[" + ",".join(repr(float(x)) for x in c.embedding) + "]",
+                }
+                for c in chunks[i : i + batch_size]
+            ]
+            ok = await self._rpc_bool(
+                "insert_chunks_fenced", {"p_id": str(doc_id), "p_attempt": attempt, "p_rows": rows}, timeout=60.0
+            )
+            if not ok:
+                return False
+        return True
+
+    async def finish_document(self, doc_id: UUID, attempt: int, status: str, error: Optional[str] = None,
+                              page_count: Optional[int] = None, chunk_count: Optional[int] = None) -> bool:
+        return await self._rpc_bool("finish_document", {
+            "p_id": str(doc_id), "p_attempt": attempt, "p_status": status, "p_error": error,
+            "p_pages": page_count, "p_chunks": chunk_count,
+        })
+
     async def insert_chunks_batch(self, chunks: List[DocumentChunk], batch_size: int = 50) -> bool:
         if not chunks:
             return True

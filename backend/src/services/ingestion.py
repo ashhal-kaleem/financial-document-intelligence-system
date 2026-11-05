@@ -13,6 +13,12 @@ from src.infrastructure.supabase_client import SupabaseClient
 
 logger = logging.getLogger(__name__)
 
+HEARTBEAT_SECONDS = 60
+
+
+class LostLeaseError(Exception):
+    """Another worker claimed this job (our lease expired). Stop without writing anything."""
+
 
 class DocumentIngestionService:
     def __init__(self, supabase_client: SupabaseClient = None):
@@ -103,14 +109,35 @@ class DocumentIngestionService:
         """Worker entry: fetch the stored PDF for a claimed job and process it."""
         pdf_bytes = await self.supabase.get_pdf_bytes(doc.id, doc.filename)
         if not pdf_bytes:
-            await self.supabase.update_document_status(
-                doc.id, "error", error_message="Stored file not found."
-            )
+            if doc.attempts is not None:
+                await self.supabase.finish_document(doc.id, doc.attempts, "error", "Stored file not found.")
+            else:
+                await self.supabase.update_document_status(doc.id, "error", error_message="Stored file not found.")
             doc.status = "error"
             return doc
-        return await self._process(doc, pdf_bytes, raise_on_error=False)
+        return await self._process(doc, pdf_bytes, raise_on_error=False, attempt=doc.attempts)
 
-    async def _process(self, doc: Document, pdf_bytes: bytes, raise_on_error: bool = True) -> Document:
+    async def _heartbeat(self, doc_id: UUID, attempt: int) -> None:
+        while True:
+            await asyncio.sleep(HEARTBEAT_SECONDS)
+            try:
+                if not await self.supabase.heartbeat_document(doc_id, attempt):
+                    return  # lease lost; the next fenced write will stop the job
+            except Exception:
+                logger.warning("Heartbeat failed for %s", doc_id)
+
+    async def _process(self, doc: Document, pdf_bytes: bytes, raise_on_error: bool = True,
+                       attempt: Optional[int] = None) -> Document:
+        """attempt is the queue fencing token; None means inline mode (no queue, no fencing)."""
+        beat = asyncio.create_task(self._heartbeat(doc.id, attempt)) if attempt is not None else None
+        try:
+            return await self._process_inner(doc, pdf_bytes, raise_on_error, attempt)
+        finally:
+            if beat:
+                beat.cancel()
+
+    async def _process_inner(self, doc: Document, pdf_bytes: bytes, raise_on_error: bool,
+                             attempt: Optional[int]) -> Document:
         doc_id = doc.id
         filename = doc.filename
         try:
@@ -138,21 +165,36 @@ class DocumentIngestionService:
                 )
                 for c, emb in zip(all_chunks, embeddings):
                     c.embedding = emb
-                # A retried job must not leave duplicate chunks behind.
-                await self.supabase.delete_chunks(doc_id)
-                await self.supabase.insert_chunks_batch(all_chunks)
+                if attempt is None:
+                    await self.supabase.delete_chunks(doc_id)
+                    await self.supabase.insert_chunks_batch(all_chunks)
+                else:
+                    # Fenced: rejected if another worker has claimed the job since we did.
+                    if not await self.supabase.clear_chunks_fenced(doc_id, attempt):
+                        raise LostLeaseError()
+                    if not await self.supabase.insert_chunks_fenced(doc_id, attempt, all_chunks):
+                        raise LostLeaseError()
 
-            await self.supabase.update_document_status(
-                document_id=doc_id, status="ready", page_count=page_count, chunk_count=len(all_chunks)
-            )
+            if attempt is None:
+                await self.supabase.update_document_status(
+                    document_id=doc_id, status="ready", page_count=page_count, chunk_count=len(all_chunks)
+                )
+            elif not await self.supabase.finish_document(doc_id, attempt, "ready", None, page_count, len(all_chunks)):
+                raise LostLeaseError()
             doc.status, doc.page_count, doc.chunk_count = "ready", page_count, len(all_chunks)
+            return doc
+        except LostLeaseError:
+            logger.warning("Lost lease on document %s; another worker owns it now", doc_id)
             return doc
         except Exception as exc:
             logger.error(f"Failed ingesting document {filename}: {exc}")
             message = (
                 str(exc) if isinstance(exc, InvalidPDFError) else "Ingestion failed. Check the file and try again."
             )
-            await self.supabase.update_document_status(document_id=doc_id, status="error", error_message=message)
+            if attempt is None:
+                await self.supabase.update_document_status(document_id=doc_id, status="error", error_message=message)
+            else:
+                await self.supabase.finish_document(doc_id, attempt, "error", message)  # no-op if lease lost
             doc.status, doc.error_message = "error", message
             if raise_on_error:
                 raise

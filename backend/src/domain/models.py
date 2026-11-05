@@ -13,6 +13,7 @@ class Document(BaseModel):
     error_message: Optional[str] = None
     is_sample: bool = False
     owner_id: Optional[str] = None
+    attempts: Optional[int] = None  # queue fencing token (set when a worker claims the job)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

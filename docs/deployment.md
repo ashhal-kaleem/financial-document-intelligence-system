@@ -79,7 +79,18 @@ pnpm dev
 3. Backend env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS` (JSON list with the frontend URL), `GROQ_API_KEY`, `HF_TOKEN`, optional `OPENROUTER_API_KEY`.
 4. Frontend env: `NEXT_PUBLIC_API_URL` (the backend `/api/v1` URL), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. There is no built-in fallback project: without these, sign-in is off.
 
-**Ingestion modes.** `INGESTION_MODE=inline` (default) processes the PDF inside the upload request. `queue` stores the PDF, returns 202 with status `queued`, and a worker inside the API process claims and processes jobs from Postgres. The queue is durable: jobs survive restarts, stuck jobs are retried (default 3 attempts, 10 minute lease), then marked `error`. Queue mode needs a long-running host such as the Render service in `render.yaml`. On Vercel serverless it automatically falls back to inline, because a background task there would not survive the request.
+**Ingestion modes.**
+- `INGESTION_MODE=inline` (default): the upload request does the whole job (parse, embed, store) and returns 201 when done. Large filings can hit request or proxy timeouts here, so inline is for local use, tests and small files.
+- `INGESTION_MODE=queue`: upload stores the PDF and a `queued` row and returns 202. A worker loop inside the API process claims jobs from Postgres and processes them. This needs a **long-running host** (the Render service in `render.yaml` is one). Apply migration 0003 first.
+- **Vercel is not a supported production target for queue mode.** On Vercel, `INGESTION_MODE=queue` is ignored and uploads run inline inside the serverless function, with the same timeout risk as inline mode. The copy in `frontend/api` exists so the app can run on Vercel; it is not a durable-ingestion deployment, and nothing here claims serverless production readiness. For production, run the backend on the long-running host and point `NEXT_PUBLIC_API_URL` at it.
+
+**Queue semantics (lease, retry, fencing).**
+- A claim sets `status=processing`, `claimed_at=now()` and increments `attempts`. `attempts` is the worker's fencing token.
+- A live worker sends a heartbeat every 60 seconds that refreshes `claimed_at`. The 10 minute lease only expires if the worker has really stopped (crash, restart), not because a job is slow.
+- If a lease does expire, another worker re-claims the job (`attempts` + 1) up to 3 attempts, then the job becomes `error`.
+- Every worker write (clear chunks, insert chunks, finish, heartbeat) is a database function that checks `attempts` under a row lock. A worker that lost its lease gets `false` back, stops, and writes nothing. So two workers can run the same job briefly, but only the latest claim can change chunks or status. Chunks are cleared and rewritten fenced, so retries do not duplicate chunks.
+- Known limit: a stalled old worker can waste compute (embedding calls) until its next write is rejected. Embedding calls may be billed even if the result is discarded.
+- Not verified against live Supabase. Tested on a local Postgres (`scripts/test_migrations.py`) and with fakes.
 
 **Vercel copy.** `frontend/api/src` is a copy of `backend/src`. Run `scripts/sync-vercel-api.sh` after backend changes; CI checks it.
 

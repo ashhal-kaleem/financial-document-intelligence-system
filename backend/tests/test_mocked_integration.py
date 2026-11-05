@@ -233,6 +233,27 @@ class QueueStore(FakeIngestStore):
     async def fail_stale_documents(self, *a):
         return 0
 
+    # fenced ops: current_attempt simulates which worker the database considers the owner
+    current_attempt = 1
+
+    async def heartbeat_document(self, doc_id, attempt):
+        return attempt == self.current_attempt
+
+    async def clear_chunks_fenced(self, doc_id, attempt):
+        return attempt == self.current_attempt
+
+    async def insert_chunks_fenced(self, doc_id, attempt, chunks):
+        if attempt != self.current_attempt:
+            return False
+        self.chunks = chunks
+        return True
+
+    async def finish_document(self, doc_id, attempt, status, error=None, page_count=None, chunk_count=None):
+        if attempt != self.current_attempt:
+            return False
+        self.statuses.append((status, {"error_message": error}))
+        return True
+
     async def claim_next_document(self, *a):
         return self.queue.pop(0) if self.queue else None
 
@@ -261,7 +282,7 @@ async def test_worker_processes_claimed_job_and_idles_when_empty():
     svc.embedding_client = type("E", (), {"embed_texts": lambda self, t: [[0.1] * 384 for _ in t]})()
     worker = IngestionWorker(svc)
     assert await worker.run_once() is False
-    store.queue.append(Document(filename="r.pdf", status="processing", owner_id=OWNER))
+    store.queue.append(Document(filename="r.pdf", status="processing", owner_id=OWNER, attempts=1))
     assert await worker.run_once() is True
     assert store.statuses[-1][0] == "ready" and store.chunks
 
@@ -270,7 +291,7 @@ async def test_worker_processes_claimed_job_and_idles_when_empty():
 async def test_worker_marks_error_when_stored_pdf_missing():
     store = QueueStore(pdf=None)
     worker = IngestionWorker(DocumentIngestionService(supabase_client=store))
-    store.queue.append(Document(filename="r.pdf", status="processing", owner_id=OWNER))
+    store.queue.append(Document(filename="r.pdf", status="processing", owner_id=OWNER, attempts=1))
     await worker.run_once()
     assert store.statuses[-1][0] == "error"
 
@@ -306,3 +327,37 @@ def test_queue_mode_upload_returns_202_and_serverless_falls_back_inline(monkeypa
     monkeypatch.setenv("VERCEL", "1")
     assert effective_ingestion_mode() == "inline"
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_worker_that_lost_its_lease_writes_nothing():
+    store = QueueStore(pdf=create_sample_financial_pdf_bytes())
+    store.current_attempt = 2  # another worker re-claimed the job; ours holds attempt 1
+    svc = DocumentIngestionService(supabase_client=store)
+    svc.embedding_client = type("E", (), {"embed_texts": lambda self, t: [[0.1] * 384 for _ in t]})()
+    doc = Document(filename="r.pdf", status="processing", owner_id=OWNER, attempts=1)
+    await svc.process_claimed(doc)
+    assert store.chunks == [] and store.statuses == []  # no chunks, no status change
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_runs_while_processing(monkeypatch):
+    from src.services import ingestion
+    monkeypatch.setattr(ingestion, "HEARTBEAT_SECONDS", 0.01)
+    store = QueueStore(pdf=create_sample_financial_pdf_bytes())
+    beats = []
+    orig = store.heartbeat_document
+
+    async def counting(d, a):
+        beats.append(a)
+        return await orig(d, a)
+    store.heartbeat_document = counting
+    svc = DocumentIngestionService(supabase_client=store)
+
+    def slow_embed(texts):
+        import time
+        time.sleep(0.1)
+        return [[0.1] * 384 for _ in texts]
+    svc.embedding_client = type("E", (), {"embed_texts": lambda self, t: slow_embed(t)})()
+    await svc.process_claimed(Document(filename="r.pdf", status="processing", owner_id=OWNER, attempts=1))
+    assert len(beats) >= 2 and store.statuses[-1][0] == "ready"

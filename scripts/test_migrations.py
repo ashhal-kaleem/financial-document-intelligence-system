@@ -92,6 +92,36 @@ k1.execute("select id::text from claim_next_document(600,3)"); k2.execute("selec
 g1, g2 = k1.fetchall(), k2.fetchall(); c1.commit(); c2.commit()
 check("concurrent claims get different jobs (skip locked)", len(g1) == 1 and len(g2) == 1 and g1 != g2)
 
+# fencing: a worker that lost its lease cannot write
+f = str(uuid.uuid4())
+cur.execute("insert into documents (id, filename, owner_id, status) values (%s,'f.pdf',%s,'queued')", (f, A))
+cur.execute("select attempts from claim_next_document(600,3) where id = %s", (f,))
+# the queue may hand out an older job first; drain until ours is claimed
+got = cur.fetchone()
+while got is None:
+    cur.execute("select attempts from claim_next_document(600,3) where id = %s", (f,)); got = cur.fetchone()
+    if got is None:
+        cur.execute("select count(*) from documents where status='queued'")
+        if cur.fetchone()[0] == 0: break
+cur.execute("select attempts, status from documents where id=%s", (f,)); att, st = cur.fetchone()
+rows = '[{"content":"c","source":"f.pdf","page":1,"chunk_index":0,"total_chunks":1,"metadata":{},"embedding":"%s"}]' % vec(7)
+cur.execute("select heartbeat_document(%s,%s)", (f, att)); check("heartbeat succeeds for the lease holder", cur.fetchone()[0])
+cur.execute("select clear_chunks_fenced(%s,%s)", (f, att)); check("clear_chunks_fenced ok for holder", cur.fetchone()[0])
+cur.execute("select insert_chunks_fenced(%s,%s,%s::jsonb)", (f, att, rows)); check("insert_chunks_fenced ok for holder", cur.fetchone()[0])
+cur.execute("select count(*) from chunks where document_id=%s", (f,)); check("fenced insert stored the chunk (vector parsed)", cur.fetchone()[0] == 1)
+# lease expires and a second worker re-claims
+cur.execute("update documents set claimed_at = now() - interval '20 minutes' where id=%s", (f,))
+cur.execute("select attempts from claim_next_document(600,3) where id = %s", (f,)); new_att = cur.fetchone()[0]
+check("re-claim bumps the fencing token", new_att == att + 1)
+cur.execute("select heartbeat_document(%s,%s)", (f, att)); check("old worker heartbeat rejected", cur.fetchone()[0] is False)
+cur.execute("select clear_chunks_fenced(%s,%s)", (f, att)); check("old worker cannot clear chunks", cur.fetchone()[0] is False)
+cur.execute("select insert_chunks_fenced(%s,%s,%s::jsonb)", (f, att, rows)); check("old worker cannot insert chunks", cur.fetchone()[0] is False)
+cur.execute("select finish_document(%s,%s,'ready',null,1,1)", (f, att)); check("old worker cannot finish the job", cur.fetchone()[0] is False)
+cur.execute("select count(*) from chunks where document_id=%s", (f,)); check("old worker left chunks untouched", cur.fetchone()[0] == 1)
+cur.execute("select finish_document(%s,%s,'ready',null,1,1)", (f, new_att)); check("new worker can finish", cur.fetchone()[0])
+cur.execute("select status, page_count, chunk_count from documents where id=%s", (f,)); check("job is ready with counts", cur.fetchone() == ("ready", 1, 1))
+cur.execute("select finish_document(%s,%s,'error','x',null,null)", (f, new_att)); check("finished job cannot be overwritten", cur.fetchone()[0] is False)
+
 k = as_role("anon")
 try:
     k.execute("select * from claim_next_document()"); blocked = False
@@ -102,6 +132,11 @@ try:
     k.execute("select * from claim_next_document()"); blocked = False
 except psycopg2.errors.InsufficientPrivilege: blocked = True
 check("authenticated cannot call claim_next_document", blocked)
+k = as_role("authenticated", A)
+try:
+    k.execute("select finish_document(%s,1,'ready',null,1,1)", (f,)); blocked = False
+except psycopg2.errors.InsufficientPrivilege: blocked = True
+check("authenticated cannot call fenced functions", blocked)
 k = as_role("service_role"); k.execute("select count(*) from claim_next_document()"); check("service_role can call claim_next_document", True)
 
 shutil.rmtree(tmp, ignore_errors=True)
