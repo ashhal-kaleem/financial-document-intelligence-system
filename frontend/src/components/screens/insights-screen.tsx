@@ -86,6 +86,13 @@ export function InsightsScreen() {
               <span className="rounded-full bg-[#F5F6FA] px-2.5 py-1 text-[10px] fam-sub">Last 6 mo</span>
             </div>
             <svg viewBox="0 0 480 170" className="mt-3 w-full">
+              <defs>
+                <linearGradient id="qFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#6FA8EF" stopOpacity="0.22" />
+                  <stop offset="1" stopColor="#6FA8EF" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M20,120 110,100 200,88 290,96 380,70 460,62 L460,150 L20,150 Z" fill="url(#qFill)" stroke="none" />
               <polyline points="20,120 110,100 200,88 290,96 380,70 460,62" fill="none" stroke="#6FA8EF" strokeWidth="2.5" strokeLinecap="round" />
               {["May", "Jun", "Jul", "Aug", "Sep", "Oct"].map((m, i) => (
                 <text key={m} x={20 + i * 88} y={162} fontSize="10" fill="#B4B9C8">{m}</text>

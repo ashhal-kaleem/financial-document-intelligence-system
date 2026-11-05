@@ -42,7 +42,7 @@ export function ComparisonScreen() {
         <p className="text-[12px] fam-sub">Two filings side by side - every difference calculated for you.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_1.5fr_1.2fr]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_2.7fr]">
         {/* left column */}
         <div className="flex flex-col gap-4">
           <section className="rounded-[20px] bg-white p-5">
@@ -99,8 +99,8 @@ export function ComparisonScreen() {
           </div>
         </div>
 
-        {/* middle: delta cards + metric table */}
-        <div className="flex flex-col gap-4">
+        {/* right area: delta cards + chart on top, metric table below */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.2fr]">
           <div className="grid grid-cols-2 gap-4">
             {[{ label: "Revenue Δ", i: 0, hero: true }, { label: "Net income Δ", i: 3 }, { label: "Gross profit Δ", i: 1 }, { label: "Op. income Δ", i: 2 }].map(({ label, i, hero }) => {
               const d = delta(i);
@@ -121,7 +121,32 @@ export function ComparisonScreen() {
             })}
           </div>
 
-          <section className="flex-1 rounded-[20px] bg-white p-5">
+{/* right: quarterly bars */}
+        <section className="rounded-[20px] bg-white p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[13px] font-semibold fam-ink">Revenue by Quarter</h3>
+              <p className="text-[10px] fam-mut">FY2024 vs FY2023</p>
+            </div>
+            <div className="flex items-center gap-2.5 text-[10px] fam-sub">
+              <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-[#F06423]" /> FY24</span>
+              <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-[#2C2C25]" /> FY23</span>
+            </div>
+          </div>
+          <div className="mt-6 flex h-64 items-end justify-around">
+            {QUARTERS.map(([q, a, b]) => (
+              <div key={q as string} className="flex h-full flex-col items-center justify-end gap-1.5">
+                <div className="flex h-full items-end gap-1.5">
+                  <div className="w-[22px] rounded-full bg-[#F06423]" style={{ height: `${(a as number) * 2.2}px` }} />
+                  <div className="w-[22px] rounded-full bg-[#2C2C25]" style={{ height: `${(b as number) * 2.2}px` }} />
+                </div>
+                <span className="text-[10px] fam-mut">{q}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+          <section className="rounded-[20px] bg-white p-5 lg:col-span-2">
             <div className="flex items-center justify-between">
               <h3 className="text-[13px] font-semibold fam-ink">Metric comparison</h3>
               <div className="flex items-center gap-2">
@@ -157,30 +182,7 @@ export function ComparisonScreen() {
           </section>
         </div>
 
-        {/* right: quarterly bars */}
-        <section className="rounded-[20px] bg-white p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-[13px] font-semibold fam-ink">Revenue by Quarter</h3>
-              <p className="text-[10px] fam-mut">FY2024 vs FY2023</p>
-            </div>
-            <div className="flex items-center gap-2.5 text-[10px] fam-sub">
-              <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-[#F06423]" /> FY24</span>
-              <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-[#2C2C25]" /> FY23</span>
-            </div>
-          </div>
-          <div className="mt-6 flex h-64 items-end justify-around">
-            {QUARTERS.map(([q, a, b]) => (
-              <div key={q as string} className="flex h-full flex-col items-center justify-end gap-1.5">
-                <div className="flex h-full items-end gap-1.5">
-                  <div className="w-[22px] rounded-full bg-[#F06423]" style={{ height: `${(a as number) * 2.2}px` }} />
-                  <div className="w-[22px] rounded-full bg-[#2C2C25]" style={{ height: `${(b as number) * 2.2}px` }} />
-                </div>
-                <span className="text-[10px] fam-mut">{q}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+
       </div>
     </div>
   );

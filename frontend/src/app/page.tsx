@@ -13,20 +13,20 @@ import { DocumentsScreen } from "@/components/screens/documents-screen";
 import { StatementsScreen } from "@/components/screens/statements-screen";
 import { ComparisonScreen } from "@/components/screens/comparison-screen";
 import { InsightsScreen } from "@/components/screens/insights-screen";
-import { TopNav, CircleRail, LabeledRail } from "@/components/shell/app-chrome";
+import { TopNav, CircleRail, LabeledRail, SampleDataTag } from "@/components/shell/app-chrome";
 import { fetchDocuments, deleteDocument } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useFDISStore } from "@/store/useFDISStore";
 import { cn } from "@/lib/utils";
 
-function AppFrame({ family, children, bleed = false }: { family: string; children: React.ReactNode; bleed?: boolean }) {
+function AppFrame({ family, children, bleed = false, sheet = "white" }: { family: string; children: React.ReactNode; bleed?: boolean; sheet?: "white" | "canvas" }) {
   return (
     <div className={cn("relative h-screen w-screen overflow-hidden", `v8-${family}`)} style={{ background: "var(--fam-canvas)" }}>
       {/* soft backdrop blobs */}
       <div className="pointer-events-none absolute -top-24 left-1/4 size-[520px] rounded-full opacity-60 blur-3xl" style={{ background: "radial-gradient(closest-side, #FFFFFF99, transparent)" }} />
       <div className="pointer-events-none absolute -bottom-40 right-0 size-[620px] rounded-full opacity-50 blur-3xl" style={{ background: "radial-gradient(closest-side, var(--fam-accent-soft), transparent)" }} />
       <div className={cn("relative z-10 flex h-full", bleed ? "p-0" : "p-4 sm:p-6")}>
-        <div className={cn("flex flex-1 overflow-hidden bg-white", bleed ? "" : "rounded-[28px]")} style={{ boxShadow: "0 18px 50px #3D2E5C14" }}>
+        <div className={cn("flex flex-1 overflow-hidden", bleed ? "" : "rounded-[28px]")} style={{ boxShadow: "0 18px 50px #3D2E5C14", background: sheet === "canvas" ? "color-mix(in srgb, var(--fam-canvas) 24%, #FFFFFF)" : "#FFFFFF" }}>
           {children}
         </div>
       </div>
@@ -61,7 +61,8 @@ export default function Home() {
   return (
     <>
       {activeTab === "overview" && (
-        <AppFrame family="green">
+        <AppFrame family="green" sheet="canvas">
+          <SampleDataTag demo={documents.length === 0} />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="green" greeting />
             <OverviewScreen />
@@ -76,7 +77,8 @@ export default function Home() {
       )}
 
       {activeTab === "documents" && (
-        <AppFrame family="green">
+        <AppFrame family="green" sheet="canvas">
+          <SampleDataTag demo={documents.length === 0} />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="green" />
             <div className="flex flex-1 overflow-hidden">
@@ -89,6 +91,7 @@ export default function Home() {
 
       {activeTab === "statements" && (
         <AppFrame family="green">
+          <SampleDataTag demo={documents.length === 0} />
           <div className="flex flex-1 overflow-hidden" style={{ background: "#EAF1E4" }}>
             <LabeledRail family="green" />
             <StatementsScreen />
@@ -97,7 +100,8 @@ export default function Home() {
       )}
 
       {activeTab === "comparison" && (
-        <AppFrame family="orange">
+        <AppFrame family="orange" sheet="canvas">
+          <SampleDataTag demo={documents.length === 0} />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="orange" />
             <div className="flex flex-1 overflow-hidden">
@@ -110,6 +114,7 @@ export default function Home() {
 
       {activeTab === "insights" && (
         <AppFrame family="pastel">
+          <SampleDataTag demo={documents.length === 0} />
           <InsightsScreen />
         </AppFrame>
       )}

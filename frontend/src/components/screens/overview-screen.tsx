@@ -2,11 +2,10 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, TrendingUp } from "lucide-react";
+import { Eye, TrendingUp, ArrowUpRight, MoreHorizontal } from "lucide-react";
 import { fetchDocuments } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useFDISStore } from "@/store/useFDISStore";
-import { Orb } from "@/components/shell/orbs";
 
 function shortTicker(filename: string) {
   const m = filename.match(/[A-Z]{2,5}/);
@@ -65,8 +64,21 @@ export function OverviewScreen() {
             >
               Upload Filing
             </button>
+            <button
+              aria-label="More actions"
+              className="flex size-10 items-center justify-center rounded-full bg-white fam-sub transition-colors hover:fam-ink"
+              style={{ border: "1px solid var(--fam-line)" }}
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
           </div>
-          <Orb kind="green" className="pointer-events-none absolute -right-8 bottom-6 size-36 opacity-90" />
+          <button
+            onClick={() => setActiveTab("chat")}
+            aria-label="Go to Q&A"
+            className="absolute bottom-7 right-7 flex size-14 items-center justify-center rounded-full bg-[#AEF359] shadow-md transition-transform active:scale-95"
+          >
+            <ArrowUpRight className="size-6 text-[#0C3B2E]" strokeWidth={2.25} />
+          </button>
         </section>
 
         {/* Coverage card */}

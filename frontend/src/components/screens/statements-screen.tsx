@@ -1,9 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Search, Bell } from "lucide-react";
 import { fetchDocuments } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useFDISStore } from "@/store/useFDISStore";
+import { AvatarCircle } from "@/components/shell/app-chrome";
 
 const KPIS = [
   { label: "Revenue", value: "$391.0B", delta: "+2.0%", sub: "+$7.7B vs FY2023", pos: true },
@@ -29,14 +31,31 @@ const SEGMENTS = [
 
 export function StatementsScreen() {
   const isHydrated = useHydrated();
-  const { setActiveTab } = useFDISStore();
+  const { setActiveTab, currentUser } = useFDISStore();
   const { data: documents = [] } = useQuery({ queryKey: ["documents"], queryFn: fetchDocuments, enabled: isHydrated });
   const filingA = documents[0];
 
   return (
-    <div className="flex flex-1 gap-0 overflow-hidden v8-green" style={{ background: "#EAF1E4" }}>
+    <div className="flex flex-1 flex-col gap-0 overflow-hidden v8-green" style={{ background: "#EAF1E4" }}>
+      {/* header */}
+      <div className="flex items-center justify-between gap-4 px-5 pb-3 pt-5">
+        <h2 className="text-[22px] font-medium tracking-tight fam-ink">Statements</h2>
+        <div className="flex items-center gap-2.5">
+          <span className="hidden items-center gap-2 rounded-full bg-white px-4 py-2 text-[12px] fam-mut sm:flex">
+            <Search className="size-3.5" /> Search filings
+          </span>
+          <button aria-label="Notifications" className="flex size-9 items-center justify-center rounded-full bg-white fam-sub transition-colors hover:fam-ink">
+            <Bell className="size-4" />
+          </button>
+          <div className="flex items-center gap-2 rounded-full bg-white py-1 pl-3 pr-1.5">
+            <span className="text-[12px] font-medium fam-ink">{currentUser?.name || "Srkia Ash"}</span>
+            {!currentUser && <span className="rounded-full bg-[#E7F5DA] px-1.5 py-0.5 text-[9px] font-semibold text-[#4C8A2E]">Demo</span>}
+            <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-7 text-[10px]" />
+          </div>
+        </div>
+      </div>
       {/* dense grid */}
-      <div className="grid flex-1 grid-cols-1 gap-3 overflow-y-auto p-4 xl:grid-cols-[1.5fr_1fr_0.9fr]">
+      <div className="grid flex-1 grid-cols-1 gap-3 overflow-y-auto px-4 pb-4 xl:grid-cols-[1.5fr_1fr_0.9fr]">
         {/* col 1 */}
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
@@ -64,6 +83,18 @@ export function StatementsScreen() {
               </div>
             </div>
             <svg viewBox="0 0 560 160" className="mt-4 w-full">
+              <defs>
+                <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#8CCB6E" stopOpacity="0.22" />
+                  <stop offset="1" stopColor="#8CCB6E" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="niFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#0E3B2E" stopOpacity="0.10" />
+                  <stop offset="1" stopColor="#0E3B2E" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M20,120 190,95 370,70 540,40 L540,140 L20,140 Z" fill="url(#revFill)" stroke="none" />
+              <path d="M20,130 190,118 370,105 540,96 L540,140 L20,140 Z" fill="url(#niFill)" stroke="none" />
               <polyline points="20,120 190,95 370,70 540,40" fill="none" stroke="#8CCB6E" strokeWidth="2.5" strokeLinecap="round" />
               <polyline points="20,130 190,118 370,105 540,96" fill="none" stroke="#0E3B2E" strokeWidth="2.5" strokeLinecap="round" />
               {["FY22", "FY23", "FY24"].map((t, i) => (
@@ -111,12 +142,17 @@ export function StatementsScreen() {
               <span className="rounded-full bg-[#F2F2F0] px-2 py-0.5 text-[10px] fam-sub">FY2024</span>
             </div>
             <div className="mt-4 flex items-center justify-center">
-              <div className="relative flex size-36 items-center justify-center rounded-full" style={{ background: "conic-gradient(#0E3B2E 0 54%, #8CCB6E 54% 66%, #CDEFA6 66% 78%, #EDF3E6 78% 100%)" }}>
-                <div className="flex size-[88px] flex-col items-center justify-center rounded-full bg-white">
-                  <span className="text-[9px] fam-mut">COGS</span>
-                  <span className="text-[22px] font-medium fam-ink tabular-nums">54%</span>
-                </div>
-              </div>
+              <svg viewBox="0 0 170 170" className="size-40">
+                {[{ r: 72, c: "#0E3B2E", p: 70 }, { r: 53, c: "#8CCB6E", p: 52 }, { r: 34, c: "#CDEFA6", p: 38 }].map(({ r, c, p }) => {
+                  const circ = 2 * Math.PI * r;
+                  return (
+                    <circle key={r} cx="85" cy="85" r={r} fill="none" stroke={c} strokeWidth="14" strokeLinecap="round"
+                      strokeDasharray={`${(circ * p) / 100} ${circ}`} transform="rotate(-90 85 85)" />
+                  );
+                })}
+                <text x="85" y="80" textAnchor="middle" fontSize="9" fill="#9AA294">COGS</text>
+                <text x="85" y="102" textAnchor="middle" fontSize="22" fontWeight="500" fill="#111714">54%</text>
+              </svg>
             </div>
             <div className="mt-4 flex flex-col gap-1.5 text-[11px]">
               {[["#0E3B2E", "Cost of sales", "54%"], ["#8CCB6E", "R&D", "8%"], ["#CDEFA6", "SG&A", "6%"]].map(([c, l, v]) => (
@@ -143,12 +179,6 @@ export function StatementsScreen() {
                 </div>
               ))}
             </div>
-          </div>
-          <div className="rounded-2xl bg-[#0E3B2E] p-5 text-white">
-            <p className="text-[13px] font-semibold">Ask anything about your filings</p>
-            <button onClick={() => setActiveTab("chat")} className="mt-3 rounded-full bg-[#CDEFA6] px-4 py-2 text-[12px] font-semibold text-[#0E3B2E] active:scale-[0.98]">
-              Open Q&A
-            </button>
           </div>
         </div>
 

@@ -47,6 +47,7 @@ export function ProfileChip({ family, expanded = true }: { family: string; expan
     >
       <AvatarCircle name={name} className="size-7 text-[10px]" />
       {expanded && <span className="text-xs font-medium fam-ink truncate max-w-[110px]">{name}</span>}
+      {expanded && !currentUser && <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold fam-sub" style={{ background: "var(--fam-tint)" }}>Demo</span>}
     </button>
   );
 }
@@ -151,7 +152,11 @@ export function LabeledRail({ family }: { family: string }) {
           </button>
         );
       })}
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-3">
+        <div className="rounded-2xl bg-[#0E3B2E] p-4 text-white">
+          <p className="text-[12px] font-semibold leading-snug">Ask anything about your filings</p>
+          <button onClick={() => setActiveTab("chat")} className="mt-3 rounded-full bg-[#CDEFA6] px-3.5 py-1.5 text-[11px] font-semibold text-[#0E3B2E] transition-transform active:scale-[0.97]">Open Q&A</button>
+        </div>
         <button className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] fam-sub hover:fam-ink transition-colors">
           <Settings className="size-4" strokeWidth={1.75} /> Settings
         </button>
@@ -256,5 +261,14 @@ export function ChatSidebar({ history, onPick }: { history: string[]; onPick: (q
         </button>
       </div>
     </aside>
+  );
+}
+
+/** Small caption marking illustrative sample content (demo vs mixed with real uploads). */
+export function SampleDataTag({ demo }: { demo: boolean }) {
+  return (
+    <span className="pointer-events-none absolute bottom-3 right-5 z-20 text-[10px] fam-mut">
+      {demo ? "Sample data - illustrative" : "Some metrics illustrative"}
+    </span>
   );
 }
