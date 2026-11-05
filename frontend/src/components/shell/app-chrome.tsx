@@ -132,7 +132,7 @@ const RAIL_ICONS: Record<DashboardTab, typeof LayoutGrid> = {
 export function LabeledRail({ family }: { family: string }) {
   const { activeTab, setActiveTab } = useFDISStore();
   return (
-    <aside className={cn("flex w-[180px] shrink-0 flex-col gap-1 py-8 pl-6 pr-3", `v8-${family}`)}>
+    <aside className={cn("hidden md:flex w-[180px] shrink-0 flex-col gap-1 py-8 pl-6 pr-3", `v8-${family}`)}>
       <div className="mb-8 px-1"><LogoMark family={family} dark /></div>
       {NAV_ITEMS.filter((n) => n.id !== "insights").map((item) => {
         const Icon = RAIL_ICONS[item.id];
@@ -195,7 +195,7 @@ export function CircleRail({ family }: { family: string }) {
 export function ChatSidebar({ history, onPick }: { history: string[]; onPick: (q: string) => void }) {
   const { activeTab, setActiveTab, currentUser, setAuthModalOpen } = useFDISStore();
   return (
-    <aside className="v8-lilac flex w-[270px] shrink-0 flex-col bg-[#F2F2F3] rounded-l-[28px]">
+    <aside className="v8-lilac hidden md:flex w-[270px] shrink-0 flex-col bg-[#F2F2F3] rounded-l-[28px]">
       <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="flex size-8 items-center justify-center rounded-lg bg-[#C9B6F2]">
