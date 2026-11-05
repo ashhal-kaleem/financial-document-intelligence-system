@@ -42,7 +42,7 @@ export function OverviewScreen() {
                           </div>
             <div className="text-right">
               <p className="text-[10px] fam-mut">Document</p>
-              <p className="max-w-[130px] sm:max-w-[220px] truncate text-[12px] font-medium fam-ink">{latest?.filename || "AAPL_10K_FY2024.pdf"}</p>
+              <p className="max-w-[96px] sm:max-w-[220px] truncate text-[12px] font-medium fam-ink">{latest?.filename || "AAPL_10K_FY2024.pdf"}</p>
             </div>
           </div>
           <p className="mt-8 text-[12px] fam-sub">Pages Ready to Query</p>

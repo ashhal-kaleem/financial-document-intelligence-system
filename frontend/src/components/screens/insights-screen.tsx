@@ -23,7 +23,7 @@ export function InsightsScreen() {
   return (
     <div className="v8-pastel flex flex-1 overflow-hidden" style={{ background: "#EBEAF5" }}>
       {/* ref2 sidebar */}
-      <aside className="flex w-[210px] shrink-0 flex-col px-5 py-6">
+      <aside className="hidden md:flex w-[210px] shrink-0 flex-col px-5 py-6">
         <div className="flex items-center gap-2.5">
           <div className="flex size-8 items-center justify-center rounded-full" style={{ border: "2px solid #B99FEC" }}>
             <span className="size-3.5 rounded-full bg-[#4FC8C4]" />
