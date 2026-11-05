@@ -86,7 +86,7 @@ export function TopNav({ family, greeting }: { family: string; greeting?: boolea
       <div className="flex items-center gap-3 min-w-[180px]">
         {greeting ? (
           <>
-            <AvatarCircle name={currentUser?.name} className="size-9 text-xs" />
+            <AvatarCircle name={currentUser?.name || "Srkia Ash"} className="size-9 text-xs" />
             <span className="text-lg font-medium fam-ink">Hello, {(currentUser?.name || "Srkia Ash").split(" ")[0]}</span>
           </>
         ) : (
