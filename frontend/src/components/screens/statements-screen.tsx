@@ -55,10 +55,11 @@ export function StatementsScreen() {
         </div>
       </div>
       {/* dense grid */}
-      <div className="grid flex-1 grid-cols-1 gap-3 overflow-y-auto px-4 pb-4 xl:grid-cols-[1.5fr_1fr_0.9fr]">
-        {/* col 1 */}
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
+      <div
+        className="grid flex-1 grid-cols-1 gap-3 overflow-y-auto px-4 pb-4 xl:grid-cols-[1.5fr_1fr_0.9fr]"
+        style={{ gridTemplateAreas: "'kpi cost filing' 'trend cost docs' 'income segments recent'" }}
+      >
+          <div className="grid grid-cols-2 gap-3 [grid-area:kpi]">
             {KPIS.map((k) => (
               <div key={k.label} className="rounded-2xl bg-white p-4">
                 <div className="flex items-center justify-between">
@@ -70,7 +71,7 @@ export function StatementsScreen() {
               </div>
             ))}
           </div>
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:trend]">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-[13px] font-semibold fam-ink">Revenue trend</h3>
@@ -102,7 +103,7 @@ export function StatementsScreen() {
               ))}
             </svg>
           </div>
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:income]">
             <div className="flex items-center justify-between">
               <h3 className="text-[13px] font-semibold fam-ink">Income statement</h3>
               <span className="rounded-full bg-[#F2F2F0] px-2.5 py-1 text-[10px] fam-sub">FY2024</span>
@@ -132,11 +133,8 @@ export function StatementsScreen() {
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* col 2 */}
-        <div className="flex flex-col gap-3">
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:cost]">
             <div className="flex items-center justify-between">
               <h3 className="text-[13px] font-semibold fam-ink">Cost structure</h3>
               <span className="rounded-full bg-[#F2F2F0] px-2 py-0.5 text-[10px] fam-sub">FY2024</span>
@@ -163,7 +161,7 @@ export function StatementsScreen() {
               ))}
             </div>
           </div>
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:segments]">
             <h3 className="text-[13px] font-semibold fam-ink">Segments</h3>
             <p className="text-[10px] fam-mut">revenue share, FY2024</p>
             <div className="mt-3 flex flex-col gap-3">
@@ -180,11 +178,8 @@ export function StatementsScreen() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* col 3 */}
-        <div className="flex flex-col gap-3">
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:filing]">
             <h3 className="text-[13px] font-semibold fam-ink">Filing A</h3>
             <p className="text-[10px] fam-mut">Form 10-K · FY2024</p>
             <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-[#F2F2F0]">
@@ -192,7 +187,7 @@ export function StatementsScreen() {
             </div>
             <p className="mt-2 text-[10px] fam-sub tabular-nums">{filingA ? `${filingA.page_count} pages · ${filingA.status}` : "184 pages · period ended Sep 28, 2024"}</p>
           </div>
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:docs]">
             <h3 className="text-[13px] font-semibold fam-ink">Documents</h3>
             <p className="text-[10px] fam-mut">in this workspace</p>
             <div className="mt-3 flex flex-col gap-2.5">
@@ -205,7 +200,7 @@ export function StatementsScreen() {
               ))}
             </div>
           </div>
-          <div className="rounded-2xl bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 [grid-area:recent]">
             <h3 className="text-[13px] font-semibold fam-ink">Recent queries</h3>
             <div className="mt-3 flex flex-col gap-3">
               {[
@@ -224,7 +219,7 @@ export function StatementsScreen() {
               ))}
             </div>
           </div>
-        </div>
+
       </div>
     </div>
   );

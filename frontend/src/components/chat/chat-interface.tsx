@@ -83,10 +83,11 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
         return current;
       });
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: `err-${Date.now()}`, role: "assistant", content: "The answer service is temporarily unavailable. Please check the connection and retry.", timestamp: new Date().toISOString() },
-      ]);
+      setMessages((prev) => prev.map((m) =>
+        m.id === assistantId
+          ? { ...m, content: "The answer service is temporarily unavailable. Please check the connection and retry." }
+          : m
+      ));
     } finally {
       setIsStreaming(false);
     }
@@ -141,7 +142,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
             <ChatInputBox
               onSend={handleSend}
               isStreaming={isStreaming}
-              disabled={documentCount === 0}
+              
               onDocumentUploaded={onDocumentUploaded}
               draft={draft}
               setDraft={setDraft}
@@ -152,7 +153,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
                 <button
                   key={a.title}
                   onClick={() => handleSend(a.prompt)}
-                  disabled={documentCount === 0}
+                  
                   className="rounded-2xl bg-[#FCFCFC] p-4 text-left transition-shadow hover:shadow-md active:scale-[0.99] disabled:opacity-50"
                   style={{ border: "1px solid #F0EEF6" }}
                 >
@@ -182,7 +183,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
               <ChatInputBox
                 onSend={handleSend}
                 isStreaming={isStreaming}
-                disabled={documentCount === 0}
+                
                 onDocumentUploaded={onDocumentUploaded}
                 draft={draft}
                 setDraft={setDraft}
