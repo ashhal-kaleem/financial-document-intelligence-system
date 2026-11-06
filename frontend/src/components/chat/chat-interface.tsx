@@ -6,7 +6,9 @@ import { ChatInputBox } from "./chat-input-box";
 import { ChatSidebar } from "@/components/shell/app-chrome";
 import { Orb } from "@/components/shell/orbs";
 import { useFDISStore, Citation } from "@/store/useFDISStore";
-import { streamQuestion, StreamEventPayload } from "@/lib/api";
+import { StreamEventPayload } from "@/lib/api";
+import { askPuter } from "@/lib/puter-ai";
+import { AIConnection } from "./ai-connection";
 import { loadChatHistory, saveChatHistory, ChatMessage } from "@/lib/chat-history";
 import { Clock, GitCompareArrows, CheckCircle2, MoreHorizontal } from "lucide-react";
 
@@ -22,6 +24,9 @@ const QUICK_ACTIONS = [
 ];
 
 export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfaceProps) {
+  const [aiConnected, setAIConnected] = useState(false);
+  const [aiModel, setAIModel] = useState("");
+  const [aiNote, setAINote] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [draft, setDraft] = useState("");
@@ -44,6 +49,10 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
     return () => { active = false; requestRef.current?.abort(); };
   }, [currentUser?.id]);
 
+  useEffect(() => {
+    if (!aiConnected) { requestRef.current?.abort(); requestRef.current = null; setIsStreaming(false); }
+  }, [aiConnected]);
+
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, []);
@@ -55,6 +64,8 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
   const handleSend = useCallback(async (content: string) => {
     if (requestRef.current && !requestRef.current.signal.aborted) return;
     if (!currentUser) { useFDISStore.getState().setAuthModalOpen(true); return; }
+    if (!aiConnected || !aiModel) { setAINote("Choose a free model and connect AI before asking."); return; }
+    setAINote("");
     const ownerId = currentUser.id;
     const controller = new AbortController();
     requestRef.current = controller;
@@ -67,7 +78,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
     try {
       const targetDocIds = selectedDocument ? [selectedDocument.id] : undefined;
       let fullContent = "";
-      await streamQuestion(content, targetDocIds || [], undefined, (event: StreamEventPayload) => {
+      await askPuter(content, targetDocIds || [], aiModel, (event: StreamEventPayload) => {
         if (!isCurrent()) return;
         if (event.event === "citations") {
           const citations: Citation[] = (event.citations || []).map((c) => ({
@@ -91,11 +102,12 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
         saveChatHistory(current, ownerId);
         return current;
       });
-    } catch {
+    } catch (error) {
       if (!isCurrent()) return;
+      const detail = error instanceof Error ? error.message : "The answer could not be completed or verified. Please retry.";
       setMessages((prev) => prev.map((m) =>
         m.id === assistantId
-          ? { ...m, content: "The answer could not be completed or verified. Please retry.", citations: [] }
+          ? { ...m, content: detail, citations: [] }
           : m
       ));
     } finally {
@@ -104,7 +116,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
         setIsStreaming(false);
       }
     }
-  }, [selectedDocument, currentUser]);
+  }, [selectedDocument, currentUser, aiConnected, aiModel]);
 
   const history = messages.filter((m) => m.role === "user").map((m) => m.content).slice(-12).reverse();
   const empty = messages.length === 0;
@@ -143,9 +155,11 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
           </div>
         </div>
 
+        <AIConnection connected={aiConnected} setConnected={setAIConnected} model={aiModel} setModel={setAIModel} />
+        {aiNote && <p role="status" className="px-5 py-2 text-xs text-amber-800">{aiNote}</p>}
         {empty ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-8 py-8">
-            <Orb kind="purple" className="size-36" />
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-start gap-5 overflow-y-auto px-8 py-8">
+            <Orb kind="purple" className="hidden size-36 sm:block" />
             <div className="text-center">
               <p className="bg-gradient-to-r from-[#6D5BD0] to-[#A284EC] bg-clip-text text-[15px] font-semibold text-transparent">
                 Hello, {(currentUser?.name || "Guest").split(" ")[0]}
@@ -187,7 +201,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
                 {isStreaming && (
                   <div className="flex items-center gap-2.5">
                     <Orb kind="warm" className="size-7 animate-pulse" />
-                    <span className="text-xs text-[#A999C4]">Composing answer...</span>
+                    <span className="text-xs text-[#A999C4]">Preparing answer and checking source markers...</span>
                   </div>
                 )}
               </div>

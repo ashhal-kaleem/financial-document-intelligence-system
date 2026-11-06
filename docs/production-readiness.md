@@ -10,7 +10,7 @@ Updated 6 November 2026. Source changes are on backend-hardening only. This is n
 - scripts/test_migrations.py uses throwaway local Postgres plus Supabase role/auth stubs. It tests RLS, search filters, queue retries/fencing and two-phase deletion. It is not a live Supabase/storage test.
 - Frontend production build and typecheck are separate checks; they do not verify real authentication or hosted availability.
 
-Latest local run:115 backend tests passed,2 live tests skipped;10 frontend regression tests passed;37 throwaway-Postgres checks passed;TypeScript,production build and mirror check passed. Two backend dependency deprecation warnings remain. Mobile390px and desktop1280px screenshots inspected for Statements, auth prompt and honest export state. These are local results only.
+Latest local run:130 backend tests passed,2 live tests skipped;18 frontend regression tests passed;37 throwaway-Postgres checks passed;TypeScript,production build and mirror check passed. Two backend dependency deprecation warnings remain. Mobile390px and desktop1280px screenshots inspected for Statements, auth prompt and honest export state. These are local results only.
 
 Reproduce with README.md commands. Do not turn passing fixture tests into an accuracy percentage on a resume.
 
@@ -26,7 +26,7 @@ A power loss between uploaded-row creation and queued state can leave a nonclaim
 
 - Working login provider and hosted redirect/client setup.
 - Private bucket creation/configuration, then authenticated upload/PDF/delete and two-user isolation on a separate empty test target.
-- User requested alternatives to model-provider quota exhaustion. Current provider configuration is retained pending choice; user-pays alternatives do not make model usage unlimited or remove embedding limits.
+- User accepted Puter Connect with its genuine popup. Opt-in UI and receipt/marker checks are implemented but fake-tested only; no real generation or private data transfer has been run. Only exact free variants are allowlisted; no paid/provider fallback. This does not make usage unlimited, lock third-party prices atomically or remove HF embedding limits.
 - Independently reviewed 30-50 question benchmark: retrieve expected evidence, run selected model under bounded approved usage, label numeric correctness, supported claims, citation support, abstention and injection behavior. Measure p50/p95, failure/retry rate and per-question cost on the same run. No live score exists yet.
 - Shared per-user/daily cost quotas and concurrency controls. In-memory limiter remains per-process; output token cap is not a total budget.
 - Metrics/alerts, dependency/security audit, secrets rotation and backup/restore exercise.
@@ -42,3 +42,7 @@ ID validation checks only marker membership, not sentence-level grounding. Parti
 - Storage API surface: https://supabase.github.io/storage/
 - SMTP limitations: https://supabase.com/docs/guides/auth/auth-smtp
 - Render free limits: https://render.com/docs/free
+
+Puter response schema was checked against https://docs.puter.com/Objects/chatresponse/ and https://docs.puter.com/AI/chat/ . Normalized non-streamed responses document finish_reason and numeric usage.cost. Only stop + zero cost is accepted; missing/unknown metadata fails with a visible explanation. This is documented compatibility, not live proof for each provider. No actual generation or private-report transfer was performed.
+
+Google Cloud access check: console.cloud.google.com requires account sign-in; no saved Google login or connected 1Password was available. Existing Cloud project/client existence remains unknown. Select the intended Google account before sign-in; request secrets through a secure vault link, never chat.

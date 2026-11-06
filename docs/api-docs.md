@@ -17,3 +17,7 @@ All document and ask endpoints require Authorization: Bearer <Supabase access to
 Input limits: question 2-4000 characters, at most100 document IDs. See source config for upload/page limits. Upload/ask limiter is per-user/per-process, not distributed; no rate-limit headers are promised.
 
 Errors use success=false, error {code,message,title,details} and meta {timestamp,path}. The content type may be application/problem+json, but the body is this app-specific envelope, not an exact RFC9457 object. Framework HTTP exceptions may use detail. Never rely on old specimen responses as live health evidence.
+
+## Optional browser AI
+
+GET /ask/browser-models lists the application allowlist (catalog existence checked before questions). POST /ask/browser-context requires consent=true plus an exact allowed model, performs owner-scoped retrieval and zero-cost catalog verification, and returns messages/citations plus signed receipt (or fixed no-context answer). POST /ask/browser-validate accepts receipt/answer and checks owner, expiry, citation markers and current source visibility. It returns semantic_support_verified=false. These endpoints do not authenticate Puter output as genuine, prove financial correctness or execute a model themselves. Both require the user's Supabase token and use the per-process limiter.

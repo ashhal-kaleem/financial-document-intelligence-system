@@ -17,7 +17,7 @@ The financial-rag app database was rebuilt with approval on 6 November 2026 usin
 
 ## Architecture
 
-Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. The backend uses Hugging Face feature extraction and a configured Groq model. OpenRouter fallback is disabled unless explicitly enabled and configured. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
+Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. Retrieval uses Hugging Face feature extraction. The optional workspace AI flow uses a separate Puter Connect popup and free-model allowlist; backend Groq streaming remains an explicit API route, not an automatic Puter failure fallback. OpenRouter fallback is disabled unless explicitly enabled and configured. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
 
 Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel's copied API runs inline, not a production durable-worker target. The frontend can run on Vercel and use a separately hosted long-running backend. No infrastructure has been provisioned by this branch.
 
@@ -35,7 +35,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The frontend currently has Google OAuth UI; a working auth route and hosted configuration decision remain pending. Email/password + production SMTP is an alternative, not implemented by this change.
+The frontend has Google OAuth UI plus an opt-in Puter AI authorization flow; hosted Google OAuth client/provider/redirect setup remains pending. Email/password + production SMTP is an alternative, not implemented by this change.
 
 ## Offline verification
 

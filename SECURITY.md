@@ -18,3 +18,7 @@ No public security contact or response-time commitment has been configured. Use 
 Private bucket and working login need hosted setup. Live two-user isolation, full deletion and crash recovery need separate target/usage approval. Migration 0004 is a new, unapplied two-phase deletion proposal. Deploying the new deletion code without it will fail closed, not silently leave files behind. Busy uploads/processing cannot be deleted until settled. Storage failures retain a deleting row for retry; no success is shown before both systems confirm.
 
 No real provider quality/cost, dependency audit, production observability or backup/restore drill is claimed. See docs/production-readiness.md and deployment.md. Rotate exposed keys through the provider, not through committed files.
+
+## Puter boundary
+
+Third-party SDK loads only after explicit user choice. Never send a Supabase/service-role key to Puter. Retrieved financial text and metadata leave FDIS only through the separately disclosed browser ask path. A signed receipt is not provenance verification of a client-supplied answer. Marker checks are not a semantic safety certificate. Provider is pinned and fallback=false; free model rates are checked against catalog per ask, and result must report zero cost, but price changes are not atomically prevented. No generation was executed during this implementation.

@@ -46,3 +46,13 @@ class AskRequest(BaseModel):
     document_ids: Optional[List[UUID]] = Field(default=None, max_length=100, description="Optional document filter")
     model: Optional[str] = Field(default=None, max_length=120, description="Configured model only")
 
+
+
+class BrowserAIRequest(AskRequest):
+    model: str = Field(..., max_length=120)
+    consent: bool = False
+
+
+class BrowserAIValidation(BaseModel):
+    receipt: str = Field(..., max_length=100000)
+    answer: str = Field(..., min_length=1, max_length=60000)
