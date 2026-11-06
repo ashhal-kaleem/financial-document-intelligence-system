@@ -18,16 +18,14 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Copy dependency specifications
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
+COPY src/ ./src/
 
 # Install python dependencies
 RUN uv sync --frozen --no-dev
 
-# Copy backend source code
-COPY src/ ./src/
-COPY README.md ./
 
 EXPOSE 8000
 
 # Start FastAPI via uvicorn binding to Render PORT
-CMD ["sh", "-c", "uv run uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uv run --frozen --no-dev uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
