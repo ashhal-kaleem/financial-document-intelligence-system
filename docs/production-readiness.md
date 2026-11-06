@@ -67,3 +67,7 @@ Live Google sign-in currently navigates to Supabase HTTP400: provider is not ena
 - Citation inspector opens the PDF on explicit action; removed misleading “Verified Ground Truth” label. Successful citation-ID checks do not establish factual support.
 - Local Playwright tests against a synthetic session/API/AI fixture verify direct/refresh/Back/Forward/same-active-tab, responsive guest/scope/unknown states, delete failure+retry, invalid upload, draft/error/cancel/history clear. These are local regression tests, not hosted Google, storage, AI, isolation or financial-quality proof. No fixture is included in production pages.
 - Source migrations 0004/0005 now propose strict owned/non-sample direct reads. Applied twice only in disposable local Postgres with own-vs-other-vs-sample checks. No hosted schema/policy/bucket mutation is included in a code deployment.
+
+## Duplicate controls cleanup (6 November, after 5:31 pm clarification)
+
+Retained the chosen top rounded coloured Overview/Documents/Q&A tabs and all route/history behavior. Q&A now has one New conversation action in its header; the recent-question sidebar is shown only to signed-in users and has no duplicate reset button. Empty Documents/Overview use the empty-state upload action instead of repeating another upload action. Contextual guest Sign in and explicit Back to documents are intentional recovery actions, not a second tabs bar; preserved. No unsupported tabs/features restored and no auth/storage/schema changes.

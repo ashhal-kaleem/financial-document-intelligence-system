@@ -145,3 +145,12 @@ test('disabled Google provider stays in app without starting OAuth',async()=>{
  const {error}=await configured.signInWithGoogle();assert.match(error.message,/not enabled/);assert.equal(oauthCalls,0);
  delete process.env.NEXT_PUBLIC_SUPABASE_URL;delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 });
+test('one New conversation control, chosen rounded top navigation and Back path stay intact',()=>{
+ const chrome=fs.readFileSync('src/components/shell/app-chrome.tsx','utf8');
+ const chat=fs.readFileSync('src/components/chat/chat-interface.tsx','utf8');
+ assert.doesNotMatch(chrome,/>New conversation<\/button>/);
+ assert.equal((chat.match(/>New conversation<\/button>/g)||[]).length,1);
+ assert.match(chrome,/aria-label="Workspace"/);assert.match(chrome,/rounded-full/);assert.match(chrome,/bg-\[#CDEFA6\]/);
+ assert.match(chat,/href="\/documents"[^>]*>← Back to documents/);
+ assert.match(chrome,/if \(!user\) return null/);
+});
