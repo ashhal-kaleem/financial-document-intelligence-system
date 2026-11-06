@@ -64,7 +64,7 @@ async function authHeaders(extra: Record<string, string> = {}): Promise<Record<s
 export async function fetchDocuments(): Promise<DocumentItem[]> {
   if (!(await getAccessToken())) return [];
   const res = await fetch(`${API_BASE}/documents`, { cache: "no-store", headers: await authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch documents.");
+  if (!res.ok) throw new Error(res.status === 401 ? "Your session expired. Sign in again." : "Documents could not load. The Free server may be waking up; retry shortly.");
   const json = await res.json();
   return json.data || [];
 }
@@ -83,7 +83,7 @@ export async function uploadDocument(file: File): Promise<DocumentItem> {
 
 export async function deleteDocument(id: string): Promise<boolean> {
   const res = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE", headers: await authHeaders() });
-  if (!res.ok) throw new Error("Delete failed. Please retry.");
+  if (!res.ok) throw new Error(res.status === 409 ? "Document is busy processing. Wait and retry deletion." : res.status === 401 ? "Your session expired. Sign in again before retrying deletion." : "Delete failed. Please retry. The document has not been confirmed deleted.");
   return true;
 }
 

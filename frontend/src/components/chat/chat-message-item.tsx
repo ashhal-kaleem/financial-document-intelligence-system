@@ -34,7 +34,7 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
   if (!isAssistant) {
     return (
       <div className="flex items-start justify-end gap-3">
-        <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-[#141414] px-4 py-3 text-[13px] leading-relaxed text-white">
+        <div className="max-w-[80%] break-words rounded-2xl rounded-tr-md bg-[#141414] px-4 py-3 text-[13px] leading-relaxed text-white">
           {message.content}
         </div>
         <AvatarCircle name={currentUser?.name || "Guest"} className="size-8 shrink-0 text-[10px]" />
@@ -47,7 +47,7 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
       <Orb kind="warm" className="mt-1 size-9 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="rounded-2xl rounded-tl-md bg-white p-5" style={{ border: "1px solid #F0EEF6", boxShadow: "0 6px 20px #4C1D9508" }}>
-          <div className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#1A1A1A]">
+          <div className="whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-[#1A1A1A]">
             {message.content}
           </div>
           {message.citations && message.citations.length > 0 && (
@@ -55,16 +55,7 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
               {message.citations.map((c, i) => (
                 <button
                   key={`${c.document}-${c.page}-${i}`}
-                  onClick={() => {
-                    onCitationClick?.(c);
-                    openPdfViewer({
-                      documentId: c.documentId,
-                      filename: c.document,
-                      pageNumber: c.page,
-                      chunkId: c.chunk_id,
-                      highlightedText: c.snippet || "",
-                    });
-                  }}
+                  onClick={() => onCitationClick?.(c)}
                   className="flex items-center gap-1 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[10px] font-medium text-[#5A6474] transition-colors hover:bg-[#E4EBF3] active:scale-[0.98] tabular-nums"
                   title={`Open page ${c.page} in the PDF viewer`}
                 >

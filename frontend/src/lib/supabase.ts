@@ -3,6 +3,7 @@
  * @client Browser Supabase Client for Authentication & Row Level Security
  * @invariant Strictly < 150 lines
  */
+import { safeReturnPath } from "@/lib/workspace-routes";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // No hardcoded project: sign-in works only when these are set (see frontend/.env.example).
@@ -23,10 +24,15 @@ export async function signInWithGoogle(): Promise<{ error: Error | null }> {
   const supabase = getSupabase();
   if (!supabase) return { error: new Error("Sign-in is not configured for this deployment.") };
   try {
+    // Public provider settings prevent sending people to a known-disabled provider error page.
+    const settings = await fetch(`${supabaseUrl}/auth/v1/settings`, { headers: { apikey: supabaseAnonKey as string }, signal: AbortSignal.timeout(10000) });
+    if (!settings.ok) return { error: new Error("Sign-in service is unavailable. Retry shortly.") };
+    const providers = await settings.json();
+    if (providers.external?.google !== true) return { error: new Error("Google sign-in is not enabled yet. Your workspace has not been opened. Please try again after setup is complete.") };
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        redirectTo: typeof window !== "undefined" ? window.location.origin + safeReturnPath(window.location.pathname + window.location.search) : undefined,
       },
     });
     return { error: error ? new Error(error.message) : null };
@@ -36,7 +42,8 @@ export async function signInWithGoogle(): Promise<{ error: Error | null }> {
 }
 
 export async function signOutUser(): Promise<void> {
-  await getSupabase()?.auth.signOut();
+  const result = await getSupabase()?.auth.signOut();
+  if (result?.error) throw new Error("Sign out failed.");
 }
 
 export async function getAccessToken(): Promise<string | null> {

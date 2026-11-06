@@ -21,9 +21,9 @@ grant execute on function public.begin_document_delete(uuid,uuid) to service_rol
 -- A failed Storage delete remains retryable but is not available to retrieval or direct RLS reads.
 drop policy if exists documents_owner_read on public.documents;
 create policy documents_owner_read on public.documents for select to authenticated
-  using (status <> 'deleting' and (owner_id = auth.uid() or is_sample));
+  using (status <> 'deleting' and (owner_id = auth.uid() and not is_sample));
 drop policy if exists chunks_owner_read on public.chunks;
 create policy chunks_owner_read on public.chunks for select to authenticated using (exists (
   select 1 from public.documents d where d.id = chunks.document_id
-    and d.status <> 'deleting' and (d.owner_id = auth.uid() or d.is_sample)
+    and d.status <> 'deleting' and (d.owner_id = auth.uid() and not d.is_sample)
 ));

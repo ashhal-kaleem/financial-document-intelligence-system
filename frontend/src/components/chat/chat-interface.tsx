@@ -1,224 +1,50 @@
 "use client";
-
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessageItem } from "./chat-message-item";
 import { ChatInputBox } from "./chat-input-box";
 import { ChatSidebar } from "@/components/shell/app-chrome";
-import { Orb } from "@/components/shell/orbs";
 import { useFDISStore, Citation } from "@/store/useFDISStore";
-import { StreamEventPayload } from "@/lib/api";
+import { useOwnedDocuments } from "@/hooks/useOwnedDocuments";
+import { DocumentState } from "@/components/workspace/document-state";
 import { askPuter } from "@/lib/puter-ai";
 import { AIConnection } from "./ai-connection";
 import { loadChatHistory, saveChatHistory, ChatMessage } from "@/lib/chat-history";
-import { Clock, GitCompareArrows, CheckCircle2, MoreHorizontal } from "lucide-react";
-
-interface ChatInterfaceProps {
-  documentCount: number;
-  onDocumentUploaded?: () => void;
-}
-
-const QUICK_ACTIONS = [
-  { icon: Clock, title: "Summarize a filing", sub: "Key points from any 10-K, with page citations", prompt: "Summarize the key points of the latest filing" },
-  { icon: GitCompareArrows, title: "Find evidence", sub: "Find a passage in your selected document", prompt: "Find the passage describing the principal business risks" },
-  { icon: CheckCircle2, title: "Check a figure", sub: "Trace any number to its source page", prompt: "Check the reported services revenue figure" },
-];
-
-export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfaceProps) {
-  const [aiConnected, setAIConnected] = useState(false);
-  const [aiModel, setAIModel] = useState("");
-  const [aiNote, setAINote] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [draft, setDraft] = useState("");
-  const requestRef = useRef<AbortController | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const setActiveCitation = useFDISStore((s) => s.setActiveCitation);
-  const selectedDocument = useFDISStore((s) => s.selectedDocument);
-  const currentUser = useFDISStore((s) => s.currentUser);
-  const setExportModalOpen = useFDISStore((s) => s.setExportModalOpen);
-
-  useEffect(() => {
-    requestRef.current?.abort();
-    setIsStreaming(false);
-    setDraft("");
-    let active = true;
-    setMessages([]);
-    loadChatHistory(currentUser?.id).then((history) => {
-      if (active) setMessages(history);
-    });
-    return () => { active = false; requestRef.current?.abort(); };
-  }, [currentUser?.id]);
-
-  useEffect(() => {
-    if (!aiConnected) { requestRef.current?.abort(); requestRef.current = null; setIsStreaming(false); }
-  }, [aiConnected]);
-
-  const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  const handleSend = useCallback(async (content: string) => {
-    if (requestRef.current && !requestRef.current.signal.aborted) return;
-    if (!currentUser) { useFDISStore.getState().setAuthModalOpen(true); return; }
-    if (!aiConnected || !aiModel) { setAINote("Choose a free model and connect AI before asking."); return; }
-    setAINote("");
-    const ownerId = currentUser.id;
-    const controller = new AbortController();
-    requestRef.current = controller;
-    const isCurrent = () => useFDISStore.getState().currentUser?.id === ownerId && !controller.signal.aborted;
-    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content, timestamp: new Date().toISOString() };
-    const assistantId = `assistant-${Date.now()}`;
-    setMessages((prev) => [...prev, userMsg, { id: assistantId, role: "assistant", content: "", timestamp: new Date().toISOString() }]);
-    setIsStreaming(true);
-
-    try {
-      const targetDocIds = selectedDocument ? [selectedDocument.id] : undefined;
-      let fullContent = "";
-      await askPuter(content, targetDocIds || [], aiModel, (event: StreamEventPayload) => {
-        if (!isCurrent()) return;
-        if (event.event === "citations") {
-          const citations: Citation[] = (event.citations || []).map((c) => ({
-            documentId: c.document_id,
-            document: c.filename,
-            page: c.page,
-            chunk_id: String(c.chunk_index),
-            relevance: c.similarity,
-            snippet: c.snippet,
-          }));
-          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, citations } : m)));
-        } else if (event.event === "token" && event.token) {
-          fullContent += event.token;
-          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)));
-        } else if (event.event === "error") {
-          throw new Error(event.detail || "stream error");
-        }
-      }, controller.signal);
-      if (!isCurrent()) return;
-      setMessages((current) => {
-        saveChatHistory(current, ownerId);
-        return current;
-      });
-    } catch (error) {
-      if (!isCurrent()) return;
-      const detail = error instanceof Error ? error.message : "The answer could not be completed or verified. Please retry.";
-      setMessages((prev) => prev.map((m) =>
-        m.id === assistantId
-          ? { ...m, content: detail, citations: [] }
-          : m
-      ));
-    } finally {
-      if (requestRef.current === controller) {
-        requestRef.current = null;
-        setIsStreaming(false);
-      }
-    }
-  }, [selectedDocument, currentUser, aiConnected, aiModel]);
-
-  const history = messages.filter((m) => m.role === "user").map((m) => m.content).slice(-12).reverse();
-  const empty = messages.length === 0;
-
-  return (
-    <div className="v8-lilac flex h-full overflow-hidden">
-      <ChatSidebar
-        history={history}
-        onPick={(q) => {
-          if (q) setDraft(q);
-          else setMessages([]);
-        }}
-      />
-
-      {/* main chat card */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-[#FDFDFD]">
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid #F0EEF6" }}>
-          <span className="text-[13px] font-semibold text-[#0A0A0A]">FDIS</span>
-          <div className="flex items-center gap-2">
-            <button className="flex size-8 items-center justify-center rounded-full hover:bg-[#F1EDF8]" aria-label="More">
-              <MoreHorizontal className="size-4 text-[#6E6A78]" />
-            </button>
-            <button
-              onClick={() => setExportModalOpen(true)}
-              className="rounded-full bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#0A0A0A] active:scale-[0.98]"
-              style={{ border: "1px solid #E5E2EC" }}
-            >
-              Export chat
-            </button>
-            <button
-              onClick={() => setExportModalOpen(true)}
-              className="rounded-full bg-[#141414] px-3.5 py-1.5 text-[11px] font-medium text-white active:scale-[0.98]"
-            >
-              Export memo
-            </button>
-          </div>
-        </div>
-
-        <AIConnection connected={aiConnected} setConnected={setAIConnected} model={aiModel} setModel={setAIModel} />
-        {aiNote && <p role="status" className="px-5 py-2 text-xs text-amber-800">{aiNote}</p>}
-        {empty ? (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-start gap-5 overflow-y-auto px-8 py-8">
-            <Orb kind="purple" className="hidden size-36 sm:block" />
-            <div className="text-center">
-              <p className="bg-gradient-to-r from-[#6D5BD0] to-[#A284EC] bg-clip-text text-[15px] font-semibold text-transparent">
-                Hello, {(currentUser?.name || "Guest").split(" ")[0]}
-              </p>
-              <h2 className="mt-1 text-[30px] font-medium tracking-tight text-[#0A0A0A]">How can I help with your filings?</h2>
-            </div>
-            <ChatInputBox
-              onSend={handleSend}
-              isStreaming={isStreaming}
-              
-              onDocumentUploaded={onDocumentUploaded}
-              draft={draft}
-              setDraft={setDraft}
-              hero
-            />
-            <div className="grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
-              {QUICK_ACTIONS.map((a) => (
-                <button
-                  key={a.title}
-                  onClick={() => handleSend(a.prompt)}
-                  
-                  className="rounded-2xl bg-[#FCFCFC] p-4 text-left transition-shadow hover:shadow-md active:scale-[0.99] disabled:opacity-50"
-                  style={{ border: "1px solid #F0EEF6" }}
-                >
-                  <a.icon className="size-4 text-[#6E6A78]" strokeWidth={1.75} />
-                  <p className="mt-2.5 text-[13px] font-semibold text-[#0A0A0A]">{a.title}</p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-[#A999C4]">{a.sub}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-              <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-6">
-                {messages.map((msg) => (
-                  <ChatMessageItem key={msg.id} message={msg} onCitationClick={(c) => setActiveCitation(c)} />
-                ))}
-                {isStreaming && (
-                  <div className="flex items-center gap-2.5">
-                    <Orb kind="warm" className="size-7 animate-pulse" />
-                    <span className="text-xs text-[#A999C4]">Preparing answer and checking source markers...</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="px-6 pb-5">
-              <ChatInputBox
-                onSend={handleSend}
-                isStreaming={isStreaming}
-                
-                onDocumentUploaded={onDocumentUploaded}
-                draft={draft}
-                setDraft={setDraft}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+export function ChatInterface() {
+ const router=useRouter(); const params=useSearchParams(); const documentId=params.get("document") || "";
+ const {documents,state,retry}=useOwnedDocuments(); const ready=documents.filter(d=>d.status==="ready"); const document=ready.find(d=>d.id===documentId);
+ const {currentUser,setSelectedDocument,setActiveCitation}=useFDISStore();
+ const [aiConnected,setAIConnected]=useState(false); const [aiModel,setAIModel]=useState(""); const [messages,setMessages]=useState<ChatMessage[]>([]); const [draft,setDraftState]=useState(""); const [error,setError]=useState(""); const [isStreaming,setIsStreaming]=useState(false); const [loaded,setLoaded]=useState(false);
+ const previousMessages=useRef<ChatMessage[]>([]);const requestRef=useRef<AbortController|null>(null);const owner=currentUser?.id;const scope=documentId; const storageScope=scope || "unselected";
+ const setDraft=useCallback((v:string)=>{ useFDISStore.getState().setChatDraft(storageScope,v);setDraftState(v); },[storageScope]);
+ useEffect(()=>{setIsStreaming(false);setDraftState(useFDISStore.getState().chatDrafts[storageScope]||"");setError("");setLoaded(false);setMessages([]);let active=true;loadChatHistory(owner,storageScope).then(m=>{if(active){setMessages(m);setLoaded(true);}});return()=>{active=false;requestRef.current?.abort();requestRef.current=null;};},[owner,storageScope]);
+ useEffect(()=>{setSelectedDocument(document?{id:document.id,filename:document.filename}:null);},[document?.id,document?.filename,setSelectedDocument]);
+ useEffect(()=>{if(!aiConnected){requestRef.current?.abort();requestRef.current=null;setIsStreaming(false);}},[aiConnected]);
+ const handleSend=async(content:string)=>{
+  if(requestRef.current||!owner||!document||!loaded)return;
+  if(!aiConnected||!aiModel){setError("Select a free model and connect AI first. Your question is still here.");return;}
+  const controller=new AbortController();requestRef.current=controller;setError("");setIsStreaming(true);
+  const userMsg:ChatMessage={id:`user-${Date.now()}`,role:"user",content,timestamp:new Date().toISOString()};const assistantId=`assistant-${Date.now()}`;const base=[...messages,userMsg];let answer:ChatMessage={id:assistantId,role:"assistant",content:"",timestamp:new Date().toISOString()};
+  const isCurrent=()=>useFDISStore.getState().currentUser?.id===owner&&requestRef.current===controller&&!controller.signal.aborted;
+  previousMessages.current=messages;setMessages([...base,answer]);
+  try{await askPuter(content,[document.id],aiModel,event=>{if(!isCurrent())return;if(event.event==="citations"){answer={...answer,citations:(event.citations||[]).map(c=>({documentId:c.document_id,document:c.filename,page:c.page,chunk_id:String(c.chunk_index),relevance:c.similarity,snippet:c.snippet} as Citation))};}else if(event.event==="token"){answer={...answer,content:answer.content+(event.token||"")};}else if(event.event==="error"){throw Error(event.detail||"Answer failed.");}setMessages([...base,answer]);},controller.signal);
+  if(!isCurrent())return;await saveChatHistory([...base,answer],owner,storageScope);setDraft("");
+  }catch(err){if(isCurrent()){setMessages(messages);setError(err instanceof Error?err.message:"Answer could not be verified. Retry.");setDraft(content);}}
+  finally{if(requestRef.current===controller){requestRef.current=null;setIsStreaming(false);}}
+ };
+ const cancel=()=>{requestRef.current?.abort();requestRef.current=null;setIsStreaming(false);setMessages(previousMessages.current);setError("Stopped waiting. A provider request already sent may still finish. Your draft is preserved.");};
+ const clear=()=>{if(isStreaming)return;setMessages([]);setDraft("");setError("");saveChatHistory([],owner,storageScope);};
+ const canAsk=Boolean(owner&&document&&loaded&&aiConnected&&aiModel);
+ return <div className="v8-lilac flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[#FDFDFD]">
+ <ChatSidebar history={messages.filter(m=>m.role==="user").map(m=>m.content).reverse()} onPick={q=>q?setDraft(q):clear()}/>
+ <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+ <div className="shrink-0 border-b border-[#ECE8F6] px-4 py-3 sm:px-6"><div className="flex flex-wrap items-center justify-between gap-3"><Link href="/documents" className="min-h-11 py-3 text-sm text-[#60449B] underline">← Back to documents</Link><button disabled={isStreaming} onClick={clear} className="min-h-11 rounded-full border px-4 text-xs disabled:opacity-40">New conversation</button></div><h1 className="text-xl font-semibold">Document Q&A</h1><p className="mt-2 text-xs text-[#6B6278]">Browser-only conversation. New conversation clears its saved messages. No cloud history or export yet.</p></div>
+ {state!=="ready"?<div className="overflow-y-auto p-5"><DocumentState state={state} retry={retry}/>{state==="empty"&&<Link className="mt-4 inline-block underline" href="/documents">Upload a PDF in Documents</Link>}</div>:<>
+ <div className="shrink-0 border-b border-[#ECE8F6] p-4 sm:px-6"><label className="block text-xs font-medium" htmlFor="question-document">1. Choose a ready PDF</label><select id="question-document" value={document?.id||""} disabled={isStreaming} onChange={e=>router.push(e.target.value?`/qa?document=${encodeURIComponent(e.target.value)}`:"/qa")} className="mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm"><option value="">Choose one document</option>{ready.map(d=><option key={d.id} value={d.id}>{d.filename}</option>)}</select>{documentId&&!document&&<p role="alert" className="mt-2 text-xs text-amber-800">This document is unavailable, not yours, or not ready. Choose a ready PDF. No question will use an implicit all-document scope.</p>}{!ready.length&&<p className="mt-2 text-xs">No ready PDF yet. Check processing status in <Link href="/documents" className="underline">Documents</Link>.</p>}</div>
+ {document&&<AIConnection connected={aiConnected} setConnected={setAIConnected} model={aiModel} setModel={setAIModel}/>}
+ <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6" aria-live="polite"><div className="mx-auto flex max-w-3xl flex-col gap-5">{!messages.length?<p className="text-sm text-[#6B6278]">{document?"2. Connect AI, then ask a question about this PDF. Answers must be checked against the cited page.":"Start by choosing a ready PDF. Your question will only use that document."}</p>:messages.map(msg=><ChatMessageItem key={msg.id} message={msg} onCitationClick={setActiveCitation}/>)}{isStreaming&&<p role="status" className="text-xs">Preparing answer and checking source markers...</p>}{error&&<p role="alert" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}</div></div>
+ <div className="shrink-0 px-3 pb-4 sm:px-6">{isStreaming&&<button onClick={cancel} className="mb-2 min-h-11 rounded-full border px-4 text-sm">Cancel answer</button>}<ChatInputBox onSend={handleSend} isStreaming={isStreaming} disabled={!canAsk} draft={draft} setDraft={setDraft}/></div>
+ </>}
+ </main></div>;
 }

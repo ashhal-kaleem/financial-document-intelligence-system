@@ -59,8 +59,8 @@ def as_role(role, uid=None):
     if uid: k.execute("select set_config('request.jwt.claim.sub', %s, false)", (uid,))
     return k
 k = as_role("authenticated", A); k.execute("select filename from documents order by filename")
-check("RLS: user A sees own + sample, not B", [r[0] for r in k.fetchall()] == ["a.pdf", "s.pdf"])
-k.execute("select count(*) from chunks"); check("RLS: user A sees only own+sample chunks", k.fetchone()[0] == 2)
+check("RLS: user A sees own only, not samples or B", [r[0] for r in k.fetchall()] == ["a.pdf"])
+k.execute("select count(*) from chunks"); check("RLS: user A sees only own chunks", k.fetchone()[0] == 1)
 k = as_role("anon"); 
 try:
     k.execute("select count(*) from documents"); denied = False

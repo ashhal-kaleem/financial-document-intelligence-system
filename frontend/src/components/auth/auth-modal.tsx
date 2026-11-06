@@ -1,5 +1,6 @@
 "use client";
 
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { X, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
 import { useFDISStore } from "@/store/useFDISStore";
@@ -16,50 +17,43 @@ export function AuthModal() {
     setErrorMsg(null);
     const { error } = await signInWithGoogle();
     if (error) {
-      setErrorMsg("Google sign-in could not start. Try again in a moment.");
+      setErrorMsg(error.message || "Google sign-in could not start. Try again in a moment.");
       setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
-    await signOutUser();
-    setCurrentUser(null);
-    setAuthModalOpen(false);
+    setLoading(true); setErrorMsg(null);
+    try { await signOutUser(); setCurrentUser(null); setAuthModalOpen(false); }
+    catch { setErrorMsg("Sign out failed. Retry before leaving this shared device."); }
+    finally { setLoading(false); }
   };
 
   if (!isAuthModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C1F2E]/25 backdrop-blur-sm" onClick={() => setAuthModalOpen(false)}>
-      <div
-        className="v8-min w-[92vw] max-w-sm rounded-[28px] bg-white p-8 shadow-2xl"
-        style={{ border: "1px solid #EDF2F7" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-end">
-          <button onClick={() => setAuthModalOpen(false)} className="fam-mut hover:fam-ink" aria-label="Close sign in">
-            <X className="size-4" />
-          </button>
-        </div>
+    <Dialog open={isAuthModalOpen} onOpenChange={setAuthModalOpen}>
+      <DialogContent aria-labelledby="auth-title" aria-describedby="auth-description" className="v8-min w-[92vw] max-w-sm max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-8 shadow-2xl">
         <div className="-mt-4 flex flex-col items-center">
           <Orb kind="warm" className="size-24" />
           {currentUser ? (
             <>
-              <h2 className="mt-6 text-[18px] font-semibold fam-ink">{currentUser.name || "Signed in"}</h2>
-              <p className="mt-1 flex items-center gap-1.5 text-[12px] fam-sub">
+              <h2 id="auth-title" className="mt-6 text-[18px] font-semibold fam-ink">{currentUser.name || "Signed in"}</h2>
+              <p id="auth-description" className="mt-1 flex items-center gap-1.5 text-[12px] fam-sub">
                 <CheckCircle2 className="size-3.5 text-[#1F8A4C]" /> Active session
               </p>
               <button
+                disabled={loading}
                 onClick={handleSignOut}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#1C1F2E] py-3 text-[13px] font-medium text-white transition-transform active:scale-[0.98]"
               >
                 <LogOut className="size-3.5" /> Sign out
-              </button>
+              </button>{errorMsg && <p role="alert" className="mt-3 text-sm text-red-800">{errorMsg}</p>}
             </>
           ) : (
             <>
-              <h2 className="mt-6 text-[20px] font-semibold fam-ink">Sign in to FDIS</h2>
-              <p className="mt-1.5 max-w-[260px] text-center text-[12px] leading-relaxed fam-sub">
+              <h2 id="auth-title" className="mt-6 text-[20px] font-semibold fam-ink">Sign in to FDIS</h2>
+              <p id="auth-description" className="mt-1.5 max-w-[260px] text-center text-[12px] leading-relaxed fam-sub">
                 Access your private filings and source citations. Chat history stays in this browser.
               </p>
               <button
@@ -84,7 +78,7 @@ export function AuthModal() {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

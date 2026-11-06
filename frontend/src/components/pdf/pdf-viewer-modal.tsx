@@ -51,10 +51,10 @@ export function PdfViewerModal() {
   return (
     <Dialog open={pdfViewer.isOpen} onOpenChange={(open) => !open && closePdfViewer()}>
       <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col bg-background/95 backdrop-blur-xl border-border/40 overflow-hidden shadow-2xl">
-        <DialogHeader className="px-5 py-3 border-b border-border/30 flex flex-row items-center justify-between shrink-0">
+        <DialogHeader className="px-5 py-3 border-b border-border/30 flex flex-row flex-wrap gap-2 items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <FileText className="size-4 text-primary" />
-            <DialogTitle className="text-sm font-semibold truncate max-w-[280px] sm:max-w-md">
+            <DialogTitle className="text-sm font-semibold truncate max-w-[140px] sm:max-w-md">
               {pdfViewer.filename || "Document Viewer"}
             </DialogTitle>
             <Badge variant="outline" className="text-xs font-mono tabular-nums bg-primary/10 text-primary border-primary/20">
@@ -122,13 +122,13 @@ export function PdfViewerModal() {
             )}
           </div>
 
-          <div className="w-full md:w-80 lg:w-96 flex flex-col bg-card/10 shrink-0">
+          <div className="max-h-[35vh] md:max-h-none w-full md:w-80 lg:w-96 flex flex-col bg-card/10 shrink-0">
             <div className="px-4 py-3 border-b border-border/20 bg-card/20 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Cited Evidentiary Chunk
               </span>
               <Badge variant="secondary" className="text-[10px] font-mono tabular-nums">
-                Verified Ground Truth
+                Source passage
               </Badge>
             </div>
             <ScrollArea className="flex-1 p-4">
@@ -142,7 +142,7 @@ export function PdfViewerModal() {
                   </div>
                 ) : (
                   <div className="p-3.5 rounded-lg border border-border/30 bg-muted/10 text-xs text-muted-foreground font-mono leading-relaxed">
-                    Source citation passage from Page {page} of {pdfViewer.filename}.
+                    No source passage was returned. Check Page {page} in the PDF.
                   </div>
                 )}
               </div>

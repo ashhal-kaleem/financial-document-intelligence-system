@@ -61,12 +61,14 @@ test('failed deletion is not reported as success', async () => {
 test('account switch clears document, citation and modal state', () => {
   const { useFDISStore: store } = load('src/store/useFDISStore.ts');
   store.getState().setCurrentUser({ id: 'alice' });
+  store.getState().setChatDraft('secret-doc','private draft');
   store.getState().setSelectedDocument({ id: 'secret-doc', filename: 'private.pdf' });
   store.getState().openPdfViewer({ documentId: 'secret-doc', filename: 'private.pdf', pageNumber: 2 });
   store.getState().setUploadOpen(true);
   store.getState().setExportModalOpen(true);
   store.getState().setCurrentUser({ id: 'bob' });
   const state = store.getState();
+  assert.deepEqual(state.chatDrafts, {});
   assert.equal(state.selectedDocument, null);
   assert.equal(state.activeCitation, null);
   assert.equal(state.pdfViewer.isOpen, false);
@@ -101,4 +103,34 @@ test('production screens contain no seeded financial records or fake activity fa
   assert.equal(fs.existsSync('src/mocks'), false);
   assert.doesNotMatch(fs.readFileSync('src/components/shell/app-chrome.tsx', 'utf8'), /BellButton|SampleDataTag/);
   assert.doesNotMatch(fs.readFileSync('src/components/citations/citation-drawer.tsx', 'utf8'), /Evidence passage verified/);
+});
+
+test('real routes, canonical tab links and safe auth return paths', () => {
+ const {TAB_PATHS,tabForPath,safeReturnPath}=load('src/lib/workspace-routes.ts');
+ for(const [tab,path] of Object.entries(TAB_PATHS)) {
+  assert.equal(tabForPath(path),tab);
+  assert.equal(fs.existsSync(`src/app/(workspace)${path}/page.tsx`),true);
+ }
+ for(const invalid of ['https://evil.invalid','//evil.invalid','/unknown','javascript:alert(1)']) assert.equal(safeReturnPath(invalid),'/workspace');
+ assert.equal(safeReturnPath('/qa?question=private&access_token=secret'),'/qa');
+ const id='12345678-1234-1234-1234-123456789abc';
+ assert.equal(safeReturnPath('/qa?document='+id),'/qa?document='+id);
+ assert.doesNotMatch(fs.readFileSync('src/store/useFDISStore.ts','utf8'),/activeTab:|setActiveTab:/);
+ assert.match(fs.readFileSync('src/components/shell/app-chrome.tsx','utf8'),/href=\{TAB_PATHS\[item.id\]\}/);
+});
+test('history separates documents and clear persists', async()=>{
+ const data=new Map();global.window={};global.localStorage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+ const m=[{id:'x',role:'user',content:'private'}];
+ await history.saveChatHistory(m,'alice','one');
+ assert.deepEqual(await history.loadChatHistory('alice','two'),[]);
+ assert.deepEqual(await history.loadChatHistory('bob','one'),[]);
+ await history.saveChatHistory([],'alice','one');
+ assert.deepEqual(await history.loadChatHistory('alice','one'),[]);
+});
+test('Q&A has explicit document scope, no pre-accept draft deletion, and no no-op controls',()=>{
+ const chat=fs.readFileSync('src/components/chat/chat-interface.tsx','utf8');
+ assert.match(chat,/askPuter\(content,\[document.id\]/);
+ assert.match(chat,/Back to documents/);assert.match(chat,/Cancel answer/);
+ assert.doesNotMatch(fs.readFileSync('src/components/chat/chat-input-box.tsx','utf8'),/setDraft\(""\)/);
+ assert.doesNotMatch(chat,/MoreHorizontal|Export memo|Export chat/);
 });

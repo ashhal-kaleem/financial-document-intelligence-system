@@ -57,3 +57,13 @@ Overview totals now derive only from the authenticated non-sample document query
 The application API now filters every document lookup/list/retrieval scope to owner_id AND is_sample=false. Existing database sample/RLS policies are not changed by this source fix and still need a reviewed hosted policy decision. No database reset, private data deletion, storage or Google provider mutation is part of this cleanup.
 
 Live Google sign-in currently navigates to Supabase HTTP400: provider is not enabled. This blocks the actual private workspace flow. Google setup, private storage, migration0004, zero-cost embeddings, real PDF/citation/deletion tests and operations checks remain release gates. Render Free sleep remains incompatible with a claimed always-on worker.
+
+## Workspace route and recovery pass (6 November 2026)
+
+- Real Next.js `/workspace`, `/documents`, `/qa` routes replace independent active-tab state; `/` and legacy `/chat` redirect. Shared desktop/mobile navigation and account entry, explicit Q&A Back link. Unsupported analysis pages retain honest unavailable states and are outside primary nav.
+- Q&A requires one ready owned PDF selected in `?document=`. Unknown/inaccessible/not-ready scopes never silently expand to all documents. The server must still authorize IDs; URLs are not permission.
+- Browser history is account AND document scoped. New conversation clears its saved record. Memory-only drafts survive route navigation, clear on account boundaries, and are not removed until a verified answer succeeds. Context errors preserve draft; cancel restores prior messages. No real provider call was made in these checks.
+- Delete UI confirms, refuses busy processing rows, retains failure/retry and waits for server acknowledgement. Hosted migration 0004 is still required. Upload has PDF/25MB/empty validation and received-vs-ready status. Auth/upload use focus-trapped dialogs; Google disabled-provider preflight keeps the error inside the app.
+- Citation inspector opens the PDF on explicit action; removed misleading “Verified Ground Truth” label. Successful citation-ID checks do not establish factual support.
+- Local Playwright tests against a synthetic session/API/AI fixture verify direct/refresh/Back/Forward/same-active-tab, responsive guest/scope/unknown states, delete failure+retry, invalid upload, draft/error/cancel/history clear. These are local regression tests, not hosted Google, storage, AI, isolation or financial-quality proof. No fixture is included in production pages.
+- Source migrations 0004/0005 now propose strict owned/non-sample direct reads. Applied twice only in disposable local Postgres with own-vs-other-vs-sample checks. No hosted schema/policy/bucket mutation is included in a code deployment.

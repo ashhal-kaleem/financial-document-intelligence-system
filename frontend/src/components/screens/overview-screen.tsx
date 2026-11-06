@@ -2,11 +2,13 @@
 
 import { useOwnedDocuments } from "@/hooks/useOwnedDocuments";
 import { DocumentState } from "@/components/workspace/document-state";
+import { useWorkspaceNavigation } from "@/hooks/useWorkspaceNavigation";
 import { useFDISStore } from "@/store/useFDISStore";
 
 export function OverviewScreen() {
+  const { setActiveTab } = useWorkspaceNavigation();
   const { documents, state, retry } = useOwnedDocuments();
-  const { setActiveTab, setUploadOpen, setSelectedDocument } = useFDISStore();
+  const { setUploadOpen, setSelectedDocument } = useFDISStore();
   const ready = documents.filter((d) => d.status === "ready");
   return <main className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 pt-4 sm:px-8">
     <DocumentState state={state} retry={retry} />

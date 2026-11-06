@@ -39,6 +39,8 @@ export interface AuthUser {
 export type DashboardTab = "overview" | "chat" | "documents" | "statements" | "comparison" | "insights";
 
 interface FDISState {
+  chatDrafts: Record<string,string>;
+  setChatDraft: (scope:string,draft:string) => void;
   activeCitation: Citation | null;
   setActiveCitation: (citation: Citation | null) => void;
 
@@ -55,8 +57,6 @@ interface FDISState {
   isAuthModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
 
-  activeTab: DashboardTab;
-  setActiveTab: (tab: DashboardTab) => void;
 
   isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
@@ -69,6 +69,8 @@ interface FDISState {
 }
 
 export const useFDISStore = create<FDISState>((set) => ({
+  chatDrafts: {},
+  setChatDraft: (scope,draft) => set(state => ({chatDrafts:{...state.chatDrafts,[scope]:draft}})),
   activeCitation: null,
   setActiveCitation: (citation) => set({ activeCitation: citation }),
 
@@ -92,15 +94,13 @@ export const useFDISStore = create<FDISState>((set) => ({
   currentUser: null,
   setCurrentUser: (user) => set((state) => state.currentUser?.id === user?.id
     ? { currentUser: user }
-    : { currentUser: user, selectedDocument: null, activeCitation: null,
+    : { currentUser: user, chatDrafts: {}, selectedDocument: null, activeCitation: null,
         pdfViewer: { isOpen: false, filename: "", pageNumber: 1 },
         isUploadOpen: false, isExportModalOpen: false }),
 
   isAuthModalOpen: false,
   setAuthModalOpen: (open) => set({ isAuthModalOpen: open }),
 
-  activeTab: "overview",
-  setActiveTab: (tab) => set({ activeTab: tab }),
 
   isSidebarCollapsed: false,
   toggleSidebar: () =>
