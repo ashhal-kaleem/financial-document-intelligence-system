@@ -5,9 +5,11 @@ import { useFDISStore } from "@/store/useFDISStore";
 export function DocumentState({
   state,
   retry,
+  hideUpload = false,
 }: {
   state: string;
   retry: () => unknown;
+  hideUpload?: boolean;
 }) {
   const { setAuthModalOpen, setUploadOpen } = useFDISStore();
   if (state === "ready") return null;
@@ -31,7 +33,7 @@ export function DocumentState({
               ? "Loading your private library. Free hosting can take longer to start; this request will show a retry option if it takes too long."
               : "Upload a PDF to start. Only your uploaded documents will appear here."}
       </p>
-      {state !== "loading" && (
+      {state !== "loading" && !(state === "empty" && hideUpload) && (
         <button
           onClick={() =>
             state === "signed-out"

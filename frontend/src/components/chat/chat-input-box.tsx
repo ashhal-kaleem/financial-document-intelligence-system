@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { ArrowUp, Loader2, Sparkles, FileText } from "lucide-react";
+import { ArrowUp, Loader2, Sparkles, FileText, Paperclip } from "lucide-react";
 import { useFDISStore } from "@/store/useFDISStore";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,6 @@ interface ChatInputBoxProps {
   onSend: (message: string) => void;
   isStreaming: boolean;
   disabled?: boolean;
-  onDocumentUploaded?: () => void;
   draft: string;
   setDraft: (v: string) => void;
   hero?: boolean;
@@ -19,12 +18,12 @@ export function ChatInputBox({
   onSend,
   isStreaming,
   disabled = false,
-  onDocumentUploaded,
   draft,
   setDraft,
   hero = false,
 }: ChatInputBoxProps) {
   const selectedDocument = useFDISStore((s) => s.selectedDocument);
+  const { currentUser, setUploadOpen, setAuthModalOpen } = useFDISStore();
 
   const handleSubmit = useCallback(() => {
     const trimmed = draft.trim();
@@ -61,6 +60,16 @@ export function ChatInputBox({
         />
         <div className="flex flex-wrap items-center justify-between gap-2 px-1.5 pb-0.5">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-label="Attach PDF"
+              title="Upload a PDF"
+              disabled={isStreaming}
+              onClick={() => currentUser ? setUploadOpen(true) : setAuthModalOpen(true)}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full text-[#60449B] hover:bg-[#F1EDF8] disabled:opacity-40"
+            >
+              <Paperclip className="size-5" />
+            </button>
             <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-3 py-1.5 text-[11px] font-medium text-[#6D5BD0]">
               <Sparkles className="size-3" /> Document Q&A
             </span>

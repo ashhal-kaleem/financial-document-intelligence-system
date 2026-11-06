@@ -361,3 +361,13 @@ test("missing session, rejected auth, and malformed document response never repo
   global.fetch = async () => new Response("{}", {status:200});
   await assert.rejects(api.fetchDocuments(), /invalid response/);
 });
+
+
+test("Q&A upload belongs in composer attachment control, not an empty-state CTA", () => {
+  const chat = fs.readFileSync("src/components/chat/chat-interface.tsx", "utf8");
+  const input = fs.readFileSync("src/components/chat/chat-input-box.tsx", "utf8");
+  assert.match(chat, /retry=\{retry\} hideUpload/);
+  assert.doesNotMatch(chat, /Upload a PDF in Documents/);
+  assert.match(input, /aria-label="Attach PDF"/);
+  assert.match(input, /currentUser \? setUploadOpen\(true\) : setAuthModalOpen\(true\)/);
+});

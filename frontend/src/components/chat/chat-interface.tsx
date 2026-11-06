@@ -210,13 +210,8 @@ export function ChatInterface() {
           </p>
         </div>
         {state !== "ready" ? (
-          <div className="overflow-y-auto p-5">
-            <DocumentState state={state} retry={retry} />
-            {state === "empty" && (
-              <Link className="mt-4 inline-block underline" href="/documents">
-                Upload a PDF in Documents
-              </Link>
-            )}
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            <DocumentState state={state} retry={retry} hideUpload />
           </div>
         ) : (
           <>
@@ -307,6 +302,9 @@ export function ChatInterface() {
                 )}
               </div>
             </div>
+
+          </>
+        )}
             <div className="shrink-0 px-3 pb-4 sm:px-6">
               {isStreaming && (
                 <button
@@ -324,8 +322,6 @@ export function ChatInterface() {
                 setDraft={setDraft}
               />
             </div>
-          </>
-        )}
       </main>
     </div>
   );
