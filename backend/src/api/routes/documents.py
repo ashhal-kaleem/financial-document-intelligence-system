@@ -143,14 +143,6 @@ async def get_document_pdf(document_id: UUID, user: AuthUser = Depends(get_curre
     # Try fetching from Supabase storage
     pdf_bytes = await supabase.get_pdf_bytes(document_id, doc.filename)
     
-    # Fallback to local sample ONLY if document is explicitly marked as sample filing
-    if not pdf_bytes and doc.is_sample:
-        import os
-        sample_path = 'tests/sample_apple_10k.pdf'
-        if os.path.exists(sample_path):
-            with open(sample_path, 'rb') as f:
-                pdf_bytes = f.read()
-                
     if not pdf_bytes:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -1,3 +1,5 @@
+> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+
 # Historical build record
 
 Not current deployment, pricing, security or test evidence. See README.md and docs/production-readiness.md for current status.

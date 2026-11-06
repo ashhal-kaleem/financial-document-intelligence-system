@@ -13,9 +13,15 @@ export interface ChatMessage {
 }
 
 const CHAT_STORAGE_KEY = "fdis_chat_messages_v2:";
-function storageKey(ownerId: string, scope?: string) { return CHAT_STORAGE_KEY + ownerId + (scope ? ":doc:" + scope : ""); }
+function storageKey(ownerId: string, scope?: string) {
+  return CHAT_STORAGE_KEY + ownerId + (scope ? ":doc:" + scope : "");
+}
 
-export async function saveChatHistory(messages: ChatMessage[], ownerId?: string, scope?: string): Promise<void> {
+export async function saveChatHistory(
+  messages: ChatMessage[],
+  ownerId?: string,
+  scope?: string,
+): Promise<void> {
   if (typeof window === "undefined" || !ownerId) return;
   try {
     localStorage.removeItem("fdis_chat_messages_v1"); // Unscoped legacy history cannot safely be assigned to any user.
@@ -25,7 +31,10 @@ export async function saveChatHistory(messages: ChatMessage[], ownerId?: string,
   }
 }
 
-export async function loadChatHistory(ownerId?: string, scope?: string): Promise<ChatMessage[]> {
+export async function loadChatHistory(
+  ownerId?: string,
+  scope?: string,
+): Promise<ChatMessage[]> {
   if (typeof window === "undefined" || !ownerId) return [];
   try {
     localStorage.removeItem("fdis_chat_messages_v1");

@@ -4,9 +4,9 @@ Private PDF report retrieval and question-answering with streamed answers and pa
 
 ## Current status
 
-Work is on `backend-hardening`, not merged to `main` or deployed. Do not treat a passing unit test, a prompt, or an empty database as proof of production readiness. There is no guaranteed zero-hallucination, latency, uptime or zero-cost claim.
+Source is merged to main. Frontend is deployed on Vercel Hobby and backend on Render Free. Deployment is not production certification: Google sign-in setup, private documents bucket, hosted migrations 0004/0005 and real end-to-end acceptance remain pending. No guaranteed zero-hallucination, latency, uptime or zero-cost claim.
 
-The financial-rag app database was rebuilt with approval on 6 November 2026 using migrations 0001-0003. Verification found empty documents/chunks tables, owner policies, queue functions and UUID document linkage. Auth settings and storage were not changed. New migration 0004 (safe deletion) is source-only and not applied; the new deletion API requires it before deployment. End-to-end login/upload/embedding/answer and two-user live isolation remain unverified.
+Hosted app schema was checked after migrations 0001-0003. Source contains safe-delete 0004 and strict owned-read 0005; neither has been applied hosted. API filters owned/non-sample documents, but direct hosted read policies still need the approved migration. Real login/upload/embedding/answer/PDF/delete and two-user isolation remain unverified.
 
 ## Product boundary
 
@@ -19,11 +19,11 @@ The financial-rag app database was rebuilt with approval on 6 November 2026 usin
 
 Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. Retrieval uses Hugging Face feature extraction. The optional workspace AI flow uses a separate Puter Connect popup and free-model allowlist; backend Groq streaming remains an explicit API route, not an automatic Puter failure fallback. OpenRouter fallback is disabled unless explicitly enabled and configured. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
 
-Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel hosts the frontend only. Render hosts the single FastAPI backend and durable queue worker. No infrastructure has been provisioned by this branch.
+Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel hosts the frontend only. Render hosts the single FastAPI backend and durable queue worker. The existing frontend/backend deployments are active; hosted data/auth configuration is separately controlled.
 
 ## Run locally
 
-Use Python 3.12, uv, Node 20 and pnpm 9. Copy backend/.env.example and frontend/.env.example to local environment files, then supply your own service settings. Never commit real environment files. Authentication fails closed outside explicitly configured local debug use.
+Supported build checks use Python 3.11/3.12 and Node 20/22 with pnpm 9. The production backend Dockerfile uses Python 3.11; the frontend host uses Node 22. Copy backend/.env.example and frontend/.env.example to local environment files, then supply your own service settings. Never commit real environment files. Authentication fails closed outside explicitly configured local debug use.
 
 ```sh
 cd backend

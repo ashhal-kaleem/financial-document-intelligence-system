@@ -2,23 +2,16 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination:
-          process.env.NODE_ENV === 'development'
-            ? 'http://127.0.0.1:8000/api/v1/:path*'
-            : '/api/index.py',
-      },
-      {
-        source: '/api/backend/:path*',
-        destination:
-          process.env.NODE_ENV === 'development'
-            ? 'http://127.0.0.1:8000/api/v1/:path*'
-            : '/api/index.py',
-      },
-    ];
+    // Local-only proxy. Production calls the configured Render API directly.
+    // Do not point production routes at the removed Vercel Python backend.
+    return process.env.NODE_ENV === "development"
+      ? [
+          {
+            source: "/api/v1/:path*",
+            destination: "http://127.0.0.1:8000/api/v1/:path*",
+          },
+        ]
+      : [];
   },
 };
-
 export default nextConfig;

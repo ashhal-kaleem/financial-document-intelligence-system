@@ -71,3 +71,12 @@ Live Google sign-in currently navigates to Supabase HTTP400: provider is not ena
 ## Duplicate controls cleanup (6 November, after 5:31 pm clarification)
 
 Retained the chosen top rounded coloured Overview/Documents/Q&A tabs and all route/history behavior. Q&A now has one New conversation action in its header; the recent-question sidebar is shown only to signed-in users and has no duplicate reset button. Empty Documents/Overview use the empty-state upload action instead of repeating another upload action. Contextual guest Sign in and explicit Back to documents are intentional recovery actions, not a second tabs bar; preserved. No unsupported tabs/features restored and no auth/storage/schema changes.
+
+
+## Repository maintenance (6 November, after audit)
+
+Removed 18 reference-verified unreachable frontend modules, unused mock seed, their 20 public asset files (7,160,790 bytes), eight unused application dependencies, dead sidebar/export state and ignored styling props. App favicon stays. Test fixtures stay; backend Docker excludes them. Removed the unreachable sample PDF fallback. Production no longer rewrites to the deleted /api/index.py backend; local /api/v1 proxy stays. Compatibility API aliases and explicit server inference stay.
+
+Security dependency remediation: Next 15.5.28, transitive sharp 0.35.5, PostCSS 8.5.32 and source-map-js 1.2.2 via reviewed overrides; certifi 2026.10.23 and filelock 4.2.9 in the Python lock. No model request/provider/schema change. Known-advisory scans are point-in-time, not a security certificate. pnpm 9 is used to resolve/check the lockfile; preserve it rather than rewriting with an incompatible package-manager generation.
+
+Personal developer sync scripts remain because external use is unresolved; do not run or delete them automatically. Long-form historical planning files remain historical, not release truth. Further CSS cleanup, distributed quotas, backup/restore, observability, real financial accuracy and authenticated end-to-end evidence remain open.

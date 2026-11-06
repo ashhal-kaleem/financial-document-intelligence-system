@@ -1,3 +1,5 @@
+> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+
 # FDIS product vision
 
 Build a private financial-report workspace for analysts, auditors and investors: upload a text-based corporate PDF, ask a question, inspect the source passage and verify the page citation.

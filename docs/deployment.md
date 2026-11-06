@@ -1,6 +1,6 @@
 # Deployment runbook
 
-Status: not deployed from backend-hardening. Last revised 6 November 2026. This is a procedure for a reviewed release, not permission to provision or spend.
+Status: frontend deployed to Vercel Hobby and backend to Render Free. Last revised 6 November 2026. Working deployment is not production acceptance; the hosted auth/storage/schema and real-user workflow gates below remain open. This runbook is not permission to provision, mutate hosted settings or spend.
 
 ## Architecture
 
@@ -32,8 +32,8 @@ Frontend: copy frontend/.env.example. Set NEXT_PUBLIC_API_URL to the backend /ap
 
 ## Release checklist
 
-Run backend tests, local migration tests, frontend regression tests/typecheck/build. Review dependency advisories and scan repository/history/configuration for secrets. Review new migration 0004 and get target-specific approval before applying it; it changes delete/RLS behavior. Then on the isolated target test real login, signed uploads, PDF access, two-user isolation, deletion, queue recovery, provider failures and timeout handling. Record model/version, latency, quality, quota/cost and failed cases.
+Run backend tests, local migration tests, frontend regression tests/typecheck/build. Review dependency advisories and scan repository/history/configuration for secrets. Review migrations 0004 and 0005 and get target-specific approval before applying them; they change delete/RLS behavior. Then on the isolated target test real login, signed uploads, PDF access, two-user isolation, deletion, queue recovery, provider failures and timeout handling. Record model/version, latency, quality, quota/cost and failed cases.
 
-Do not release until private storage, distributed quotas, reviewed/apply-authorized migration 0004 and real Storage deletion tests, observability, secret rotation procedures and a backup/restore drill are addressed. The current in-memory rate limiter is per-process, not a shared quota. Table extraction is heuristic, not a verified accounting model. Citation ID validation does not prove semantic support.
+Do not release until private storage, distributed quotas, reviewed/apply-authorized migrations 0004/0005 and real Storage deletion tests, observability, secret rotation procedures and a backup/restore drill are addressed. The current in-memory rate limiter is per-process, not a shared quota. Table extraction is heuristic, not a verified accounting model. Citation ID validation does not prove semantic support.
 
-Main merge is approved under the code-first sequence; manual deployment and paid resources still need separate approval. render.yaml is a proposal only. Root and /api/v1 routes are retained until deployed rewrites/clients are verified.
+render.yaml defines the existing Free backend deployment shape. All future hosted changes require their own established authority. Root and /api/v1 API routes remain compatibility aliases until consumers are checked. Production frontend API calls use NEXT_PUBLIC_API_URL pointing to Render; the Next proxy exists only in development.

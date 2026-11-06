@@ -8,7 +8,8 @@ import { signInWithGoogle, signOutUser } from "@/lib/supabase";
 import { Orb } from "@/components/shell/orbs";
 
 export function AuthModal() {
-  const { isAuthModalOpen, setAuthModalOpen, currentUser, setCurrentUser } = useFDISStore();
+  const { isAuthModalOpen, setAuthModalOpen, currentUser, setCurrentUser } =
+    useFDISStore();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -17,30 +18,53 @@ export function AuthModal() {
     setErrorMsg(null);
     const { error } = await signInWithGoogle();
     if (error) {
-      setErrorMsg(error.message || "Google sign-in could not start. Try again in a moment.");
+      setErrorMsg(
+        error.message ||
+          "Google sign-in could not start. Try again in a moment.",
+      );
       setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
-    setLoading(true); setErrorMsg(null);
-    try { await signOutUser(); setCurrentUser(null); setAuthModalOpen(false); }
-    catch { setErrorMsg("Sign out failed. Retry before leaving this shared device."); }
-    finally { setLoading(false); }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      await signOutUser();
+      setCurrentUser(null);
+      setAuthModalOpen(false);
+    } catch {
+      setErrorMsg("Sign out failed. Retry before leaving this shared device.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isAuthModalOpen) return null;
 
   return (
     <Dialog open={isAuthModalOpen} onOpenChange={setAuthModalOpen}>
-      <DialogContent aria-labelledby="auth-title" aria-describedby="auth-description" className="v8-min w-[92vw] max-w-sm max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-8 shadow-2xl">
+      <DialogContent
+        aria-labelledby="auth-title"
+        aria-describedby="auth-description"
+        className="v8-min w-[92vw] max-w-sm max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-8 shadow-2xl"
+      >
         <div className="-mt-4 flex flex-col items-center">
           <Orb kind="warm" className="size-24" />
           {currentUser ? (
             <>
-              <h2 id="auth-title" className="mt-6 text-[18px] font-semibold fam-ink">{currentUser.name || "Signed in"}</h2>
-              <p id="auth-description" className="mt-1 flex items-center gap-1.5 text-[12px] fam-sub">
-                <CheckCircle2 className="size-3.5 text-[#1F8A4C]" /> Active session
+              <h2
+                id="auth-title"
+                className="mt-6 text-[18px] font-semibold fam-ink"
+              >
+                {currentUser.name || "Signed in"}
+              </h2>
+              <p
+                id="auth-description"
+                className="mt-1 flex items-center gap-1.5 text-[12px] fam-sub"
+              >
+                <CheckCircle2 className="size-3.5 text-[#1F8A4C]" /> Active
+                session
               </p>
               <button
                 disabled={loading}
@@ -48,13 +72,27 @@ export function AuthModal() {
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#1C1F2E] py-3 text-[13px] font-medium text-white transition-transform active:scale-[0.98]"
               >
                 <LogOut className="size-3.5" /> Sign out
-              </button>{errorMsg && <p role="alert" className="mt-3 text-sm text-red-800">{errorMsg}</p>}
+              </button>
+              {errorMsg && (
+                <p role="alert" className="mt-3 text-sm text-red-800">
+                  {errorMsg}
+                </p>
+              )}
             </>
           ) : (
             <>
-              <h2 id="auth-title" className="mt-6 text-[20px] font-semibold fam-ink">Sign in to FDIS</h2>
-              <p id="auth-description" className="mt-1.5 max-w-[260px] text-center text-[12px] leading-relaxed fam-sub">
-                Access your private filings and source citations. Chat history stays in this browser.
+              <h2
+                id="auth-title"
+                className="mt-6 text-[20px] font-semibold fam-ink"
+              >
+                Sign in to FDIS
+              </h2>
+              <p
+                id="auth-description"
+                className="mt-1.5 max-w-[260px] text-center text-[12px] leading-relaxed fam-sub"
+              >
+                Access your private filings and source citations. Chat history
+                stays in this browser.
               </p>
               <button
                 onClick={handleGoogleSignIn}
@@ -63,16 +101,29 @@ export function AuthModal() {
                 style={{ border: "1px solid #EDF2F7" }}
               >
                 <svg className="size-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
                 </svg>
                 {loading ? "Connecting..." : "Continue with Google"}
               </button>
               {errorMsg && (
                 <p className="mt-3 flex items-start gap-2 text-[11px] text-amber-700">
-                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" /> {errorMsg}
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />{" "}
+                  {errorMsg}
                 </p>
               )}
             </>

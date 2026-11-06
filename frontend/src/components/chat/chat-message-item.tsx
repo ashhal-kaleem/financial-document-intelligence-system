@@ -19,7 +19,10 @@ interface ChatMessageItemProps {
   onCitationClick?: (citation: Citation) => void;
 }
 
-export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemProps) {
+export function ChatMessageItem({
+  message,
+  onCitationClick,
+}: ChatMessageItemProps) {
   const [copied, setCopied] = useState(false);
   const openPdfViewer = useFDISStore((s) => s.openPdfViewer);
   const currentUser = useFDISStore((s) => s.currentUser);
@@ -37,7 +40,10 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
         <div className="max-w-[80%] break-words rounded-2xl rounded-tr-md bg-[#141414] px-4 py-3 text-[13px] leading-relaxed text-white">
           {message.content}
         </div>
-        <AvatarCircle name={currentUser?.name || "Guest"} className="size-8 shrink-0 text-[10px]" />
+        <AvatarCircle
+          name={currentUser?.name || "Guest"}
+          className="size-8 shrink-0 text-[10px]"
+        />
       </div>
     );
   }
@@ -46,7 +52,13 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
     <div className="flex items-start gap-3.5">
       <Orb kind="warm" className="mt-1 size-9 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="rounded-2xl rounded-tl-md bg-white p-5" style={{ border: "1px solid #F0EEF6", boxShadow: "0 6px 20px #4C1D9508" }}>
+        <div
+          className="rounded-2xl rounded-tl-md bg-white p-5"
+          style={{
+            border: "1px solid #F0EEF6",
+            boxShadow: "0 6px 20px #4C1D9508",
+          }}
+        >
           <div className="whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-[#1A1A1A]">
             {message.content}
           </div>
@@ -67,12 +79,23 @@ export function ChatMessageItem({ message, onCitationClick }: ChatMessageItemPro
           )}
         </div>
         <div className="mt-1.5 flex items-center gap-2 pl-1">
-          <button onClick={handleCopy} className="flex items-center gap-1 text-[10px] text-[#A999C4] hover:text-[#6D5BD0]">
-            {copied ? <Check className="size-3" /> : <Copy className="size-3" />} {copied ? "Copied" : "Copy"}
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 text-[10px] text-[#A999C4] hover:text-[#6D5BD0]"
+          >
+            {copied ? (
+              <Check className="size-3" />
+            ) : (
+              <Copy className="size-3" />
+            )}{" "}
+            {copied ? "Copied" : "Copy"}
           </button>
           {message.timestamp && (
             <span className="text-[10px] text-[#C7C0D6] tabular-nums">
-              {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {new Date(message.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           )}
         </div>

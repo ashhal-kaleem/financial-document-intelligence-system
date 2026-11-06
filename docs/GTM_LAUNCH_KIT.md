@@ -1,3 +1,5 @@
+> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+
 # Launch and resume copy gate
 
 Do not publish production, sub-second, zero-hallucination, unlimited-free or audit-readiness claims without measured evidence. This branch is not merged or deployed. No launch communication is authorized by this document.

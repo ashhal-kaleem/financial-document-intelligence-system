@@ -17,7 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Financial Document Intelligence System (FDIS)",
-  description: "Enterprise RAG platform for corporate financial filings, balance sheets, and footnotes with verifiable citations.",
+  description:
+    "Enterprise RAG platform for corporate financial filings, balance sheets, and footnotes with verifiable citations.",
 };
 
 export default function RootLayout({
@@ -26,7 +27,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`h-full ${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`h-full ${inter.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="h-full antialiased overflow-hidden bg-background text-foreground font-sans">
         <Providers>{children}</Providers>
       </body>

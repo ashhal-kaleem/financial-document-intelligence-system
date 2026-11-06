@@ -36,11 +36,17 @@ export interface AuthUser {
   avatarUrl?: string;
 }
 
-export type DashboardTab = "overview" | "chat" | "documents" | "statements" | "comparison" | "insights";
+export type DashboardTab =
+  | "overview"
+  | "chat"
+  | "documents"
+  | "statements"
+  | "comparison"
+  | "insights";
 
 interface FDISState {
-  chatDrafts: Record<string,string>;
-  setChatDraft: (scope:string,draft:string) => void;
+  chatDrafts: Record<string, string>;
+  setChatDraft: (scope: string, draft: string) => void;
   activeCitation: Citation | null;
   setActiveCitation: (citation: Citation | null) => void;
 
@@ -57,20 +63,14 @@ interface FDISState {
   isAuthModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
 
-
-  isSidebarCollapsed: boolean;
-  toggleSidebar: () => void;
-
   isUploadOpen: boolean;
   setUploadOpen: (open: boolean) => void;
-
-  isExportModalOpen: boolean;
-  setExportModalOpen: (open: boolean) => void;
 }
 
 export const useFDISStore = create<FDISState>((set) => ({
   chatDrafts: {},
-  setChatDraft: (scope,draft) => set(state => ({chatDrafts:{...state.chatDrafts,[scope]:draft}})),
+  setChatDraft: (scope, draft) =>
+    set((state) => ({ chatDrafts: { ...state.chatDrafts, [scope]: draft } })),
   activeCitation: null,
   setActiveCitation: (citation) => set({ activeCitation: citation }),
 
@@ -92,23 +92,23 @@ export const useFDISStore = create<FDISState>((set) => ({
   setSelectedDocument: (doc) => set({ selectedDocument: doc }),
 
   currentUser: null,
-  setCurrentUser: (user) => set((state) => state.currentUser?.id === user?.id
-    ? { currentUser: user }
-    : { currentUser: user, chatDrafts: {}, selectedDocument: null, activeCitation: null,
-        pdfViewer: { isOpen: false, filename: "", pageNumber: 1 },
-        isUploadOpen: false, isExportModalOpen: false }),
+  setCurrentUser: (user) =>
+    set((state) =>
+      state.currentUser?.id === user?.id
+        ? { currentUser: user }
+        : {
+            currentUser: user,
+            chatDrafts: {},
+            selectedDocument: null,
+            activeCitation: null,
+            pdfViewer: { isOpen: false, filename: "", pageNumber: 1 },
+            isUploadOpen: false,
+          },
+    ),
 
   isAuthModalOpen: false,
   setAuthModalOpen: (open) => set({ isAuthModalOpen: open }),
 
-
-  isSidebarCollapsed: false,
-  toggleSidebar: () =>
-    set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
-
   isUploadOpen: false,
   setUploadOpen: (open) => set({ isUploadOpen: open }),
-
-  isExportModalOpen: false,
-  setExportModalOpen: (open) => set({ isExportModalOpen: open }),
 }));

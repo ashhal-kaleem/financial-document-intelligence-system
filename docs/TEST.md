@@ -1,3 +1,5 @@
+> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+
 # Test strategy
 
 Use README.md for exact offline commands and docs/production-readiness.md for evidence limits. tests/test_financial_seed.py checks synthetic PDF/evidence plumbing, not model quality. frontend/tests/regressions.test.cjs uses Node's test runner and the pinned TypeScript transpiler, without live services.

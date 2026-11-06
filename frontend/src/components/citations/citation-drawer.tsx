@@ -7,7 +7,12 @@
 "use client";
 
 import { FileText, Quote, BookOpen } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +38,10 @@ export function CitationDrawer() {
 
   return (
     <Sheet open={isOpen} onOpenChange={() => setActiveCitation(null)}>
-      <SheetContent side="right" className="w-80 border-border/40 bg-card/95 backdrop-blur-sm sm:w-96">
+      <SheetContent
+        side="right"
+        className="w-80 border-border/40 bg-card/95 backdrop-blur-sm sm:w-96"
+      >
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2 text-sm">
             <Quote className="size-4 text-primary" strokeWidth={1.75} />
@@ -48,9 +56,14 @@ export function CitationDrawer() {
                 <FileText className="size-4 text-primary" strokeWidth={1.75} />
               </div>
               <div className="flex min-w-0 flex-col gap-1">
-                <span className="truncate text-sm font-medium">{activeCitation.document}</span>
+                <span className="truncate text-sm font-medium">
+                  {activeCitation.document}
+                </span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-[10px] tabular-nums font-mono">
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] tabular-nums font-mono"
+                  >
                     Page {activeCitation.page}
                   </Badge>
                 </div>
@@ -74,10 +87,10 @@ export function CitationDrawer() {
                 Passage Extract
               </span>
               <p className="text-xs leading-relaxed text-foreground/90 font-mono">
-                {activeCitation.snippet || "No source passage was returned. Open the PDF to check this citation."}
+                {activeCitation.snippet ||
+                  "No source passage was returned. Open the PDF to check this citation."}
               </p>
             </div>
-
           </div>
         )}
       </SheetContent>
