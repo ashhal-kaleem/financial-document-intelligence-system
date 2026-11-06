@@ -60,7 +60,7 @@ export function AuthModal() {
             <>
               <h2 className="mt-6 text-[20px] font-semibold fam-ink">Sign in to FDIS</h2>
               <p className="mt-1.5 max-w-[260px] text-center text-[12px] leading-relaxed fam-sub">
-                Access your private filings, saved memos, and citation history.
+                Access your private filings and source citations. Chat history stays in this browser.
               </p>
               <button
                 onClick={handleGoogleSignIn}

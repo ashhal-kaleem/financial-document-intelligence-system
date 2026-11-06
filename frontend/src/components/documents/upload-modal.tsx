@@ -14,7 +14,13 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
   const queryClient = useQueryClient();
 
   const uploadMutation = useMutation({
-    mutationFn: uploadDocument,
+    mutationFn: async (file: File) => {
+      const ownerId = useFDISStore.getState().currentUser?.id;
+      if (!ownerId) { useFDISStore.getState().setAuthModalOpen(true); throw Error("Sign in to upload."); }
+      const doc = await uploadDocument(file);
+      if (useFDISStore.getState().currentUser?.id !== ownerId) throw Error("Account changed. Check uploads after signing back in.");
+      return doc;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       setSelectedFile(null);
@@ -45,7 +51,7 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
           </button>
         </div>
         <h2 className="mt-4 text-center text-[18px] font-semibold fam-ink">Upload a filing</h2>
-        <p className="mt-1 text-center text-[12px] fam-sub">PDF only. Large filings are indexed in the background.</p>
+        <p className="mt-1 text-center text-[12px] fam-sub">PDF only. Processing may take time; wait for Ready before asking questions.</p>
 
         <label
           onDragOver={(e) => { e.preventDefault(); setIsDragActive(true); }}
@@ -69,7 +75,7 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
 
         {uploadMutation.isSuccess && (
           <p className="mt-3 flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#1F8A4C]">
-            <CheckCircle2 className="size-4" /> Filing indexed
+            <CheckCircle2 className="size-4" /> {uploadMutation.data?.status === "ready" ? "Filing indexed" : "Uploaded; processing is pending"}
           </p>
         )}
         {uploadMutation.isError && (

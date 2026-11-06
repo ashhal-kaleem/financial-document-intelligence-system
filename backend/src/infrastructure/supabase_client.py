@@ -65,7 +65,8 @@ class SupabaseClient(BaseVectorStore):
                 headers=self.headers,
                 json=payload,
             )
-            return res.status_code in (200, 204)
+            res.raise_for_status()
+            return True
 
     @staticmethod
     def _visible_filter(owner_id: str) -> str:
@@ -86,7 +87,7 @@ class SupabaseClient(BaseVectorStore):
         """Returns the document only if the user owns it or it is a shared sample."""
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(
-                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&{self._visible_filter(owner_id)}",
+                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&status=neq.deleting&{self._visible_filter(owner_id)}",
                 headers=self.headers,
             )
             res.raise_for_status()
@@ -97,29 +98,37 @@ class SupabaseClient(BaseVectorStore):
 
     async def delete_document(self, doc_id: UUID, owner_id: str) -> bool:
         """Deletes only a document owned by the user (shared samples are never deletable)."""
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            owned = await client.get(
-                f"{self.base_url}/rest/v1/documents?select=id&id=eq.{doc_id}&owner_id=eq.{owner_id}&is_sample=eq.false",
-                headers=self.headers,
+        from src.core.errors import FDISException
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            begin = await client.post(
+                f"{self.base_url}/rest/v1/rpc/begin_document_delete",
+                headers=self.headers, json={"p_id": str(doc_id), "p_owner": owner_id},
             )
-            owned.raise_for_status()
-            if not owned.json():
+            if begin.status_code == 400 and begin.json().get("code") == "55000":
+                raise FDISException("Document is busy", "Wait for processing to finish before deleting.", 409, "document_busy")
+            begin.raise_for_status()
+            rows = begin.json()
+            if not rows:
                 return False
-            # Delete chunks first (or let CASCADE handle it)
-            await client.delete(
-                f"{self.base_url}/rest/v1/chunks?document_id=eq.{doc_id}",
-                headers=self.headers,
+            # Keep the deleting row until Storage confirms removal. Retry is safe after either failure.
+            path = f"{doc_id}/{rows[0]['filename']}"
+            removed = await client.request(
+                "DELETE", f"{self.base_url}/storage/v1/object/{self.bucket}",
+                headers=self.headers, json={"prefixes": [path]},
             )
+            removed.raise_for_status()
+            # FK cascade clears chunks atomically with the final document removal.
             res = await client.delete(
-                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&owner_id=eq.{owner_id}",
+                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&owner_id=eq.{owner_id}&status=eq.deleting",
                 headers=self.headers,
             )
-            return res.status_code in (200, 204)
+            res.raise_for_status()
+            return True
 
     async def get_visible_document_ids(self, owner_id: str) -> List[UUID]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(
-                f"{self.base_url}/rest/v1/documents?select=id&{self._visible_filter(owner_id)}",
+                f"{self.base_url}/rest/v1/documents?select=id&status=eq.ready&{self._visible_filter(owner_id)}",
                 headers=self.headers,
             )
             res.raise_for_status()
@@ -278,7 +287,7 @@ class SupabaseClient(BaseVectorStore):
                 content=pdf_bytes,
             )
             res.raise_for_status()
-        return f"{self.base_url}/storage/v1/object/public/{self.bucket}/{path}"
+        return path  # private object key, never a public URL
 
     async def get_pdf_bytes(self, document_id: UUID, filename: str) -> Optional[bytes]:
         path = f"{document_id}/{filename}"

@@ -3,7 +3,7 @@ import logging
 from typing import AsyncGenerator, Dict, List, Optional
 from uuid import UUID
 from src.core.config import get_settings
-from src.domain.citation import GROUNDED_SYSTEM_PROMPT, NOT_COVERED_ANSWER, create_citations_from_chunks
+from src.domain.citation import GROUNDED_SYSTEM_PROMPT, NOT_COVERED_ANSWER, create_citations_from_chunks, validate_answer_citations
 from src.domain.models import Citation, DocumentChunk
 from src.infrastructure.groq_client import GroqClient
 from src.services.retrieval import RetrievalService
@@ -99,23 +99,30 @@ Provide an accurate, comprehensive, and grounded answer strictly citing relevant
         if not chunks:
             # Nothing relevant retrieved: answer with a fixed sentence. The model is never asked to guess.
             yield {"event": "token", "token": NOT_COVERED_ANSWER}
-            yield {"event": "done", "finish_reason": "not_covered", "total_tokens": 1, "citations_count": 0}
+            yield {"event": "done", "finish_reason": "not_covered", "stream_chunks": 1, "citations_count": 0}
             return
 
         messages = self.build_rag_prompt(question, chunks, citations)
         
         token_count = 0
+        answer_parts = []
         try:
             async for token in self.llm.stream_chat(messages, model=model):
                 token_count += 1
+                answer_parts.append(token)
                 yield {"event": "token", "token": token}
         except Exception as e:
-            logger.exception("LLM streaming failed")
+            logger.warning("Answer stream failed")
             yield {"event": "error", "detail": "The answer service failed. Please try again."}
+            return
+
+        if not validate_answer_citations("".join(answer_parts), citations):
+            yield {"event": "error", "detail": "The answer did not include valid source citations. Please retry."}
+            return
 
         yield {
             "event": "done",
             "finish_reason": "stop",
-            "total_tokens": token_count,
+            "stream_chunks": token_count,
             "citations_count": len(citations),
         }

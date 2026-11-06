@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 from uuid import UUID
 from src.core.config import get_settings
@@ -31,7 +32,7 @@ class RetrievalService:
             if not document_ids:
                 return []
 
-        query_embedding = self.embedding_client.embed_query(query)
+        query_embedding = await asyncio.to_thread(self.embedding_client.embed_query, query)
         chunks = await self.supabase.match_chunks(
             query_embedding=query_embedding,
             match_threshold=threshold,

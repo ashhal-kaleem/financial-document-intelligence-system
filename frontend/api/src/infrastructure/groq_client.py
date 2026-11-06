@@ -5,6 +5,7 @@ import httpx
 from src.core.config import get_settings
 from src.infrastructure.interfaces import BaseLLMClient
 from src.infrastructure.openrouter_client import OpenRouterClient
+from src.infrastructure.llm_stream import stream_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ class GroqClient(BaseLLMClient):
         temperature: float = 0.1,
     ) -> AsyncGenerator[str, None]:
         target_model = model or self.default_model
+        if target_model != self.default_model:
+            raise ValueError("Model is not enabled")
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -33,36 +36,21 @@ class GroqClient(BaseLLMClient):
             "messages": messages,
             "temperature": temperature,
             "stream": True,
+            "max_tokens": self.settings.LLM_MAX_OUTPUT_TOKENS,
         }
 
-        used_fallback = False
+        emitted = False
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as client:
                 async with client.stream("POST", self.base_url, headers=headers, json=payload) as response:
-                    if response.status_code in (429, 500, 502, 503, 504):
-                        logger.warning(f"Groq returned {response.status_code}, shifting quota to OpenRouter fallback...")
-                        used_fallback = True
-                    else:
-                        response.raise_for_status()
-                        async for line in response.aiter_lines():
-                            line = line.strip()
-                            if not line or not line.startswith("data: "):
-                                continue
-                            data_str = line[6:].strip()
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                parsed = json.loads(data_str)
-                                delta = parsed.get("choices", [{}])[0].get("delta", {})
-                                content = delta.get("content")
-                                if content:
-                                    yield content
-                            except json.JSONDecodeError:
-                                continue
-        except (httpx.HTTPError, Exception) as exc:
-            logger.warning(f"Groq request failed ({exc}), falling back to OpenRouter...")
-            used_fallback = True
-
-        if used_fallback:
+                    response.raise_for_status()
+                    async for token in stream_tokens(response):
+                        emitted = True
+                        yield token
+        except Exception:
+            # Never concatenate a second model's answer onto a partial first answer.
+            if emitted or not self.settings.LLM_FALLBACK_ENABLED or not self.settings.OPENROUTER_API_KEY:
+                raise RuntimeError("Answer provider failed") from None
+            logger.warning("Primary provider unavailable; using configured fallback")
             async for token in self.fallback_client.stream_chat(messages, temperature=temperature):
                 yield token

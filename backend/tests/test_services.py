@@ -54,6 +54,6 @@ def test_inference_service_rag_prompt_construction():
 
     assert len(messages) == 2
     assert messages[0]["role"] == "system"
-    assert "ZERO-HALLUCINATION RULES" in messages[0]["content"]
+    assert "STRICT GROUNDING RULES" in messages[0]["content"]
     assert "[1] Document: apple_10k.pdf, Page: 32" in messages[1]["content"]
     assert "$180,683 million" in messages[1]["content"]

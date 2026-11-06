@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = Field("", description="OpenRouter API Key for fallback")
     OPENROUTER_DEFAULT_MODEL: str = Field("liquid/lfm-2.5-2.6b:free", description="Default OpenRouter fallback model")
 
+    LLM_FALLBACK_ENABLED: bool = False  # opt-in only; a second provider may spend quota/money
+    LLM_MAX_OUTPUT_TOKENS: int = Field(1024, ge=1, le=8192)
+
     # Transactional Email Configuration
     RESEND_API_KEY: str = Field("", description="Resend Email API Key")
     HF_TOKEN: str = Field("", description="Hugging Face API token")

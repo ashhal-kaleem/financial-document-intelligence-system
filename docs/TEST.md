@@ -1,55 +1,7 @@
-# Testing Strategy & Quality Review Gates — Financial Document Intelligence System (FDIS)
+# Test strategy
 
-> **Status**: Approved  
-> **Master Protocol**: `/home/shaikhfardin/templates/instructions.md`  
-> **Last Updated**: 2026-09-06
+Use README.md for exact offline commands and docs/production-readiness.md for evidence limits. tests/test_financial_seed.py checks synthetic PDF/evidence plumbing, not model quality. frontend/tests/regressions.test.cjs uses Node's test runner and the pinned TypeScript transpiler, without live services.
 
----
+Live tests default to skipped. RUN_LIVE_TESTS=1 is an explicit switch, not authority: first get an isolated empty project, permitted test users/storage mutations and bounded provider usage. Never use private documents or enable production test writes by accident.
 
-## 1. Quick Smoke-Test Suite (Terminal)
-
-```bash
-# 1. Environment and Runtimes
-python3 --version
-node -v
-
-# 2. Backend Unit & Contract Tests
-cd backend && uv run pytest -v
-
-# 3. Frontend Typecheck
-cd frontend && pnpm run typecheck
-```
-
----
-
-## 2. Live Dependency Reachability Verification
-
-| Dependency | Verification Command | Expected Status |
-|---|---|---|
-| **Supabase REST & Storage** | `curl -s "${SUPABASE_URL}/storage/v1/bucket" -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}"` | `200 OK` (includes `documents` bucket) |
-| **Supabase pgvector** | SQL query `pg_extension WHERE extname = 'vector'` | `vector 0.8.2` |
-| **Groq LPU Engine** | `curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"` | `200 OK` |
-| **OpenRouter Router** | `curl -s https://openrouter.ai/api/v1/chat/completions ...` | `200 OK` |
-| **Resend Email API** | `curl -s https://api.resend.com/emails ...` | `200 OK` |
-
----
-
-## 3. Deep Diagnostic & End-to-End API Smoke Tests
-
-### 3.1 Health Diagnostic (`GET /api/v1/health`)
-```bash
-curl -s http://localhost:8000/api/v1/health | jq .
-```
-
-### 3.2 Document Upload & Indexing (`POST /api/v1/documents`)
-```bash
-curl -s -X POST http://localhost:8000/api/v1/documents \
-  -F "file=@sample_report.pdf" | jq .
-```
-
-### 3.3 Real-Time SSE Inference (`POST /api/v1/ask/stream`)
-```bash
-curl -N -s -X POST http://localhost:8000/api/v1/ask/stream \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is the net profit?", "document_ids": []}'
-```
+Required release evidence: login/upload/PDF/answer/delete; two-user isolation including selected-document search; queue crash/restart and lost-worker writes; provider429/timeouts/truncated streams; financial numeric/citation support/abstention/injection benchmark; privacy settings; measured latency and cost; backup/restore. Record failures and exact configurations. Do not use an empty queue check as proof of recovery.

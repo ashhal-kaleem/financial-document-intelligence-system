@@ -39,7 +39,7 @@ export default function Home() {
   const isHydrated = useHydrated();
   const queryClient = useQueryClient();
   const [, setDeletingId] = useState<string | undefined>(undefined);
-  const { activeTab, setCurrentUser } = useFDISStore();
+  const { activeTab, setCurrentUser, currentUser } = useFDISStore();
 
   // Keep the UI user and cached documents in step with the real Supabase session.
   useEffect(() => {
@@ -54,15 +54,15 @@ export default function Home() {
     supabase.auth.getSession().then(({ data }) => apply(data.session?.user));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       apply(session?.user);
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.removeQueries({ queryKey: ["documents"] });
     });
     return () => sub.subscription.unsubscribe();
   }, [setCurrentUser, queryClient]);
 
   const { data: documents = [] } = useQuery({
-    queryKey: ["documents"],
+    queryKey: ["documents", currentUser?.id],
     queryFn: fetchDocuments,
-    enabled: isHydrated,
+    enabled: isHydrated && Boolean(currentUser),
     // Queued and processing documents finish in the background: keep checking until they settle.
     refetchInterval: (query) =>
       (query.state.data ?? []).some((d) => d.status === "queued" || d.status === "processing") ? 4000 : false,
@@ -96,7 +96,7 @@ export default function Home() {
         <AppFrame family="lilac">
           <div className="flex flex-1 flex-col overflow-hidden">
             <MobileTabNav family="lilac" />
-            <ChatInterface documentCount={documents.length} onDocumentUploaded={refreshDocs} />
+            <ChatInterface key={currentUser?.id || "guest"} documentCount={documents.length} onDocumentUploaded={refreshDocs} />
           </div>
         </AppFrame>
       )}
@@ -116,17 +116,20 @@ export default function Home() {
 
       {activeTab === "statements" && (
         <AppFrame family="green">
-          <SampleDataTag demo={documents.length === 0} />
-          <div className="flex flex-1 overflow-hidden" style={{ background: "#EAF1E4" }}>
+          <SampleDataTag demo />
+          <div className="flex flex-1 flex-col overflow-hidden" style={{ background: "#EAF1E4" }}>
+            <MobileTabNav family="green" />
+            <div className="flex min-h-0 flex-1 overflow-hidden">
             <LabeledRail family="green" />
             <StatementsScreen />
+            </div>
           </div>
         </AppFrame>
       )}
 
       {activeTab === "comparison" && (
         <AppFrame family="orange" sheet="canvas">
-          <SampleDataTag demo={documents.length === 0} />
+          <SampleDataTag demo />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="orange" />
             <div className="flex flex-1 overflow-hidden">
@@ -139,7 +142,7 @@ export default function Home() {
 
       {activeTab === "insights" && (
         <AppFrame family="pastel">
-          <SampleDataTag demo={documents.length === 0} />
+          <SampleDataTag demo />
           <div className="flex flex-1 flex-col overflow-hidden">
             <MobileTabNav family="pastel" />
             <InsightsScreen />

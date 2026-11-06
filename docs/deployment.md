@@ -1,97 +1,39 @@
-# Deployment & Production Runbook — Financial Document Intelligence System (FDIS)
+# Deployment runbook
 
-> **Status**: Approved  
-> **Master Protocol**: `/home/shaikhfardin/templates/instructions.md`  
-> **Last Updated**: 2026-09-06
+Status: not deployed from backend-hardening. Last revised 6 November 2026. This is a procedure for a reviewed release, not permission to provision or spend.
 
----
+## Architecture
 
-## 1. Environment Architecture
+- Frontend: Next.js version pinned in frontend/package.json.
+- Backend: FastAPI on a long-running host for queue ingestion.
+- Data: Supabase Postgres/pgvector, Auth and private Storage.
+- Inference: configured Groq model; OpenRouter fallback is explicit opt-in and never joins a partial primary answer. Configured keys do not prove provider availability.
 
-- **Frontend**: Next.js 16 (App Router) on Vercel or Docker container.
-- **Backend API**: FastAPI asynchronous server running via Uvicorn.
-- **Vector Database**: Supabase PostgreSQL 17.6 with `pgvector 0.8.2` (Mumbai `ap-south-1`).
-- **Object Storage**: Supabase Storage (`documents` bucket).
-- **Inference Engines**: Groq LPU (`qwen/qwen3.8-27b`) with OpenRouter transparent fallback.
+## Before setup
 
----
+1. Review migrations against the actual target. On 6 November 2026 the financial-rag app schema was rebuilt with approval using 0001-0003. Empty tables, app functions/grants and owner policies were checked live. This does not grant permission for another rebuild or destructive migration. Other projects may have incompatible drift.
+2. Resolve the login route: existing UI is Google OAuth. Enabling it requires a Google Cloud client and Supabase provider/redirect settings. Email/password needs UI plus production SMTP for arbitrary signups. Neither route is verified working here. Ask before hosted settings changes.
+3. Propose private `documents` bucket creation separately. No bucket existed at last verification. Confirm file size/MIME limits and prohibit public access; the backend service role mediates file reads. No direct client storage access is required.
+4. Approve a separate empty test project and bounded provider usage before real integration tests. Never use private reports as test fixtures.
 
-## 2. Environment Variables & Secret Configuration
+## Configuration
 
-### Backend (`backend/.env.local` / Environment)
-```env
-SUPABASE_URL=https://aluzqooagiymysssnhkg.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-SUPABASE_STORAGE_BUCKET=documents
-GROQ_API_KEY=your_groq_key
-GROQ_MODEL=qwen/qwen3.8-27b
-OPENROUTER_API_KEY=your_openrouter_key
-OPENROUTER_DEFAULT_MODEL=liquid/lfm-2.5-2.6b:free
-RESEND_API_KEY=your_resend_key
-PORT=8000
-```
+Backend: copy backend/.env.example. Supply SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, HF_TOKEN, GROQ_API_KEY and ALLOWED_ORIGINS. Use a reviewed model identifier actually available to the provider account. Optional fallback requires LLM_FALLBACK_ENABLED=true plus OPENROUTER_API_KEY. Output has a configured cap. No client-chosen arbitrary model.
 
-### Frontend (`frontend/.env.local` / Environment)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-```
+Frontend: copy frontend/.env.example. Set NEXT_PUBLIC_API_URL to the backend /api/v1 URL, NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Never expose service role/provider keys in NEXT_PUBLIC settings or client code. No project is hardcoded.
 
----
+## Ingestion
 
-## 3. Local Development Runbook
+- Inline (default): request parses, embeds and stores the report; intended for local use and small-file tests, not guaranteed within serverless time limits.
+- Queue: use INGESTION_MODE=queue on a long-running host. Upload first stores a nonclaimable row and PDF, then changes state to queued. A failed storage write cannot create a claimable job. API worker claims, heartbeats and uses fenced database writes.
+- Claims increment attempts; expired leases can retry up to three attempts. Old workers cannot write after loss of their fencing token. A lost worker can still waste billed embedding compute until its next fenced write.
+- Vercel uses the inline copy, not durable queue mode. scripts/sync-vercel-api.sh maintains frontend/api/src from backend/src.
+- Nonempty crash/restart recovery has local automated evidence, not a live Supabase end-to-end result.
 
-### Backend (Python via `uv`)
-```bash
-cd backend
-uv sync
-uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
-```
+## Release checklist
 
-### Frontend (Next.js via `pnpm`)
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
+Run backend tests, local migration tests, frontend regression tests/typecheck/build and mirror check. Review dependency advisories and scan repository/history/configuration for secrets. Review new migration 0004 and get target-specific approval before applying it; it changes delete/RLS behavior. Then on the isolated target test real login, signed uploads, PDF access, two-user isolation, deletion, queue recovery, provider failures and timeout handling. Record model/version, latency, quality, quota/cost and failed cases.
 
----
+Do not release until private storage, distributed quotas, reviewed/apply-authorized migration 0004 and real Storage deletion tests, observability, secret rotation procedures and a backup/restore drill are addressed. The current in-memory rate limiter is per-process, not a shared quota. Table extraction is heuristic, not a verified accounting model. Citation ID validation does not prove semantic support.
 
-## 4. Pre-Flight Production Checklist & Audit
-
-- [ ] Run backend tests: `cd backend && uv run pytest -v`
-- [ ] Run frontend typecheck: `cd frontend && pnpm run typecheck`
-- [ ] Client Secret Leak Audit:
-  ```bash
-  grep -rn "API_KEY\|SERVICE_ROLE\|SECRET" frontend/src/ 2>/dev/null | grep -v "NEXT_PUBLIC_"
-  ```
-  Ensure zero private backend secrets exist in frontend client code.
-
-## Production hardening notes (backend-hardening branch)
-
-**Order matters. Do not deploy this branch before the database steps below.**
-
-1. Database (Supabase SQL editor or CLI), reviewed by a person, never auto-applied:
-   - `supabase/migrations/0001_schema.sql` is reconstructed from the code, not exported from the live project. Diff it against the live schema first. It is idempotent, but treat it as a reference, not the source of truth.
-   - `0002_document_owner.sql` adds `owner_id`, turns on RLS. Existing rows have no owner and stay hidden (unless `is_sample`). Assigning old documents to a user is a manual, reviewed `update`; nothing does it automatically.
-   - `0003_ingestion_queue.sql` adds the job queue columns and the `claim_next_document` and `fail_stale_documents` functions (service role only). Required before `INGESTION_MODE=queue`.
-   - `python scripts/test_migrations.py` runs all three against a throwaway local Postgres with pgvector. The rebuild itself was first validated the same way against a local clone of the drifted live schema, then verified live (schema, RLS, function grants, empty data).
-2. Supabase Auth: enable the Google provider and add the frontend URL to the redirect list. Keep the storage bucket private.
-3. Backend env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS` (JSON list with the frontend URL), `GROQ_API_KEY`, `HF_TOKEN`, optional `OPENROUTER_API_KEY`.
-4. Frontend env: `NEXT_PUBLIC_API_URL` (the backend `/api/v1` URL), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. There is no built-in fallback project: without these, sign-in is off.
-
-**Ingestion modes.**
-- `INGESTION_MODE=inline` (default): the upload request does the whole job (parse, embed, store) and returns 201 when done. Large filings can hit request or proxy timeouts here, so inline is for local use, tests and small files.
-- `INGESTION_MODE=queue`: upload stores the PDF and a `queued` row and returns 202. A worker loop inside the API process claims jobs from Postgres and processes them. This needs a **long-running host** (the Render service in `render.yaml` is one). Apply migration 0003 first.
-- **Vercel is not a supported production target for queue mode.** On Vercel, `INGESTION_MODE=queue` is ignored and uploads run inline inside the serverless function, with the same timeout risk as inline mode. The copy in `frontend/api` exists so the app can run on Vercel; it is not a durable-ingestion deployment, and nothing here claims serverless production readiness. For production, run the backend on the long-running host and point `NEXT_PUBLIC_API_URL` at it.
-
-**Queue semantics (lease, retry, fencing).**
-- A claim sets `status=processing`, `claimed_at=now()` and increments `attempts`. `attempts` is the worker's fencing token.
-- A live worker sends a heartbeat every 60 seconds that refreshes `claimed_at`. The 10 minute lease only expires if the worker has really stopped (crash, restart), not because a job is slow.
-- If a lease does expire, another worker re-claims the job (`attempts` + 1) up to 3 attempts, then the job becomes `error`.
-- Every worker write (clear chunks, insert chunks, finish, heartbeat) is a database function that checks `attempts` under a row lock. A worker that lost its lease gets `false` back, stops, and writes nothing. So two workers can run the same job briefly, but only the latest claim can change chunks or status. Chunks are cleared and rewritten fenced, so retries do not duplicate chunks.
-- Known limit: a stalled old worker can waste compute (embedding calls) until its next write is rejected. Embedding calls may be billed even if the result is discarded.
-- Not verified against live Supabase. Tested on a local Postgres (`scripts/test_migrations.py`) and with fakes.
-
-**Vercel copy.** `frontend/api/src` is a copy of `backend/src`. Run `scripts/sync-vercel-api.sh` after backend changes; CI checks it.
-
-**Dual route mounting** (`/api/v1/...` and `/...`) is left in place. It could not be verified whether the current Vercel rewrite or any deployed client relies on the root paths, so removing it is a separate change to make after checking the live deployment.
+Deployment/main merge/paid resources need separate approval. render.yaml is a proposal only. Root and /api/v1 routes are retained until deployed rewrites/clients are verified.

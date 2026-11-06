@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 import logging
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from src.core.auth import AuthUser
 from src.core.rate_limit import rate_limited_user
@@ -16,7 +16,7 @@ inference_service = InferenceService()
 async def get_ask_context(payload: AskRequest, user: AuthUser = Depends(rate_limited_user)):
     """
     RAG Context Endpoint: Returns grounded context passages, citations, and prompt.
-    Enables client-side inference via Puter.js (Claude 3.5 Sonnet / GPT-4o) with 0 Groq limits.
+    Authenticated inspection of retrieved passages; the app answers through the backend stream.
     """
     chunks = await inference_service.retrieval.retrieve_relevant_chunks(
         query=payload.question,
@@ -44,6 +44,9 @@ async def ask_stream(payload: AskRequest, request: Request, user: AuthUser = Dep
     """
     Backend Stream Endpoint: Server-side SSE inference fallback using Groq / OpenRouter.
     """
+    if payload.model and payload.model != inference_service.settings.GROQ_MODEL:
+        raise HTTPException(status_code=422, detail="Requested model is not enabled.")
+
     async def event_generator():
         try:
             async for event_data in inference_service.stream_answer(
@@ -57,7 +60,7 @@ async def ask_stream(payload: AskRequest, request: Request, user: AuthUser = Dep
                 yield f"data: {json.dumps(event_data)}\n\n"
             yield "data: [DONE]\n\n"
         except Exception:
-            logger.exception("Ask stream failed")
+            logger.warning("Ask stream failed")
             error_payload = {"event": "error", "detail": "The answer service failed. Please try again."}
             yield f"data: {json.dumps(error_payload)}\n\n"
 

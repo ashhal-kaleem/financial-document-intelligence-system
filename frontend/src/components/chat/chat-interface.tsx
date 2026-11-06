@@ -25,6 +25,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [draft, setDraft] = useState("");
+  const requestRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const setActiveCitation = useFDISStore((s) => s.setActiveCitation);
   const selectedDocument = useFDISStore((s) => s.selectedDocument);
@@ -32,10 +33,16 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
   const setExportModalOpen = useFDISStore((s) => s.setExportModalOpen);
 
   useEffect(() => {
-    loadChatHistory().then((history) => {
-      if (history && history.length > 0) setMessages(history);
+    requestRef.current?.abort();
+    setIsStreaming(false);
+    setDraft("");
+    let active = true;
+    setMessages([]);
+    loadChatHistory(currentUser?.id).then((history) => {
+      if (active) setMessages(history);
     });
-  }, []);
+    return () => { active = false; requestRef.current?.abort(); };
+  }, [currentUser?.id]);
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -46,6 +53,12 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
   }, [messages, scrollToBottom]);
 
   const handleSend = useCallback(async (content: string) => {
+    if (requestRef.current && !requestRef.current.signal.aborted) return;
+    if (!currentUser) { useFDISStore.getState().setAuthModalOpen(true); return; }
+    const ownerId = currentUser.id;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const isCurrent = () => useFDISStore.getState().currentUser?.id === ownerId && !controller.signal.aborted;
     const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content, timestamp: new Date().toISOString() };
     const assistantId = `assistant-${Date.now()}`;
     setMessages((prev) => [...prev, userMsg, { id: assistantId, role: "assistant", content: "", timestamp: new Date().toISOString() }]);
@@ -55,6 +68,7 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
       const targetDocIds = selectedDocument ? [selectedDocument.id] : undefined;
       let fullContent = "";
       await streamQuestion(content, targetDocIds || [], undefined, (event: StreamEventPayload) => {
+        if (!isCurrent()) return;
         if (event.event === "citations") {
           const citations: Citation[] = (event.citations || []).map((c) => ({
             documentId: c.document_id,
@@ -71,21 +85,26 @@ export function ChatInterface({ documentCount, onDocumentUploaded }: ChatInterfa
         } else if (event.event === "error") {
           throw new Error(event.detail || "stream error");
         }
-      });
+      }, controller.signal);
+      if (!isCurrent()) return;
       setMessages((current) => {
-        saveChatHistory(current);
+        saveChatHistory(current, ownerId);
         return current;
       });
     } catch {
+      if (!isCurrent()) return;
       setMessages((prev) => prev.map((m) =>
         m.id === assistantId
-          ? { ...m, content: "The answer service is temporarily unavailable. Please check the connection and retry." }
+          ? { ...m, content: "The answer could not be completed or verified. Please retry.", citations: [] }
           : m
       ));
     } finally {
-      setIsStreaming(false);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setIsStreaming(false);
+      }
     }
-  }, [selectedDocument]);
+  }, [selectedDocument, currentUser]);
 
   const history = messages.filter((m) => m.role === "user").map((m) => m.content).slice(-12).reverse();
   const empty = messages.length === 0;

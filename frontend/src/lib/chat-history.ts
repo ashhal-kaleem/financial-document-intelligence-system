@@ -12,23 +12,27 @@ export interface ChatMessage {
   model?: string;
 }
 
-const CHAT_STORAGE_KEY = "fdis_chat_messages_v1";
+const CHAT_STORAGE_KEY = "fdis_chat_messages_v2:";
+function storageKey(ownerId: string) { return CHAT_STORAGE_KEY + ownerId; }
 
-export async function saveChatHistory(messages: ChatMessage[]): Promise<void> {
-  if (typeof window === "undefined") return;
+export async function saveChatHistory(messages: ChatMessage[], ownerId?: string): Promise<void> {
+  if (typeof window === "undefined" || !ownerId) return;
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    localStorage.removeItem("fdis_chat_messages_v1"); // Unscoped legacy history cannot safely be assigned to any user.
+    localStorage.setItem(storageKey(ownerId), JSON.stringify(messages));
   } catch (err) {
     console.warn("Local storage save failed:", err);
   }
 }
 
-export async function loadChatHistory(): Promise<ChatMessage[]> {
-  if (typeof window === "undefined") return [];
+export async function loadChatHistory(ownerId?: string): Promise<ChatMessage[]> {
+  if (typeof window === "undefined" || !ownerId) return [];
   try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem("fdis_chat_messages_v1");
+    const raw = localStorage.getItem(storageKey(ownerId));
     if (raw && typeof raw === "string") {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
     }
   } catch (err) {
     console.warn("Local storage read failed:", err);

@@ -1,3 +1,7 @@
+# Historical build record
+
+Not current deployment, pricing, security or test evidence. See README.md and docs/production-readiness.md for current status.
+
 # Systematic Build Checklist — Financial Document Intelligence System (FDIS)
 
 > **Phased Build Engine & Atomic Verification Checklist**  
@@ -18,7 +22,7 @@
 
 ### Phase 2 — Backend Engine Architecture & Scaffolding
 - [x] **Step 2.1**: Backend dependencies setup via `uv` → verified: `import fitz, sentence_transformers, fastapi`
-- [x] **Step 2.2**: Config & environment validation (`src/core/config.py`) → verified: `Config valid: https://aluzqooagiymysssnhkg.supabase.co`
+- [x] **Step 2.2**: Config & environment validation (`src/core/config.py`) → verified: `Config valid: [historical project reference omitted]`
 - [x] **Step 2.3**: Domain Layer (`models.py`, `chunker.py`, `citation.py`) → verified: `pytest tests/test_chunker.py -v` (3 passed)
 - [x] **Step 2.4**: Infrastructure Layer (`supabase_client.py`, `groq_client.py`, `openrouter_client.py`, `embedding_client.py`, `resend_client.py`) → verified: `pytest tests/test_infrastructure.py -v` (4 passed)
 - [x] **Step 2.5**: Service Layer (`ingestion.py`, `retrieval.py`, `inference.py`, `notification.py`) → verified: `pytest tests/test_services.py -v` (2 passed)

@@ -14,11 +14,11 @@ function shortTicker(filename: string) {
 
 export function OverviewScreen() {
   const isHydrated = useHydrated();
-  const { setActiveTab, setUploadOpen } = useFDISStore();
+  const { setActiveTab, setUploadOpen, currentUser } = useFDISStore();
   const { data: documents = [] } = useQuery({
-    queryKey: ["documents"],
+    queryKey: ["documents", currentUser?.id],
     queryFn: fetchDocuments,
-    enabled: isHydrated,
+    enabled: isHydrated && Boolean(currentUser),
   });
 
   const readyDocs = documents.filter((d) => d.status === "ready");

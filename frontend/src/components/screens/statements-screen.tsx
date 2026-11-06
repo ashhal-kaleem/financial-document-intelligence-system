@@ -32,8 +32,8 @@ const SEGMENTS = [
 export function StatementsScreen() {
   const isHydrated = useHydrated();
   const { setActiveTab, currentUser } = useFDISStore();
-  const { data: documents = [] } = useQuery({ queryKey: ["documents"], queryFn: fetchDocuments, enabled: isHydrated });
-  const filingA = documents[0];
+  const { data: documents = [] } = useQuery({ queryKey: ["documents", currentUser?.id], queryFn: fetchDocuments, enabled: isHydrated && Boolean(currentUser) });
+
 
   return (
     <div className="flex flex-1 flex-col gap-0 overflow-hidden v8-green" style={{ background: "#EAF1E4" }}>
@@ -56,8 +56,7 @@ export function StatementsScreen() {
       </div>
       {/* dense grid */}
       <div
-        className="grid flex-1 grid-cols-1 gap-3 overflow-y-auto px-4 pb-4 xl:grid-cols-[1.5fr_1fr_0.9fr]"
-        style={{ gridTemplateAreas: "'kpi cost filing' 'trend cost docs' 'income segments recent'" }}
+        className="fdis-statements-grid grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto px-4 pb-4 xl:grid-cols-[1.5fr_1fr_0.9fr]"
       >
           <div className="grid grid-cols-2 gap-3 [grid-area:kpi]">
             {KPIS.map((k) => (
@@ -185,7 +184,7 @@ export function StatementsScreen() {
             <div className="mt-3 h-[7px] overflow-hidden rounded-full bg-[#F2F2F0]">
               <div className="h-full w-[86%] rounded-full" style={{ background: "linear-gradient(90deg,#0E3B2E,#8CCB6E)" }} />
             </div>
-            <p className="mt-2 text-[10px] fam-sub tabular-nums">{filingA ? `${filingA.page_count} pages · ${filingA.status}` : "184 pages · period ended Sep 28, 2024"}</p>
+            <p className="mt-2 text-[10px] fam-sub tabular-nums">Sample period ended Sep 28, 2024</p>
           </div>
           <div className="rounded-2xl bg-white p-5 [grid-area:docs]">
             <h3 className="text-[13px] font-semibold fam-ink">Documents</h3>

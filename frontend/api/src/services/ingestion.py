@@ -1,5 +1,5 @@
 import asyncio
-import io
+from contextlib import suppress
 import logging
 from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
@@ -39,6 +39,8 @@ class DocumentIngestionService:
         pages_data = []
         try:
             doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+            if doc.needs_pass:
+                raise InvalidPDFError("Password-protected PDFs are not supported.")
             page_count = len(doc)
             if page_count == 0:
                 raise InvalidPDFError("The PDF document contains 0 pages.")
@@ -67,14 +69,16 @@ class DocumentIngestionService:
                             table_md = f"| {header} |\n| {separator} |\n" + "\n".join(f"| {r} |" for r in rows)
                             page_tables.append(table_md)
                 except Exception as e:
-                    logger.debug(f"Table detection skipped on page {page_num}: {e}")
+                    logger.debug("Table detection skipped on page %s", page_num)
 
                 pages_data.append((page_num, page_text, page_tables))
+            if not any(text.strip() or tables for _, text, tables in pages_data):
+                raise InvalidPDFError("No readable text found. Scanned PDFs need OCR, which is not supported yet.")
             return page_count, pages_data
         except Exception as e:
             if isinstance(e, InvalidPDFError):
                 raise
-            raise InvalidPDFError(f"Failed to parse PDF document '{filename}': {str(e)}")
+            raise InvalidPDFError("The PDF could not be parsed. Check that it is valid and not encrypted.") from None
         finally:
             if doc:
                 doc.close()
@@ -83,8 +87,8 @@ class DocumentIngestionService:
 
     async def enqueue_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None) -> Document:
         """Queue mode: store the PDF and a 'queued' row. A worker does the heavy work later.
-        If the PDF cannot be stored the row is removed and the error propagates (nothing to retry from)."""
-        doc = Document(id=uuid4(), filename=filename, status="queued", owner_id=owner_id)
+        If storage fails the row becomes error and cannot be claimed."""
+        doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=owner_id)
         created = await self.supabase.create_document(doc)
         try:
             await self.supabase.upload_pdf(doc.id, filename, pdf_bytes)
@@ -93,6 +97,8 @@ class DocumentIngestionService:
                 doc.id, "error", error_message="Could not store the uploaded file."
             )
             raise
+        await self.supabase.update_document_status(doc.id, "queued")
+        created.status = "queued"
         return created
 
     async def ingest_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None, is_sample: bool = False) -> Document:
@@ -101,8 +107,9 @@ class DocumentIngestionService:
         created_doc = await self.supabase.create_document(doc)
         try:
             await self.supabase.upload_pdf(doc.id, filename, pdf_bytes)
-        except Exception as e:
-            logger.warning(f"Could not upload PDF bytes to storage: {e}")
+        except Exception:
+            await self.supabase.update_document_status(doc.id, "error", error_message="Could not store the uploaded file.")
+            raise RuntimeError("Could not store the uploaded file") from None
         return await self._process(created_doc, pdf_bytes)
 
     async def process_claimed(self, doc: Document) -> Document:
@@ -135,6 +142,8 @@ class DocumentIngestionService:
         finally:
             if beat:
                 beat.cancel()
+                with suppress(asyncio.CancelledError):
+                    await beat
 
     async def _process_inner(self, doc: Document, pdf_bytes: bytes, raise_on_error: bool,
                              attempt: Optional[int]) -> Document:
@@ -163,6 +172,8 @@ class DocumentIngestionService:
                 embeddings = await asyncio.to_thread(
                     self.embedding_client.embed_texts, [c.content for c in all_chunks]
                 )
+                if len(embeddings) != len(all_chunks):
+                    raise RuntimeError("Embedding batch size mismatch")
                 for c, emb in zip(all_chunks, embeddings):
                     c.embedding = emb
                 if attempt is None:
@@ -187,7 +198,7 @@ class DocumentIngestionService:
             logger.warning("Lost lease on document %s; another worker owns it now", doc_id)
             return doc
         except Exception as exc:
-            logger.error(f"Failed ingesting document {filename}: {exc}")
+            logger.error("Document ingestion failed (%s)", type(exc).__name__)
             message = (
                 str(exc) if isinstance(exc, InvalidPDFError) else "Ingestion failed. Check the file and try again."
             )

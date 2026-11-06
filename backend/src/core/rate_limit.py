@@ -29,6 +29,13 @@ async def rate_limited_user(user: AuthUser = Depends(get_current_user)) -> AuthU
     if limit <= 0:
         return user
     now = time.monotonic()
+    # Prune idle accounts and bound memory even across many authenticated users.
+    if len(_hits) >= 1000:
+        for key in list(_hits):
+            if not _hits[key] or now - _hits[key][-1] > 60:
+                del _hits[key]
+        if user.id not in _hits and len(_hits) >= 1000:
+            raise RateLimitError()  # fail closed rather than evict an active user's quota
     q = _hits[user.id]
     while q and now - q[0] > 60:
         q.popleft()

@@ -90,7 +90,11 @@ export const useFDISStore = create<FDISState>((set) => ({
   setSelectedDocument: (doc) => set({ selectedDocument: doc }),
 
   currentUser: null,
-  setCurrentUser: (user) => set({ currentUser: user }),
+  setCurrentUser: (user) => set((state) => state.currentUser?.id === user?.id
+    ? { currentUser: user }
+    : { currentUser: user, selectedDocument: null, activeCitation: null,
+        pdfViewer: { isOpen: false, filename: "", pageNumber: 1 },
+        isUploadOpen: false, isExportModalOpen: false }),
 
   isAuthModalOpen: false,
   setAuthModalOpen: (open) => set({ isAuthModalOpen: open }),

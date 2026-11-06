@@ -1,0 +1,76 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+function load(path, imports = {}) {
+  const js = ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+  const mod = { exports: {} };
+  new Function('require', 'module', 'exports', js)((name) => imports[name] ?? require(name), mod, mod.exports);
+  return mod.exports;
+}
+const history = load('src/lib/chat-history.ts');
+const api = load('src/lib/api.ts', { '@/lib/supabase': { getAccessToken: async () => 'test-token' } });
+test('history is account-scoped and never claims legacy unscoped messages', async () => {
+  global.window = {};
+  const data = new Map([['fdis_chat_messages_v1', '[{"content":"legacy private data"}]']]);
+  global.localStorage = { getItem: k => data.get(k), setItem: (k,v) => data.set(k,v), removeItem: k => data.delete(k) };
+  assert.deepEqual(await history.loadChatHistory('alice'), []);
+  assert.equal(data.has('fdis_chat_messages_v1'), false);
+  const messages = [{ id: '1', role: 'user', content: 'alice report' }];
+  await history.saveChatHistory(messages, 'alice');
+  assert.deepEqual(await history.loadChatHistory('bob'), []);
+  assert.deepEqual(await history.loadChatHistory(), []);
+  assert.deepEqual(await history.loadChatHistory('alice'), messages);
+  await history.saveChatHistory(messages);
+  assert.equal(data.size, 1);
+});
+function mockStream(text) {
+  global.fetch = async () => new Response(new ReadableStream({ start(c) {
+    // Deliberately split inside JSON and UTF-8 bytes.
+    const bytes = new TextEncoder().encode(text);
+    for (let i=0;i<bytes.length;i+=7) c.enqueue(bytes.slice(i,i+7));
+    c.close();
+  } }), { status: 200 });
+}
+test('stream accepts only a complete answer and terminal marker', async () => {
+  mockStream('data: {"event":"token","token":"₹42 [1]"}\n\ndata: {"event":"done"}\n\ndata: [DONE]\n\n');
+  const events = [];
+  await api.streamQuestion('question', [], undefined, e => events.push(e));
+  assert.equal(events[0].token, '₹42 [1]');
+  assert.equal(events.at(-1).event, 'done');
+});
+for (const [name, text] of Object.entries({
+  provider_error: 'data: {"event":"error","detail":"failed"}\n\ndata: [DONE]\n\n',
+  missing_done: 'data: [DONE]\n\n',
+  truncated: 'data: {"event":"token","token":"partial"}\n\n',
+  no_terminal: 'data: {"event":"done"}\n\n',
+  malformed: 'data: {invalid}\n\n',
+})) test(`stream rejects ${name}`, async () => {
+  mockStream(text);
+  await assert.rejects(api.streamQuestion('question', []));
+});
+test('callback failures propagate rather than being swallowed', async () => {
+  mockStream('data: {"event":"token","token":"x"}\n\n');
+  await assert.rejects(api.streamQuestion('q', [], undefined, () => { throw Error('callback failure'); }), /callback failure/);
+});
+test('failed deletion is not reported as success', async () => {
+  global.fetch = async () => new Response('{}', { status: 500 });
+  await assert.rejects(api.deleteDocument('id'), /Delete failed/);
+});
+
+test('account switch clears document, citation and modal state', () => {
+  const { useFDISStore: store } = load('src/store/useFDISStore.ts');
+  store.getState().setCurrentUser({ id: 'alice' });
+  store.getState().setSelectedDocument({ id: 'secret-doc', filename: 'private.pdf' });
+  store.getState().openPdfViewer({ documentId: 'secret-doc', filename: 'private.pdf', pageNumber: 2 });
+  store.getState().setUploadOpen(true);
+  store.getState().setExportModalOpen(true);
+  store.getState().setCurrentUser({ id: 'bob' });
+  const state = store.getState();
+  assert.equal(state.selectedDocument, null);
+  assert.equal(state.activeCitation, null);
+  assert.equal(state.pdfViewer.isOpen, false);
+  assert.equal(state.pdfViewer.documentId, undefined);
+  assert.equal(state.isUploadOpen, false);
+  assert.equal(state.isExportModalOpen, false);
+});

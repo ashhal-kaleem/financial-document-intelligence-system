@@ -32,7 +32,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     title="Financial Document Intelligence System (FDIS) API",
-    description="Enterprise API for sub-second, strictly grounded financial document Q&A",
+    description="Authenticated financial document retrieval and cited Q&A",
     version="1.0.0",
 )
 
@@ -51,7 +51,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error("Unhandled error on %s", request.url.path, exc_info=exc)
+    logger.error("Unhandled request failure (%s)", type(exc).__name__)
     return JSONResponse(
         status_code=500,
         content={

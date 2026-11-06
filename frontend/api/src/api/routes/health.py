@@ -37,17 +37,16 @@ async def health_check():
             "latency_ms": latency_ms,
         },
         "groq": {
-            "status": "available" if settings.GROQ_API_KEY else "unconfigured",
+            "status": "configured_unverified" if settings.GROQ_API_KEY else "unconfigured",
         },
         "openrouter": {
-            "status": "available" if settings.OPENROUTER_API_KEY else "unconfigured",
+            "status": "configured_unverified" if settings.OPENROUTER_API_KEY else "unconfigured",
         },
         "resend": {
-            "status": "available" if settings.RESEND_API_KEY else "unconfigured",
+            "status": "configured_unverified" if settings.RESEND_API_KEY else "unconfigured",
         }
     }
-    if db_error:
-        checks["database"]["error"] = db_error
+    # Do not echo upstream error details or imply configured providers were probed.
 
     return JSONResponse(
         status_code=http_status,

@@ -1,7 +1,7 @@
 -- Durable ingestion queue on the documents table. Upload stores the PDF and inserts a row with
 -- status = 'queued'; a worker claims rows with claim_next_document(). State lives in Postgres, so a
 -- restart loses nothing: rows stuck in 'processing' past the lease are claimed again, up to a cap.
--- Assumes 0001 and 0002 are applied. Not applied anywhere yet.
+-- Assumes 0001 and 0002 are applied. Applied to financial-rag during the approved 2026-11-06 rebuild.
 
 alter table public.documents
   add column if not exists claimed_at timestamptz,

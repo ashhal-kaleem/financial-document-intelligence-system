@@ -3,7 +3,7 @@ export interface DocumentItem {
   filename: string;
   page_count: number;
   chunk_count: number;
-  status: "uploaded" | "queued" | "processing" | "ready" | "error";
+  status: "uploaded" | "queued" | "processing" | "deleting" | "ready" | "error";
   error_message?: string | null;
   is_sample?: boolean;
   created_at: string;
@@ -39,7 +39,7 @@ export interface StreamEventPayload {
   citations?: CitationItem[];
   token?: string;
   finish_reason?: string;
-  total_tokens?: number;
+  stream_chunks?: number;
   citations_count?: number;
 }
 
@@ -83,7 +83,8 @@ export async function uploadDocument(file: File): Promise<DocumentItem> {
 
 export async function deleteDocument(id: string): Promise<boolean> {
   const res = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE", headers: await authHeaders() });
-  return res.ok;
+  if (!res.ok) throw new Error("Delete failed. Please retry.");
+  return true;
 }
 
 /** Fetches the PDF with the user's token and returns a local blob URL (iframes cannot send headers). */
@@ -133,6 +134,8 @@ export async function streamQuestion(
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
 
+  let completed = false;
+  try {
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -143,15 +146,21 @@ export async function streamQuestion(
       const trimmed = block.trim();
       if (!trimmed || !trimmed.startsWith("data: ")) continue;
       const dataStr = trimmed.slice(6).trim();
-      if (dataStr === "[DONE]") return;
-      try {
-        const parsed: StreamEventPayload = JSON.parse(dataStr);
-        if (onEvent) onEvent(parsed);
-      } catch (e) {
-        console.error("SSE parse error", e);
+      if (dataStr === "[DONE]") {
+        if (!completed) throw new Error("Answer stream ended before completion.");
+        return;
       }
+      let parsed: StreamEventPayload;
+      try { parsed = JSON.parse(dataStr); }
+      catch { throw new Error("Invalid answer stream."); }
+      if (parsed.event === "error") throw new Error(parsed.detail || "Answer failed.");
+      if (parsed.event === "done") completed = true;
+      if (onEvent) onEvent(parsed);
+
     }
   }
+  throw new Error("Answer stream was interrupted. Please retry.");
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 }
 
 export async function fetchHealth(): Promise<{ status: string; latency_ms: number }> {

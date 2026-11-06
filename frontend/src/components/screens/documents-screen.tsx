@@ -10,8 +10,8 @@ const BARS = [38, 46, 34, 58, 41, 47];
 
 export function DocumentsScreen() {
   const isHydrated = useHydrated();
-  const { setActiveTab, setUploadOpen } = useFDISStore();
-  const { data: documents = [] } = useQuery({ queryKey: ["documents"], queryFn: fetchDocuments, enabled: isHydrated });
+  const { setActiveTab, setUploadOpen, currentUser } = useFDISStore();
+  const { data: documents = [] } = useQuery({ queryKey: ["documents", currentUser?.id], queryFn: fetchDocuments, enabled: isHydrated && Boolean(currentUser) });
   const latest = documents[0];
   const totalPages = documents.reduce((n, d) => n + (d.page_count || 0), 0);
 

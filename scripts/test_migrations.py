@@ -139,5 +139,20 @@ except psycopg2.errors.InsufficientPrivilege: blocked = True
 check("authenticated cannot call fenced functions", blocked)
 k = as_role("service_role"); k.execute("select count(*) from claim_next_document()"); check("service_role can call claim_next_document", True)
 
+# Two-phase deletion hides rows, fences queue claims and retains the row until Storage succeeds.
+t = str(uuid.uuid4())
+cur.execute("insert into documents (id,filename,owner_id,status) values (%s,'delete.pdf',%s,'queued')", (t,A))
+cur.execute("select count(*) from begin_document_delete(%s,%s)",(t,B)); check("delete cannot claim another owner's document",cur.fetchone()[0]==0)
+cur.execute("select status from begin_document_delete(%s,%s)",(t,A)); check("delete atomically marks queued row",cur.fetchone()[0]=='deleting')
+k=as_role("authenticated",A);k.execute("select count(*) from documents where id=%s",(t,));check("deleting row hidden by RLS",k.fetchone()[0]==0)
+cur.execute("select heartbeat_document(%s,0)",(t,));check("deleting row cannot be heartbeated",cur.fetchone()[0] is False)
+cur.execute("select count(*) from begin_document_delete(%s,%s)",(t,A));check("delete can be retried",cur.fetchone()[0]==1)
+cur.execute("delete from documents where id=%s",(t,))
+k=as_role("authenticated",A)
+try:
+    k.execute("select * from begin_document_delete(%s,%s)",(f,A));blocked=False
+except psycopg2.errors.InsufficientPrivilege:blocked=True
+check("authenticated cannot call service delete function",blocked)
+
 shutil.rmtree(tmp, ignore_errors=True)
 print(f"\n{len(fails)} failed"); sys.exit(1 if fails else 0)

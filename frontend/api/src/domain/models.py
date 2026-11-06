@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
@@ -14,7 +14,7 @@ class Document(BaseModel):
     is_sample: bool = False
     owner_id: Optional[str] = None
     attempts: Optional[int] = None  # queue fencing token (set when a worker claims the job)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class DocumentChunk(BaseModel):
@@ -42,7 +42,7 @@ class Citation(BaseModel):
 
 
 class AskRequest(BaseModel):
-    question: str = Field(..., min_length=2, description="User question on financial reports")
-    document_ids: Optional[List[UUID]] = Field(default=None, description="Optional document filter")
-    model: Optional[str] = Field(default=None, description="Optional model override")
+    question: str = Field(..., min_length=2, max_length=4000, description="User question on financial reports")
+    document_ids: Optional[List[UUID]] = Field(default=None, max_length=100, description="Optional document filter")
+    model: Optional[str] = Field(default=None, max_length=120, description="Configured model only")
 

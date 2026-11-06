@@ -25,7 +25,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
 
   const handleSubmit = useCallback(() => {
     const trimmed = draft.trim();
-    if (!trimmed || isStreaming) return;
+    if (!trimmed || isStreaming || disabled) return;
     onSend(trimmed);
     setDraft("");
   }, [draft, isStreaming, onSend, setDraft]);
@@ -33,15 +33,19 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || file.type !== "application/pdf") return;
+    const ownerId = useFDISStore.getState().currentUser?.id;
+    if (!ownerId) { useFDISStore.getState().setAuthModalOpen(true); return; }
     setIsUploading(true);
     setUploadNote(null);
     try {
       const doc = await uploadDocument(file);
+      if (useFDISStore.getState().currentUser?.id !== ownerId) return;
       setSelectedDocument({ id: doc.id, filename: doc.filename });
       setUploadNote(doc.status === "ready" ? `Indexed ${doc.filename}` : `Uploaded ${doc.filename}. Indexing in the background; answers need it to finish.`);
       onDocumentUploaded?.();
       setTimeout(() => setUploadNote(null), 4000);
     } catch (err) {
+      if (useFDISStore.getState().currentUser?.id !== ownerId) return;
       setUploadNote(err instanceof Error ? err.message : "Upload failed.");
       setTimeout(() => setUploadNote(null), 6000);
     } finally {

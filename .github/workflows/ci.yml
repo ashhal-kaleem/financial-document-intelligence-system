@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, backend-hardening]
 
 jobs:
   backend:
@@ -34,5 +34,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: pnpm, cache-dependency-path: frontend/pnpm-lock.yaml }
       - run: pnpm install --frozen-lockfile
+      - run: node --test tests/*.test.cjs
       - run: npx tsc --noEmit
       - run: pnpm build

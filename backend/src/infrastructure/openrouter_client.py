@@ -3,17 +3,14 @@ from typing import AsyncGenerator, Dict, List, Optional
 import httpx
 from src.core.config import get_settings
 from src.infrastructure.interfaces import BaseLLMClient
+from src.infrastructure.llm_stream import stream_tokens
 
 class OpenRouterClient(BaseLLMClient):
     def __init__(self):
         self.settings = get_settings()
         self.api_key = self.settings.OPENROUTER_API_KEY
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.fallback_models = [
-            "liquid/lfm-2.5-2.6b:free",
-            "nvidia/nemotron-3.5-lightning:free",
-            "minimax/minimax-m3:free",
-        ]
+        self.fallback_models = [self.settings.OPENROUTER_DEFAULT_MODEL]
 
     async def stream_chat(
         self,
@@ -21,8 +18,11 @@ class OpenRouterClient(BaseLLMClient):
         model: Optional[str] = None,
         temperature: float = 0.1,
     ) -> AsyncGenerator[str, None]:
-        models_to_try = [model] if model and model not in self.fallback_models else []
-        models_to_try.extend([m for m in self.fallback_models if m not in models_to_try])
+        if not self.settings.LLM_FALLBACK_ENABLED or not self.api_key:
+            raise RuntimeError("Fallback is not enabled")
+        if model and model != self.settings.OPENROUTER_DEFAULT_MODEL:
+            raise ValueError("Model is not enabled")
+        models_to_try = self.fallback_models
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -36,23 +36,11 @@ class OpenRouterClient(BaseLLMClient):
             "messages": messages,
             "temperature": temperature,
             "stream": True,
+            "max_tokens": self.settings.LLM_MAX_OUTPUT_TOKENS,
         }
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             async with client.stream("POST", self.base_url, headers=headers, json=payload) as response:
                 response.raise_for_status()
-                async for line in response.aiter_lines():
-                    line = line.strip()
-                    if not line or not line.startswith("data: "):
-                        continue
-                    data_str = line[6:].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        parsed = json.loads(data_str)
-                        delta = parsed.get("choices", [{}])[0].get("delta", {})
-                        content = delta.get("content")
-                        if content:
-                            yield content
-                    except json.JSONDecodeError:
-                        continue
+                async for token in stream_tokens(response):
+                    yield token

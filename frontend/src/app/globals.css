@@ -152,3 +152,10 @@
 ::-webkit-scrollbar-thumb:hover { background: #1117144d; }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Stack named statement panels on narrow viewports; avoid implicit desktop columns. */
+.fdis-statements-grid { grid-template-areas: "kpi" "trend" "income" "cost" "segments" "filing" "docs" "recent"; }
+.fdis-statements-grid > * { min-width: 0; }
+@media (min-width: 1280px) {
+  .fdis-statements-grid { grid-template-areas: "kpi cost filing" "trend cost docs" "income segments recent"; }
+}

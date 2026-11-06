@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, Search, SlidersHorizontal, ArrowLeftRight } from "lucide-react";
 import { fetchDocuments } from "@/lib/api";
+import { useFDISStore } from "@/store/useFDISStore";
 import { useHydrated } from "@/hooks/useHydrated";
 
 interface MetricRow { name: string; docA: number; docB: number; src: string }
@@ -22,12 +23,13 @@ const pct = (a: number, b: number) => `${b >= a ? "+" : ""}${(((b - a) / a) * 10
 const QUARTERS = [["Q1", 62, 55], ["Q2", 88, 76], ["Q3", 58, 68], ["Q4", 95, 84]];
 
 export function ComparisonScreen() {
+  const currentUser = useFDISStore((s) => s.currentUser);
   const isHydrated = useHydrated();
-  const { data: docs = [] } = useQuery({ queryKey: ["documents"], queryFn: fetchDocuments, enabled: isHydrated });
+  const { data: docs = [] } = useQuery({ queryKey: ["documents", currentUser?.id], queryFn: fetchDocuments, enabled: isHydrated && Boolean(currentUser) });
   const [swapped, setSwapped] = useState(false);
 
-  const filingA = docs[0]?.filename.replace(/\.pdf$/i, "") || "Filing A · FY2024";
-  const filingB = docs[1]?.filename.replace(/\.pdf$/i, "") || "Filing B · FY2023";
+  const filingA = "Sample filing · FY2024";
+  const filingB = "Sample filing · FY2023";
 
   const delta = (i: number) => {
     const m = METRICS[i];
@@ -39,7 +41,7 @@ export function ComparisonScreen() {
     <div className="v8-orange flex flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6 pt-2" style={{ background: "#F7F7F6" }}>
       <div>
         <h2 className="text-[26px] font-medium tracking-tight fam-ink">Compare filings</h2>
-        <p className="text-[12px] fam-sub">Two filings side by side - every difference calculated for you.</p>
+        <p className="text-[12px] fam-sub">Illustrative sample figures only. Uploaded reports are not compared here yet.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_2.7fr]">

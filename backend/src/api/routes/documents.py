@@ -69,7 +69,7 @@ async def upload_document(response: Response, file: UploadFile = File(...), user
     except InvalidPDFError:
         raise
     except Exception:
-        logger.exception("Document ingestion failed")
+        logger.warning("Document ingestion failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to ingest document.",
@@ -162,6 +162,6 @@ async def get_document_pdf(document_id: UUID, user: AuthUser = Depends(get_curre
         media_type="application/pdf",
         headers={
             "Content-Disposition": f'inline; filename="{safe_filename(doc.filename)}"',
-            "Cache-Control": "private, max-age=3600",
+            "Cache-Control": "private, no-store",
         }
     )

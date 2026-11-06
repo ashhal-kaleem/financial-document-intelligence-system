@@ -52,8 +52,10 @@ async def test_delete_refuses_unowned_and_never_deletes_samples(monkeypatch):
         return httpx.Response(200, json=[])  # ownership lookup finds nothing
     mock_supabase(monkeypatch, handler)
     assert await sc.SupabaseClient().delete_document(uuid4(), OWNER) is False
-    assert [r.method for r in seen] == ["GET"]
-    assert "is_sample=eq.false" in str(seen[0].url) and f"owner_id=eq.{OWNER}" in str(seen[0].url)
+    assert [r.method for r in seen] == ["POST"]
+    import json
+    assert seen[0].url.path.endswith("/rpc/begin_document_delete")
+    assert json.loads(seen[0].content)["p_owner"] == OWNER
 
 
 class FakeStore:

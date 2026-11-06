@@ -2,7 +2,8 @@
 -- financial-rag Supabase project since 2026-11-06: the drifted app tables and functions
 -- were dropped and rebuilt by applying these three migrations, with the owner's approval.
 -- Before that it was reconstructed from backend/src (not exported from the live project).
--- Every statement is idempotent, so it is safe to run on an existing project.
+-- Rerunnable on the expected schema; NOT safe to apply blindly to an existing drifted project.
+-- Compare schema and review data/privilege effects before any new hosted application.
 
 create extension if not exists vector;
 

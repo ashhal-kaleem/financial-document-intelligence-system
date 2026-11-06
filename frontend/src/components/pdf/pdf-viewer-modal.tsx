@@ -20,7 +20,8 @@ export function PdfViewerModal() {
   const [currentPage, setCurrentPage] = useState<number>(pdfViewer.pageNumber || 1);
   const [zoom, setZoom] = useState<number>(100);
 
-  const page = pdfViewer.pageNumber || currentPage;
+  const page = currentPage;
+  useEffect(() => { setCurrentPage(pdfViewer.pageNumber || 1); setZoom(100); }, [pdfViewer.documentId, pdfViewer.pageNumber, pdfViewer.isOpen]);
   const [blobUrl, setBlobUrl] = useState<string>("");
   const [loadError, setLoadError] = useState<string>("");
 
