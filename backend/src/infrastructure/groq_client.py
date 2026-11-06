@@ -27,6 +27,8 @@ class GroqClient(BaseLLMClient):
         target_model = model or self.default_model
         if target_model != self.default_model:
             raise ValueError("Model is not enabled")
+        if not self.api_key:
+            raise RuntimeError("Backend answer provider is not configured")
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",

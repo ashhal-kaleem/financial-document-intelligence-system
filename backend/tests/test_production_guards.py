@@ -179,3 +179,21 @@ async def test_rate_limit_map_prunes_stale_users_and_fails_closed_when_full(monk
     for i in range(1000):rl._hits[str(i)]=deque([999.])
     with pytest.raises(rl.RateLimitError):await rl.rate_limited_user(AuthUser('another-user'))
     rl.reset_rate_limits()
+
+
+@pytest.mark.asyncio
+async def test_unconfigured_backend_provider_makes_no_request(monkeypatch):
+    provider = GroqClient()
+    monkeypatch.setattr(provider, "api_key", "")
+    def unexpected_client(*args, **kwargs):
+        raise AssertionError("No provider request without configured key")
+    monkeypatch.setattr("src.infrastructure.groq_client.httpx.AsyncClient", unexpected_client)
+    with pytest.raises(RuntimeError, match="not configured"):
+        async for _ in provider.stream_chat([]):
+            pass
+
+def test_groq_key_is_optional_for_app_startup(monkeypatch):
+    from src.core.config import Settings
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    settings = Settings(_env_file=None, SUPABASE_URL="https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY="test")
+    assert settings.GROQ_API_KEY == ""

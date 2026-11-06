@@ -18,7 +18,7 @@ Status: not deployed from backend-hardening. Last revised 6 November 2026. This 
 
 ## Configuration
 
-Backend: copy backend/.env.example. Supply SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, HF_TOKEN, GROQ_API_KEY and ALLOWED_ORIGINS. Use a reviewed model identifier actually available to the provider account. Optional fallback requires LLM_FALLBACK_ENABLED=true plus OPENROUTER_API_KEY. Output has a configured cap. No client-chosen arbitrary model.
+Backend: copy backend/.env.example. Supply SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, HF_TOKEN (only for approved embedding use) and ALLOWED_ORIGINS. GROQ_API_KEY is optional for explicit backend inference; Puter browser inference does not require it. Use a reviewed model identifier actually available to the provider account. Optional fallback requires LLM_FALLBACK_ENABLED=true plus OPENROUTER_API_KEY. Output has a configured cap. No client-chosen arbitrary model.
 
 Frontend: copy frontend/.env.example. Set NEXT_PUBLIC_API_URL to the backend /api/v1 URL, NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Never expose service role/provider keys in NEXT_PUBLIC settings or client code. No project is hardcoded.
 

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     SUPABASE_STORAGE_BUCKET: str = Field("documents", description="Storage bucket name for PDFs")
 
     # LLM Inference Configuration
-    GROQ_API_KEY: str = Field(..., description="Groq LPU API Key")
+    GROQ_API_KEY: str = Field("", description="Optional Groq key for explicit backend inference")
     GROQ_MODEL: str = Field("qwen/qwen3.8-27b", description="Default Groq model")
     OPENROUTER_API_KEY: str = Field("", description="OpenRouter API Key for fallback")
     OPENROUTER_DEFAULT_MODEL: str = Field("liquid/lfm-2.5-2.6b:free", description="Default OpenRouter fallback model")
