@@ -46,3 +46,14 @@ ID validation checks only marker membership, not sentence-level grounding. Parti
 Puter response schema was checked against https://docs.puter.com/Objects/chatresponse/ and https://docs.puter.com/AI/chat/ . Normalized non-streamed responses document finish_reason and numeric usage.cost. Only stop + zero cost is accepted; missing/unknown metadata fails with a visible explanation. This is documented compatibility, not live proof for each provider. No actual generation or private-report transfer was performed.
 
 Google Cloud access check: console.cloud.google.com requires account sign-in; no saved Google login or connected 1Password was available. Existing Cloud project/client existence remains unknown. Select the intended Google account before sign-in; request secrets through a secure vault link, never chat.
+
+
+## 6 November follow-up: production data only
+
+The deployed Overview and Documents screens still used hardcoded filing/activity fallbacks, even when the real library was empty. Statements, Comparison and Insights also contained fixed financial figures. The database reset did not remove these source-rendered values. These blocks and unused frontend seeds are now removed, not merely labeled. Unsupported analytics show an explicit unavailable state. The notification count and unsupported voice-input control were removed.
+
+Overview totals now derive only from the authenticated non-sample document query. Signed-out, loading, failed-request and genuinely empty-library states are separate. Account-switch clearing and account-scoped chat-history behavior remain regression-tested; upload-modal state is remounted per account. Ready documents link to scoped Q&A and authenticated PDF view. No real login/upload/answer/delete workflow or cross-user isolation is claimed by these mocked/local tests.
+
+The application API now filters every document lookup/list/retrieval scope to owner_id AND is_sample=false. Existing database sample/RLS policies are not changed by this source fix and still need a reviewed hosted policy decision. No database reset, private data deletion, storage or Google provider mutation is part of this cleanup.
+
+Live Google sign-in currently navigates to Supabase HTTP400: provider is not enabled. This blocks the actual private workspace flow. Google setup, private storage, migration0004, zero-cost embeddings, real PDF/citation/deletion tests and operations checks remain release gates. Render Free sleep remains incompatible with a claimed always-on worker.

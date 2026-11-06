@@ -28,7 +28,7 @@ def mock_supabase(monkeypatch, handler):
 
 
 @pytest.mark.asyncio
-async def test_queries_are_scoped_to_owner_or_sample(monkeypatch):
+async def test_queries_are_scoped_to_owner_and_exclude_samples(monkeypatch):
     seen = []
 
     def handler(request):
@@ -40,7 +40,9 @@ async def test_queries_are_scoped_to_owner_or_sample(monkeypatch):
     await client.get_document_by_id(uuid4(), OWNER)
     await client.get_visible_document_ids(OWNER)
     for r in seen:
-        assert f"owner_id.eq.{OWNER}" in str(r.url) and "is_sample.eq.true" in str(r.url)
+        assert r.url.params["owner_id"] == f"eq.{OWNER}"
+        assert r.url.params["is_sample"] == "eq.false"
+        assert "or" not in r.url.params
 
 
 @pytest.mark.asyncio

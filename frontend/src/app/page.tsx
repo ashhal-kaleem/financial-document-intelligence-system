@@ -13,7 +13,7 @@ import { DocumentsScreen } from "@/components/screens/documents-screen";
 import { StatementsScreen } from "@/components/screens/statements-screen";
 import { ComparisonScreen } from "@/components/screens/comparison-screen";
 import { InsightsScreen } from "@/components/screens/insights-screen";
-import { TopNav, CircleRail, LabeledRail, MobileTabNav, SampleDataTag } from "@/components/shell/app-chrome";
+import { TopNav, CircleRail, LabeledRail, MobileTabNav } from "@/components/shell/app-chrome";
 import { fetchDocuments, deleteDocument } from "@/lib/api";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getSupabase } from "@/lib/supabase";
@@ -84,7 +84,6 @@ export default function Home() {
     <>
       {activeTab === "overview" && (
         <AppFrame family="green" sheet="canvas">
-          <SampleDataTag demo={documents.length === 0} />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="green" greeting />
             <OverviewScreen />
@@ -103,7 +102,6 @@ export default function Home() {
 
       {activeTab === "documents" && (
         <AppFrame family="green" sheet="canvas">
-          <SampleDataTag demo={documents.length === 0} />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="green" />
             <div className="flex flex-1 overflow-hidden">
@@ -116,7 +114,6 @@ export default function Home() {
 
       {activeTab === "statements" && (
         <AppFrame family="green">
-          <SampleDataTag demo />
           <div className="flex flex-1 flex-col overflow-hidden" style={{ background: "#EAF1E4" }}>
             <MobileTabNav family="green" />
             <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -129,7 +126,6 @@ export default function Home() {
 
       {activeTab === "comparison" && (
         <AppFrame family="orange" sheet="canvas">
-          <SampleDataTag demo />
           <div className="flex flex-1 flex-col overflow-hidden">
             <TopNav family="orange" />
             <div className="flex flex-1 overflow-hidden">
@@ -142,7 +138,6 @@ export default function Home() {
 
       {activeTab === "insights" && (
         <AppFrame family="pastel">
-          <SampleDataTag demo />
           <div className="flex flex-1 flex-col overflow-hidden">
             <MobileTabNav family="pastel" />
             <InsightsScreen />
@@ -155,7 +150,7 @@ export default function Home() {
       <PdfViewerModal />
       <MemoExportModal />
       <AuthModal />
-      <UploadModal onUploaded={refreshDocs} />
+      <UploadModal key={currentUser?.id || "guest"} onUploaded={refreshDocs} />
     </>
   );
 }

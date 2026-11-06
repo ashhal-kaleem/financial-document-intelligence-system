@@ -19,7 +19,7 @@ interface ChatInterfaceProps {
 
 const QUICK_ACTIONS = [
   { icon: Clock, title: "Summarize a filing", sub: "Key points from any 10-K, with page citations", prompt: "Summarize the key points of the latest filing" },
-  { icon: GitCompareArrows, title: "Compare two filings", sub: "Year-over-year changes, side by side", prompt: "Compare revenue and margins year over year" },
+  { icon: GitCompareArrows, title: "Find evidence", sub: "Find a passage in your selected document", prompt: "Find the passage describing the principal business risks" },
   { icon: CheckCircle2, title: "Check a figure", sub: "Trace any number to its source page", prompt: "Check the reported services revenue figure" },
 ];
 

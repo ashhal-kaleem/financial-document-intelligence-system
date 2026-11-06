@@ -70,8 +70,8 @@ class SupabaseClient(BaseVectorStore):
 
     @staticmethod
     def _visible_filter(owner_id: str) -> str:
-        """PostgREST filter: documents the user owns, plus shared read-only samples."""
-        return f"or=(owner_id.eq.{owner_id},is_sample.eq.true)"
+        """PostgREST filter: non-sample documents owned by this user only."""
+        return f"owner_id=eq.{owner_id}&is_sample=eq.false"
 
     async def get_documents(self, owner_id: str) -> List[Document]:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -84,7 +84,7 @@ class SupabaseClient(BaseVectorStore):
             return [Document(**item) for item in data]
 
     async def get_document_by_id(self, doc_id: UUID, owner_id: str) -> Optional[Document]:
-        """Returns the document only if the user owns it or it is a shared sample."""
+        """Returns the document only if the user owns it and it is not a sample."""
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(
                 f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&status=neq.deleting&{self._visible_filter(owner_id)}",

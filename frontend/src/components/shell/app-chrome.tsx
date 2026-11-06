@@ -52,19 +52,6 @@ export function ProfileChip({ family, expanded = true }: { family: string; expan
   );
 }
 
-export function BellButton({ family }: { family: string }) {
-  return (
-    <button
-      className={cn("relative flex size-9 items-center justify-center rounded-full bg-white transition-shadow hover:shadow-md active:scale-[0.98]", `v8-${family}`)}
-      style={{ border: "1px solid var(--fam-line)" }}
-      aria-label="Notifications"
-    >
-      <Bell className="size-4 fam-sub" strokeWidth={1.75} />
-      <span className="absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-[#D64541] text-[8px] font-bold text-white">3</span>
-    </button>
-  );
-}
-
 export function LogoMark({ family, dark = false }: { family: string; dark?: boolean }) {
   return (
     <div className={cn("flex items-center gap-2.5", `v8-${family}`)}>
@@ -138,7 +125,6 @@ export function TopNav({ family, greeting }: { family: string; greeting?: boolea
         })}
       </nav>
       <div className="flex items-center gap-2.5 min-w-0 md:min-w-[180px] justify-end">
-        <BellButton family={family} />
         <ProfileChip family={family} />
       </div>
     </header>
@@ -287,14 +273,5 @@ export function ChatSidebar({ history, onPick }: { history: string[]; onPick: (q
         </button>
       </div>
     </aside>
-  );
-}
-
-/** Small caption marking illustrative sample content (demo vs mixed with real uploads). */
-export function SampleDataTag({ demo }: { demo: boolean }) {
-  return (
-    <span className="pointer-events-none absolute bottom-3 right-5 z-20 text-[10px] fam-mut">
-      {demo ? "Sample data - illustrative" : "Some metrics illustrative"}
-    </span>
   );
 }

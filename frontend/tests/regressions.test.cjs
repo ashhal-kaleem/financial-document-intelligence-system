@@ -74,3 +74,31 @@ test('account switch clears document, citation and modal state', () => {
   assert.equal(state.isUploadOpen, false);
   assert.equal(state.isExportModalOpen, false);
 });
+
+function ownedState({ owner = 'alice', hydrated = true, data = [], pending = false, error = false } = {}) {
+  return load('src/hooks/useOwnedDocuments.ts', {
+    '@tanstack/react-query': { useQuery: () => ({ data, isError: error, isPending: pending, refetch() {} }) },
+    '@/lib/api': { fetchDocuments() {} },
+    '@/hooks/useHydrated': { useHydrated: () => hydrated },
+    '@/store/useFDISStore': { useFDISStore: select => select({ currentUser: owner ? { id: owner } : null }) },
+  }).useOwnedDocuments();
+}
+test('document state distinguishes signed-out, loading, error and true empty results', () => {
+  const privateDoc = { id: 'private', filename: 'private.pdf' };
+  for (const props of [{ owner: null }, { hydrated: false }, { error: true }]) {
+    assert.deepEqual(ownedState({ ...props, data: [privateDoc] }).documents, []);
+  }
+  assert.equal(ownedState({ owner: null }).state, 'signed-out');
+  assert.equal(ownedState({ pending: true }).state, 'loading');
+  assert.equal(ownedState({ error: true }).state, 'error');
+  assert.equal(ownedState().state, 'empty');
+  assert.deepEqual(ownedState({ data: [privateDoc, { id: 'sample', is_sample: true }] }).documents, [privateDoc]);
+});
+test('production screens contain no seeded financial records or fake activity fallback', () => {
+  const paths = fs.readdirSync('src/components/screens').map(p => 'src/components/screens/' + p);
+  const source = paths.map(p => fs.readFileSync(p, 'utf8')).join('\n');
+  assert.doesNotMatch(source, /AAPL|MSFT|TSLA|391\.0B|FY2024|Questions This Week|SampleDataTag/);
+  assert.equal(fs.existsSync('src/mocks'), false);
+  assert.doesNotMatch(fs.readFileSync('src/components/shell/app-chrome.tsx', 'utf8'), /BellButton|SampleDataTag/);
+  assert.doesNotMatch(fs.readFileSync('src/components/citations/citation-drawer.tsx', 'utf8'), /Evidence passage verified/);
+});

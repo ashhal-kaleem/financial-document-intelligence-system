@@ -74,7 +74,7 @@ export function CitationDrawer() {
                 Passage Extract
               </span>
               <p className="text-xs leading-relaxed text-foreground/90 font-mono">
-                {activeCitation.snippet || "Evidence passage verified in SEC filing. Click 'Open in In-Browser PDF Viewer' to view the original source page."}
+                {activeCitation.snippet || "No source passage was returned. Open the PDF to check this citation."}
               </p>
             </div>
 

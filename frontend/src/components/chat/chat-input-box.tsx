@@ -40,7 +40,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
     try {
       const doc = await uploadDocument(file);
       if (useFDISStore.getState().currentUser?.id !== ownerId) return;
-      setSelectedDocument({ id: doc.id, filename: doc.filename });
+      if (doc.status === "ready") setSelectedDocument({ id: doc.id, filename: doc.filename });
       setUploadNote(doc.status === "ready" ? `Indexed ${doc.filename}` : `Uploaded ${doc.filename}. Indexing in the background; answers need it to finish.`);
       onDocumentUploaded?.();
       setTimeout(() => setUploadNote(null), 4000);
@@ -77,7 +77,7 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
         <div className="flex items-center justify-between px-1.5 pb-0.5">
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-3 py-1.5 text-[11px] font-medium text-[#6D5BD0]">
-              <Sparkles className="size-3" /> Deep analysis
+              <Sparkles className="size-3" /> Document Q&A
             </span>
             {selectedDocument && (
               <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-2.5 py-1.5 text-[10px] font-medium text-[#6D5BD0]">
@@ -99,9 +99,6 @@ export function ChatInputBox({ onSend, isStreaming, disabled = false, onDocument
               aria-label="Attach a PDF filing"
             >
               {isUploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
-            </button>
-            <button className="flex size-9 items-center justify-center rounded-full text-[#A999C4] transition-colors hover:bg-[#F1EDF8] active:scale-[0.95]" aria-label="Voice input">
-              <Mic className="size-4" />
             </button>
             <button
               onClick={handleSubmit}
