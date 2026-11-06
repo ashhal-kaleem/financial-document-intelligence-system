@@ -134,3 +134,14 @@ test('Q&A has explicit document scope, no pre-accept draft deletion, and no no-o
  assert.doesNotMatch(fs.readFileSync('src/components/chat/chat-input-box.tsx','utf8'),/setDraft\(""\)/);
  assert.doesNotMatch(chat,/MoreHorizontal|Export memo|Export chat/);
 });
+test('disabled Google provider stays in app without starting OAuth',async()=>{
+ let oauthCalls=0;
+ const client={auth:{signInWithOAuth:async()=>{oauthCalls++;return {error:null};}}};
+ const auth=load('src/lib/supabase.ts',{'@/lib/workspace-routes':{safeReturnPath:p=>p},'@supabase/supabase-js':{createClient:()=>client}});
+ // This test module reads env at initialization, so reload after configuring the synthetic project.
+ process.env.NEXT_PUBLIC_SUPABASE_URL='https://fixture.invalid';process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY='fixture';
+ const configured=load('src/lib/supabase.ts',{'@/lib/workspace-routes':{safeReturnPath:p=>p},'@supabase/supabase-js':{createClient:()=>client}});
+ global.fetch=async()=>new Response(JSON.stringify({external:{google:false}}),{status:200});
+ const {error}=await configured.signInWithGoogle();assert.match(error.message,/not enabled/);assert.equal(oauthCalls,0);
+ delete process.env.NEXT_PUBLIC_SUPABASE_URL;delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+});
