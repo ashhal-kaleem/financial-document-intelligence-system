@@ -1,2 +1,6 @@
+# A single-package workspace. `packages` is required by the pinned CI pnpm 9.
+packages:
+  - '.'
+# Used by pnpm 12 local development; pnpm 9 uses package.json.onlyBuiltDependencies.
 allowBuilds:
   sharp: true
