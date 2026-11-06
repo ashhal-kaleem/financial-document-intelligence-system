@@ -22,8 +22,14 @@ services:
         value: qwen/qwen3.8-27b
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: RESEND_API_KEY
+      - key: HF_TOKEN
         sync: false
+      - key: AUTH_REQUIRED
+        value: "true"
+      - key: DEBUG
+        value: "false"
+      - key: LLM_FALLBACK_ENABLED
+        value: "false"
       - key: INGESTION_MODE
         value: queue
       - key: ALLOWED_ORIGINS

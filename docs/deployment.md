@@ -4,8 +4,8 @@ Status: not deployed from backend-hardening. Last revised 6 November 2026. This 
 
 ## Architecture
 
-- Frontend: Next.js version pinned in frontend/package.json.
-- Backend: FastAPI on a long-running host for queue ingestion.
+- Frontend: Next.js on Vercel, version pinned in frontend/package.json.
+- Backend: FastAPI on Render with queue ingestion.
 - Data: Supabase Postgres/pgvector, Auth and private Storage.
 - Inference: configured Groq model; OpenRouter fallback is explicit opt-in and never joins a partial primary answer. Configured keys do not prove provider availability.
 
@@ -27,13 +27,13 @@ Frontend: copy frontend/.env.example. Set NEXT_PUBLIC_API_URL to the backend /ap
 - Inline (default): request parses, embeds and stores the report; intended for local use and small-file tests, not guaranteed within serverless time limits.
 - Queue: use INGESTION_MODE=queue on a long-running host. Upload first stores a nonclaimable row and PDF, then changes state to queued. A failed storage write cannot create a claimable job. API worker claims, heartbeats and uses fenced database writes.
 - Claims increment attempts; expired leases can retry up to three attempts. Old workers cannot write after loss of their fencing token. A lost worker can still waste billed embedding compute until its next fenced write.
-- Vercel uses the inline copy, not durable queue mode. scripts/sync-vercel-api.sh maintains frontend/api/src from backend/src.
+- Render hosts the backend/worker. Vercel deploys only frontend; NEXT_PUBLIC_API_URL must point to the Render /api/v1 URL.
 - Nonempty crash/restart recovery has local automated evidence, not a live Supabase end-to-end result.
 
 ## Release checklist
 
-Run backend tests, local migration tests, frontend regression tests/typecheck/build and mirror check. Review dependency advisories and scan repository/history/configuration for secrets. Review new migration 0004 and get target-specific approval before applying it; it changes delete/RLS behavior. Then on the isolated target test real login, signed uploads, PDF access, two-user isolation, deletion, queue recovery, provider failures and timeout handling. Record model/version, latency, quality, quota/cost and failed cases.
+Run backend tests, local migration tests, frontend regression tests/typecheck/build. Review dependency advisories and scan repository/history/configuration for secrets. Review new migration 0004 and get target-specific approval before applying it; it changes delete/RLS behavior. Then on the isolated target test real login, signed uploads, PDF access, two-user isolation, deletion, queue recovery, provider failures and timeout handling. Record model/version, latency, quality, quota/cost and failed cases.
 
 Do not release until private storage, distributed quotas, reviewed/apply-authorized migration 0004 and real Storage deletion tests, observability, secret rotation procedures and a backup/restore drill are addressed. The current in-memory rate limiter is per-process, not a shared quota. Table extraction is heuristic, not a verified accounting model. Citation ID validation does not prove semantic support.
 
-Deployment/main merge/paid resources need separate approval. render.yaml is a proposal only. Root and /api/v1 routes are retained until deployed rewrites/clients are verified.
+Main merge is approved under the code-first sequence; manual deployment and paid resources still need separate approval. render.yaml is a proposal only. Root and /api/v1 routes are retained until deployed rewrites/clients are verified.

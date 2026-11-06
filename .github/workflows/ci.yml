@@ -19,11 +19,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv run --python 3.12 --with pgserver --with psycopg2-binary python scripts/test_migrations.py
-  vercel-copy-in-sync:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: scripts/sync-vercel-api.sh --check
   frontend:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }

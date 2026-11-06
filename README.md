@@ -19,7 +19,7 @@ The financial-rag app database was rebuilt with approval on 6 November 2026 usin
 
 Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. Retrieval uses Hugging Face feature extraction. The optional workspace AI flow uses a separate Puter Connect popup and free-model allowlist; backend Groq streaming remains an explicit API route, not an automatic Puter failure fallback. OpenRouter fallback is disabled unless explicitly enabled and configured. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
 
-Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel's copied API runs inline, not a production durable-worker target. The frontend can run on Vercel and use a separately hosted long-running backend. No infrastructure has been provisioned by this branch.
+Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel hosts the frontend only. Render hosts the single FastAPI backend and durable queue worker. No infrastructure has been provisioned by this branch.
 
 ## Run locally
 
@@ -43,7 +43,6 @@ The frontend has Google OAuth UI plus an opt-in Puter AI authorization flow; hos
 cd backend && uv run --group dev pytest -q
 cd ..
 uv run --python 3.12 --with pgserver --with psycopg2-binary python scripts/test_migrations.py
-bash scripts/sync-vercel-api.sh --check
 cd frontend && node --test tests/*.test.cjs && pnpm typecheck && pnpm build
 ```
 

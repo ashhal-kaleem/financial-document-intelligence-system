@@ -1,6 +1,6 @@
 # Readiness evidence and release gates
 
-Updated 6 November 2026. Source changes are on backend-hardening only. This is not a production certification.
+Updated 6 November 2026. Source development is on backend-hardening; main may be fast-forwarded only after checked approval. This is not a production certification.
 
 ## Offline evidence
 
@@ -10,7 +10,7 @@ Updated 6 November 2026. Source changes are on backend-hardening only. This is n
 - scripts/test_migrations.py uses throwaway local Postgres plus Supabase role/auth stubs. It tests RLS, search filters, queue retries/fencing and two-phase deletion. It is not a live Supabase/storage test.
 - Frontend production build and typecheck are separate checks; they do not verify real authentication or hosted availability.
 
-Latest local run:130 backend tests passed,2 live tests skipped;18 frontend regression tests passed;37 throwaway-Postgres checks passed;TypeScript,production build and mirror check passed. Two backend dependency deprecation warnings remain. Mobile390px and desktop1280px screenshots inspected for Statements, auth prompt and honest export state. These are local results only.
+Latest local run:130 backend tests passed,2 live tests skipped;18 frontend regression tests passed;37 throwaway-Postgres checks passed;TypeScript,production build passed. Two backend dependency deprecation warnings remain. Mobile390px and desktop1280px screenshots inspected for Statements, auth prompt and honest export state. These are local results only.
 
 Reproduce with README.md commands. Do not turn passing fixture tests into an accuracy percentage on a resume.
 
@@ -30,7 +30,7 @@ A power loss between uploaded-row creation and queued state can leave a nonclaim
 - Independently reviewed 30-50 question benchmark: retrieve expected evidence, run selected model under bounded approved usage, label numeric correctness, supported claims, citation support, abstention and injection behavior. Measure p50/p95, failure/retry rate and per-question cost on the same run. No live score exists yet.
 - Shared per-user/daily cost quotas and concurrency controls. In-memory limiter remains per-process; output token cap is not a total budget.
 - Metrics/alerts, dependency/security audit, secrets rotation and backup/restore exercise.
-- Main merge and release approval; hosting budget/regions/privacy policies. Free Render proposal sleeps/has limited RAM and is not an always-on production promise.
+- Release approval; hosting budget/regions/privacy policies. Free Render proposal sleeps/has limited RAM and is not an always-on production promise.
 
 ## Privacy and correctness limits
 
