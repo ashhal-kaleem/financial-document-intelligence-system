@@ -74,7 +74,7 @@ pnpm dev
    - `supabase/migrations/0001_schema.sql` is reconstructed from the code, not exported from the live project. Diff it against the live schema first. It is idempotent, but treat it as a reference, not the source of truth.
    - `0002_document_owner.sql` adds `owner_id`, turns on RLS. Existing rows have no owner and stay hidden (unless `is_sample`). Assigning old documents to a user is a manual, reviewed `update`; nothing does it automatically.
    - `0003_ingestion_queue.sql` adds the job queue columns and the `claim_next_document` and `fail_stale_documents` functions (service role only). Required before `INGESTION_MODE=queue`.
-   - `python scripts/test_migrations.py` runs all three against a throwaway local Postgres with pgvector. It proves the SQL behaves as written; it does not prove it matches the live database.
+   - `python scripts/test_migrations.py` runs all three against a throwaway local Postgres with pgvector. The rebuild itself was first validated the same way against a local clone of the drifted live schema, then verified live (schema, RLS, function grants, empty data).
 2. Supabase Auth: enable the Google provider and add the frontend URL to the redirect list. Keep the storage bucket private.
 3. Backend env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS` (JSON list with the frontend URL), `GROQ_API_KEY`, `HF_TOKEN`, optional `OPENROUTER_API_KEY`.
 4. Frontend env: `NEXT_PUBLIC_API_URL` (the backend `/api/v1` URL), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. There is no built-in fallback project: without these, sign-in is off.

@@ -1,6 +1,7 @@
--- FDIS schema, reconstructed from how backend/src reads and writes the database.
--- It was NOT exported from the live project. Before applying anywhere that already has data,
--- diff it against the live schema (Supabase dashboard > Database, or `supabase db diff`).
+-- FDIS schema. This file plus 0002 and 0003 is the authoritative schema of the
+-- financial-rag Supabase project since 2026-11-06: the drifted app tables and functions
+-- were dropped and rebuilt by applying these three migrations, with the owner's approval.
+-- Before that it was reconstructed from backend/src (not exported from the live project).
 -- Every statement is idempotent, so it is safe to run on an existing project.
 
 create extension if not exists vector;
