@@ -316,3 +316,48 @@ test("retired frontend source and assets are absent, required framework packages
   assert.equal(pkg.dependencies["motion"], undefined);
   assert.equal(pkg.pnpm.overrides["next>postcss"], "8.5.32");
 });
+
+
+test("document request uses one session lookup and explicit private auth", async () => {
+  let calls = 0;
+  const docsApi = load("src/lib/api.ts", {
+    "@/lib/supabase": { getAccessToken: async () => { calls++; return "synthetic-token"; } },
+  });
+  global.fetch = async (_url, options) => {
+    assert.equal(options.headers.Authorization, "Bearer synthetic-token");
+    assert.equal(options.signal.aborted, false);
+    return new Response(JSON.stringify({ data: [] }), {status: 200});
+  };
+  assert.deepEqual(await docsApi.fetchDocuments(), []);
+  assert.equal(calls, 1);
+});
+
+test("stalled document session becomes an error, not an endless loading result", async () => {
+  const realTimer = global.setTimeout;
+  global.setTimeout = (fn, ms, ...args) => realTimer(fn, ms === 45000 ? 5 : ms, ...args);
+  const docsApi = load("src/lib/api.ts", {
+    "@/lib/supabase": { getAccessToken: () => new Promise(() => {}) },
+  });
+  try { await assert.rejects(docsApi.fetchDocuments(), /timed out/); }
+  finally { global.setTimeout = realTimer; }
+});
+
+test("stalled document HTTP request is aborted and can be retried", async () => {
+  const realTimer = global.setTimeout;
+  global.setTimeout = (fn, ms, ...args) => realTimer(fn, ms === 45000 ? 5 : ms, ...args);
+  let signal;
+  global.fetch = (_url, options) => { signal = options.signal; return new Promise(() => {}); };
+  try { await assert.rejects(api.fetchDocuments(), /timed out/); assert.equal(signal.aborted, true); }
+  finally { global.setTimeout = realTimer; }
+  global.fetch = async () => new Response(JSON.stringify({data: []}), {status:200});
+  assert.deepEqual(await api.fetchDocuments(), []);
+});
+
+test("missing session, rejected auth, and malformed document response never report empty success", async () => {
+  const signedOutApi = load("src/lib/api.ts", {"@/lib/supabase": {getAccessToken: async () => null}});
+  await assert.rejects(signedOutApi.fetchDocuments(), /Sign in/);
+  global.fetch = async () => new Response("{}", {status:401});
+  await assert.rejects(api.fetchDocuments(), /session expired/);
+  global.fetch = async () => new Response("{}", {status:200});
+  await assert.rejects(api.fetchDocuments(), /invalid response/);
+});

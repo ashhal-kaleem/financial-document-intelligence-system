@@ -11,6 +11,7 @@ export function useOwnedDocuments() {
   const query = useQuery({
     queryKey: ["documents", currentUser?.id],
     queryFn: fetchDocuments,
+    retry: false, // One bounded request; the visible Retry button starts a new one.
     enabled: hydrated && Boolean(currentUser),
     refetchInterval: (q) =>
       (q.state.data ?? []).some(

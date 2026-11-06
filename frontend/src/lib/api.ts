@@ -65,19 +65,41 @@ async function authHeaders(
 }
 
 export async function fetchDocuments(): Promise<DocumentItem[]> {
-  if (!(await getAccessToken())) return [];
-  const res = await fetch(`${API_BASE}/documents`, {
-    cache: "no-store",
-    headers: await authHeaders(),
+  // Bound both session lookup and the complete HTTP/body read. A stalled request
+  // must become a retryable error, never an endless loading or empty-library result.
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("Documents request timed out. Retry to check your library."));
+    }, 45000);
   });
-  if (!res.ok)
-    throw new Error(
-      res.status === 401
-        ? "Your session expired. Sign in again."
-        : "Documents could not load. The Free server may be waking up; retry shortly.",
-    );
-  const json = await res.json();
-  return json.data || [];
+  const request = async () => {
+    const token = await getAccessToken();
+    if (!token) throw new AuthRequiredError();
+    if (controller.signal.aborted) throw new Error("Documents request timed out.");
+    const res = await fetch(`${API_BASE}/documents`, {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    });
+    if (!res.ok)
+      throw new Error(
+        res.status === 401
+          ? "Your session expired. Sign in again."
+          : "Documents could not load. Retry to check your library.",
+      );
+    const json = await res.json();
+    if (!Array.isArray(json.data))
+      throw new Error("Documents returned an invalid response. Retry to check your library.");
+    return json.data as DocumentItem[];
+  };
+  try {
+    return await Promise.race([request(), timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
 }
 
 export async function uploadDocument(file: File): Promise<DocumentItem> {

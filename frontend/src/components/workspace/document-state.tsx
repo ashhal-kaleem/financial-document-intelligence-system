@@ -28,7 +28,7 @@ export function DocumentState({
           : state === "error"
             ? "The request failed. Your library may contain documents; this is not an empty-library result. On Free hosting the server may be waking up. Retry to check; sign in again if your session expired."
             : state === "loading"
-              ? "Checking your account. Document totals will appear after the request completes."
+              ? "Loading your private library. Free hosting can take longer to start; this request will show a retry option if it takes too long."
               : "Upload a PDF to start. Only your uploaded documents will appear here."}
       </p>
       {state !== "loading" && (
