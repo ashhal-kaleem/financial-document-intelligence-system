@@ -55,3 +55,10 @@ A local re-encoding of 18 live public chunks, 30 authored expected-number checks
 ## Data and deployment discipline
 
 Keep code/main, backend deployment and frontend deployment provenance separate: the frontend auto-deploys from GitHub; the backend has no git link and is deployed with the Vercel CLI from `backend/`. The suspended Render service/config remains a rollback artifact, not the current host.
+
+## Follow-up fixes (2026-11-22, second batch)
+- Rejected answers no longer burn the daily question quota: any failure during generation or citation validation refunds the guest's and the global quota unit (migration 0009, verified live with a fixture identity; the provider's own token spend is separate and is not refundable).
+- Groq calls now send `reasoning_effort: "low"`. gpt-oss is a reasoning model whose reasoning tokens share the `max_tokens` budget; low effort reduces length-truncated completions that the completeness guard then rejects. Rejected answers are now logged with finish_reason, answer length and token usage (never content) for diagnosis.
+- `GLOBAL_DAILY_ANSWER_LIMIT` lowered to 40 so the worst-case daily token spend (40 questions x up to 2 provider calls x ~2.4K tokens) stays under the model's free daily token budget.
+- Answer style: answers are written naturally in the question's own language, without template phrasing, automatic headings/tables or HTML tags; detail follows the question. Grounding, citation and completeness validation are unchanged.
+- The expired-document sweep URL-encodes its cutoff timestamp; an unencoded `+` in the ISO offset previously made every sweep call fail with HTTP 400 (regression test added; 24h-expiry delete path verified end-to-end with an owned fixture: row, chunks and stored PDF removed, subsequent access 404).
