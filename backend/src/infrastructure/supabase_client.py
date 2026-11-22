@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 from uuid import UUID
 import httpx
 from src.core.config import get_settings
@@ -524,7 +525,7 @@ class SupabaseClient(BaseVectorStore):
         daily scheduled sweep."""
         async with httpx.AsyncClient(timeout=60.0) as client:
             res = await client.get(
-                f"{self.base_url}/rest/v1/documents?select=id,filename&session_expires_at=lt.{datetime.now(timezone.utc).isoformat()}&order=session_expires_at.asc&limit={limit}",
+                f"{self.base_url}/rest/v1/documents?select=id,filename&session_expires_at=lt.{quote(datetime.now(timezone.utc).isoformat(), safe='')}&order=session_expires_at.asc&limit={limit}",
                 headers=self.headers,
             )
             res.raise_for_status()
@@ -537,7 +538,7 @@ class SupabaseClient(BaseVectorStore):
                         headers=self.headers, json={"prefixes": [f"{row['id']}/{row['filename']}"]},
                     )
                     dele = await client.delete(
-                        f"{self.base_url}/rest/v1/documents?id=eq.{row['id']}&session_expires_at=lt.{datetime.now(timezone.utc).isoformat()}",
+                        f"{self.base_url}/rest/v1/documents?id=eq.{row['id']}&session_expires_at=lt.{quote(datetime.now(timezone.utc).isoformat(), safe='')}",
                         headers=self.headers,
                     )
                     dele.raise_for_status()

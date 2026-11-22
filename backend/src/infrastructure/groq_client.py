@@ -85,6 +85,13 @@ class GroqClient:
                 "ai_unavailable",
             ) from None
         if finish != "stop" or not isinstance(answer, str) or not answer.strip() or len(answer) > MAX_ANSWER_CHARS:
+            usage = res.json().get("usage") if isinstance(res.json(), dict) else None
+            logger.warning(
+                "Groq answer rejected: finish_reason=%s answer_chars=%s usage=%s",
+                finish,
+                len(answer) if isinstance(answer, str) else None,
+                usage,
+            )
             raise FDISException(
                 "Incomplete answer",
                 "The AI did not return a complete answer. Nothing was accepted; retry the question.",
