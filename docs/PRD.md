@@ -1,25 +1,32 @@
-# Product requirements: FDIS V1
+# Product requirements: Financial Document Intelligence System
+
+Reconciled 22 November 2026. The product remains financial-document RAG, not a generic chatbot or a new analytics product. Current evidence and open verification gates live in `production-readiness.md`.
 
 ## User outcome
 
-A signed-in analyst uploads a text-based annual report, gets clear processing status, asks report-specific questions, and checks every answer against page-level evidence. No cross-user document access.
+A signed-in user can upload their financial PDF, wait until indexing is explicitly ready, select the report and ask a question. The answer should identify its supporting source pages and admit insufficient context. The user must be able to open the cited PDF and check amounts, units and periods.
 
-## Required behavior
+## Current implemented behavior
 
-- Private document library and authenticated file viewing.
-- Queued processing, bounded retries, lease heartbeats and fenced DB writes.
-- Preserve page/source metadata, financial scale, currency, year, signs and reporting basis.
-- Cite only retrieved sources; no-source queries return a fixed non-disclosure answer.
-- Provider failures, incomplete streams and invalid citation identifiers are failures, not successful answers.
-- Explicit empty/loading/error/partial/ready UI states.
-- Reject unsupported encrypted or image-only PDFs rather than mark them ready with no text.
+- Next.js workspace, Supabase authentication and a private per-owner document library.
+- Browser-to-private-storage signed uploads, backend file validation and inline ingestion on Vercel. Queued processing is a non-Vercel compatibility path, not an active durable Vercel worker.
+- Text/table PDF extraction, page-aware/token-bounded chunks, local pinned MiniLM embeddings and owned pgvector retrieval. Missing/incompatible vector profiles fail rather than mixing silently.
+- A retrieval-context API and separate consent-gated Puter browser generation. Only the exact configured free-model IDs may be selected; catalog pricing is checked and no paid fallback is enabled.
+- Browser-local conversations, citation source viewer and safe owner-only document deletion. No cloud chat archive or export.
 
-## Release gates, not claimed results
+Puter is the final-answer writer. It is not an embeddings API. HF provides pinned public build-time model artifacts, not a runtime inference service. Cloudflare and Groq are not in the chosen runtime.
 
-Real login/upload/answer/delete flow; two-user isolation; hostile input and prompt-injection fixtures; queue crash/restart tests; provider timeouts/429 and interrupted SSE; labeled financial/citation benchmark; measured latency and usage; private storage; alerts and backup/restore drill.
+## Acceptance boundaries
 
-Use 30-50 labeled questions initially and report the actual dataset, metrics and errors. Set quality/latency acceptance thresholds after baseline measurement, before release. No absolute hallucination, free-cost or speed guarantee.
+- Ready means real extraction/indexing completed, not that upload was merely accepted. Processing/error/deleting states must not present as ready.
+- Non-owners must not read, retrieve or delete another user's reports. PDF responses stay private/no-store.
+- No financial answer should be treated as correct solely because retrieval returned a number or citation IDs validated. Source amount, scale, year, quarter and arithmetic must match; absent evidence should lead to abstention.
+- Only text-based PDFs within the current 4 MiB app cap are accepted. Scanned, empty and encrypted PDFs fail clearly. Default page/chunk/parser-work limits also apply.
+- Document text goes to local backend embeddings. Puter receives questions and retrieved excerpts/metadata only after the separate disclosure/account flow. Free catalog pricing does not remove quotas or establish unlimited use.
+- Existing user data, re-indexing, schema changes, paid resources and new processor disclosures need their own approval.
 
-## Not V1
+## Still outside the verified product
 
-Investment advice, autonomous external actions, OCR, cross-device saved memos or team collaboration unless separately implemented and verified.
+Broadly measured financial-answer accuracy, full Puter end-to-end generation/correctness for this rollout, reliable Hinglish coverage, OCR, durable background jobs on Vercel, cloud chat/export, financial dashboards, arbitrary larger documents, distributed quotas and commercial uptime guarantees.
+
+No launch target overrides these boundaries. Use the dated test/readiness notes to distinguish local tests, successful deployment, live retrieval and real final-answer evidence.

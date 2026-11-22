@@ -5,6 +5,10 @@
 All notable changes to the Financial Document Intelligence System (FDIS) are documented here.
 
 ## [Unreleased] - 2026-11-22
+### Changed
+- Replaced hosted HF embeddings with pinned build-time public MiniLM ONNX assets and local CPU inference. No HF token/runtime hosted inference; Puter remains the separate answer writer.
+- Added token-aware splitting, asset/profile checks, bounded local inference and financial table context. Backend 160 tests and frontend 25 tests passed during the rollout.
+- Updated current architecture/runbooks and preserved the five requested project notes. Live signed upload and five retrieval checks passed on a public one-page financial statement. Narrow local top-5 number coverage 29/30 is not answer accuracy; actual Puter generation remains gated by user consent/account authorization.
 ### Removed
 - **Groq provider**: `groq_client.py`, GROQ_API_KEY/GROQ_MODEL settings, health check entry, env/render.yaml entries and provider tests.
 - **Server-side answer streaming**: `/api/v1/ask/stream` route and the frontend `streamQuestion` helper. Answers come from the user-authorized Puter browser AI flow; backend retrieval, grounded prompt assembly and citation validation are preserved.

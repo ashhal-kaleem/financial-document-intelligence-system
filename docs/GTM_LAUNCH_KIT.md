@@ -1,9 +1,17 @@
-> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+# Resume and launch wording gate
 
-# Launch and resume copy gate
+Updated 22 November 2026. Keep product claims aligned with measured evidence; this file does not authorize publishing outreach or changing the product idea.
 
-Do not publish production, sub-second, zero-hallucination, unlimited-free or audit-readiness claims without measured evidence. This branch is not merged or deployed. No launch communication is authorized by this document.
+## Accurate project description
 
-Truthful project description now: “Built a private financial PDF retrieval and cited Q&A application with authenticated document scoping, durable ingestion design, streamed answers and offline regression tests.” Distinguish implemented code from live verified behavior.
+Built a private financial-document RAG app using Next.js, FastAPI, Supabase/pgvector and local ONNX MiniLM embeddings, with owner-scoped document retrieval, page citations and an opt-in Puter answer flow.
 
-Before publishing results, record: selected model/provider and date, independently reviewed dataset size, numeric/citation support and abstention scores, p50/p95, error rate, cost and known failures. Synthetic extraction tests are not answer-accuracy evidence. A measured reproducible demo is still pending.
+That describes the implementation, not independently measured answer accuracy. The current deployment and tests are documented in production-readiness.md. Public weights are downloaded from HF at build time; hosted HF inference is not used. Puter remains a separate account-based service with its own limits.
+
+## Claims that need more evidence
+
+Do not claim production certification, audit readiness, zero hallucinations, unlimited free usage, sub-second end-to-end performance or business uptime guarantees. Narrow expected-number retrieval on one public PDF page is not answer accuracy. A citation marker is not proof of semantic support.
+
+Before adding performance/quality figures to a resume or launch page, record the independently reviewed dataset, language mix, exact model/profile, source-page recall, numeric/period/currency support, abstention behavior, p50/p95, failure rate, test date and cost/limits. Identify any untested generation or provider boundary.
+
+Screenshots must show the real application state. Never replace failed ingestion, missing provider access or unavailable analytics with demo success.

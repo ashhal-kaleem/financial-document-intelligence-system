@@ -1,14 +1,15 @@
-> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+# Current project map
 
-# Current project state
+Updated 22 November 2026. This is an orientation note, not live account state or execution approval.
 
-This is a navigation note, not proof of current hosted deployment state.
+FDIS remains the same financial-document RAG project: private PDF upload, source passage retrieval, cited answers and authenticated PDF inspection. The embedding implementation changed, not the product idea.
 
-- Active work: backend-hardening branch. Main is not merged with these changes.
-- GitHub commit identity: Fardin7798, verified from the supplied account token. Never infer commit identity from a chat profile or old commits.
-- Current intended Supabase project: financial-rag. Old hardcoded project references are not current configuration.
-- Approved app-schema rebuild completed 6 November 2026; app tables were empty at verification. Auth/settings/storage preserved.
-- Login provider choice, private bucket setup, authorized real provider tests and release/deployment are pending.
-- No guaranteed free usage, zero hallucinations or sub-second performance.
+- Source is on main. Verify the current remote HEAD before reporting it as latest.
+- Frontend and FastAPI backend use separate Vercel Hobby projects; Supabase holds auth, private PDFs and vectors. The former Render service is preserved, suspended.
+- MiniLM public model weights are pulled from a pinned HF revision at build time and run in our backend with ONNX Runtime. Hosted HF inference and HF_TOKEN are removed. No Cloudflare integration was added.
+- Puter is the separate opt-in final-answer service. Its user account, free-model availability and allowances are not the embedding engine or an unlimited-free guarantee.
+- Existing app data is not repository documentation. Updating old Markdown files does not authorize deleting uploaded PDFs, rows, accounts, models or migrations.
 
-Start with README.md, docs/deployment.md and docs/production-readiness.md. Historical build logs are not current service-health evidence.
+Start with README.md for product/setup, docs/architecture.md for data flow, docs/deployment.md for deployment controls and docs/production-readiness.md for measured evidence versus open gates. This file does not duplicate changing test counts or deployment hashes.
+
+The verified GitHub credential identity on 22 November was ashhal-kaleem. Check it again when needed; old profile/author names do not override the actual intended account. Review diffs, test small changes and distinguish committed, pushed, deployed and tested.

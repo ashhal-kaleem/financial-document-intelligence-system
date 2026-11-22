@@ -1,9 +1,27 @@
-> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+# Test map and evidence rules
 
-# Test strategy
+Updated 22 November 2026. Tests stay in the repository; this note is not the test implementation.
 
-Use README.md for exact offline commands and docs/production-readiness.md for evidence limits. tests/test_financial_seed.py checks synthetic PDF/evidence plumbing, not model quality. frontend/tests/regressions.test.cjs uses Node's test runner and the pinned TypeScript transpiler, without live services.
+## Reproduce
 
-Live tests default to skipped. RUN_LIVE_TESTS=1 is an explicit switch, not authority: first get an isolated empty project, permitted test users/storage mutations and bounded provider usage. Never use private documents or enable production test writes by accident.
+```sh
+cd backend
+uv sync --frozen
+uv run python scripts/fetch_embedding_model.py
+uv run pytest -q
+cd ../frontend
+pnpm install --frozen-lockfile  # use pnpm 9, matching CI/lockfile
+node --test tests/*.test.cjs
+pnpm typecheck
+pnpm build
+```
 
-Required release evidence: login/upload/PDF/answer/delete; two-user isolation including selected-document search; queue crash/restart and lost-worker writes; provider429/timeouts/truncated streams; financial numeric/citation support/abstention/injection benchmark; privacy settings; measured latency and cost; backup/restore. Record failures and exact configurations. Do not use an empty queue check as proof of recovery.
+Backend tests cover auth/document scoping, storage/ingestion failures, queue fencing, citation rules, local vector dimensions/norms, offline operation, token splitting, deterministic doc/query encoding, profile mismatches and bounded work. CI downloads pinned public model assets before running tests. No user document is sent to HF inference.
+
+The bundled sample_apple_10k.pdf and financial_seed.json are synthetic test fixtures. They are not private uploads or independently labeled model-accuracy evidence. Keep them unless their dependent tests are intentionally replaced.
+
+scripts/test_migrations.py uses throwaway local Postgres and role/auth stubs; it is not a hosted migration or storage test. Existing live suites remain opt-in. RUN_LIVE_TESTS=1 is a switch, not permission to write production data or spend quota.
+
+The public Apple statement retrieval check is separate from actual language-model generation. Its narrow result, known Hinglish miss and limitations are in production-readiness.md. Broader financial accuracy, absent-answer behavior, hostile-document resistance and real Puter generation remain separate gates.
+
+For live checks use approved temporary users and public documents, record created IDs privately, test both owners and negative access, then remove only test data. Preserve existing app documents and metadata unless specifically approved otherwise. Do not log tokens or put private reports in fixtures.

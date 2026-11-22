@@ -1,15 +1,13 @@
-> Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
+# Financial-document RAG: unchanged product idea
 
-# FDIS product vision
+FDIS is a private financial-report workspace, not a generic chatbot and not an investment-advice engine.
 
-Build a private financial-report workspace for analysts, auditors and investors: upload a text-based corporate PDF, ask a question, inspect the source passage and verify the page citation.
+The flow remains: sign in, upload a text-based corporate PDF, wait for honest processing status, ask a document-specific question, inspect the retrieved source passage/page and delete a document when appropriate.
 
-V1 is document-grounded Q&A, not a trading or investment recommendation system. Preserve financial units, currency, year and reporting basis; decline to invent missing facts. Prompt instructions alone cannot guarantee correctness.
+RAG means the app retrieves relevant passages from uploaded documents before asking a language model to write an answer. MiniLM now creates the search vectors inside the backend. Puter provides the opt-in answer-writing model. Downloading free public weights from HF is different from using its hosted inference API.
 
-Core flow: authenticate → upload → durable processing → ready document → scoped retrieval → streamed answer → inspect page evidence → delete when needed.
+V1 priorities are owner isolation, recovery from failed processing, preservation of currency/units/years/reporting basis, source citations and clear limits. A valid citation marker alone does not prove the answer is financially correct. No-source questions must not invent evidence.
 
-Current code uses Next.js/React, FastAPI, PyMuPDF, Supabase PostgreSQL/pgvector, and configurable embedding/inference providers. Package files, source and reviewed migrations define implementation, not older spec version numbers or provider names.
+OCR, structured financial extraction, cross-report analytics, team access and cross-device conversation sync remain future work unless independently implemented and tested. The current browser history is local to the browser/account/document.
 
-Later candidates: OCR, structured extraction, multi-report comparisons, saved conversations and team access. Add these after measured evidence supports the basic flow.
-
-No project credentials belong here. See .env.example files, README.md and docs/deployment.md for setup. Model access, costs, quality and deployment state require current verification.
+Use docs/PRD.md for required behavior and docs/production-readiness.md for evidence. This idea note does not make deployment, model quality, price or uptime claims.

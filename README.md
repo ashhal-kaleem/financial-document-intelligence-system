@@ -1,49 +1,56 @@
 # Financial Document Intelligence System
 
-Private PDF report retrieval and question-answering with streamed answers and page-level source citations.
+A private financial-document RAG app: upload a corporate PDF, retrieve relevant passages, ask a question and inspect page-level evidence. The product idea has not changed.
 
-## Current status
+## Current architecture
 
-Source is merged to main. Frontend is deployed on Vercel Hobby and backend on Render Free. Deployment is not production certification: Google sign-in setup, private documents bucket, hosted migrations 0004/0005 and real end-to-end acceptance remain pending. No guaranteed zero-hallucination, latency, uptime or zero-cost claim.
+- Next.js/React frontend and FastAPI backend on separate Vercel Hobby projects.
+- Supabase Auth, private PDF storage and Postgres/pgvector.
+- Public `sentence-transformers/all-MiniLM-L6-v2` weights downloaded from a fixed HF revision at build time and run locally on backend CPU with ONNX Runtime.
+- No hosted HF embedding API, HF token or Cloudflare integration.
+- Puter remains the separate opt-in final-answer service. It does not replace the embedding/retrieval engine, and its free-model availability/account allowance is not unlimited.
 
-Hosted app schema was checked after migrations 0001-0003. Source contains safe-delete 0004 and strict owned-read 0005; neither has been applied hosted. API filters owned/non-sample documents, but direct hosted read policies still need the approved migration. Real login/upload/embedding/answer/PDF/delete and two-user isolation remain unverified.
+The browser uploads directly to private Supabase storage with an object-scoped signed URL. The backend checks the stored file and processes it inline on Vercel. The app accepts PDFs up to 4 MiB in the current deployment; the bucket has a separate admission limit. Text-only PDFs are supported; scanned/empty and password-protected PDFs are rejected. OCR, structured extraction and financial-analysis dashboards are not implemented.
 
-## Product boundary
+Local vectors use a pinned model/profile, masked mean pooling, L2 normalization and token-aware splits with a 256-wordpiece ceiling. Missing/corrupt assets fail closed. Existing vectors are not silently mixed or re-indexed. Table extraction and language-model answers still need financial review.
 
-- Text-based corporate reports: private upload, processing states, selected-document retrieval, streaming Q&A, page citations and authenticated PDF viewing.
-- Scanned/empty and password-protected PDFs are rejected; OCR is not implemented.
-- Financial units, reporting periods and source evidence matter. Generated answers require review; this is not investment advice.
-- Cross-device conversations, OCR, structured financial extraction and team sharing are future work. Chat history is browser-local and account-scoped, not server persistence.
+## Status and evidence
 
-## Architecture
+The MiniLM backend has been built and deployed, and a public financial-statement PDF page has reached ready through the real signed-upload flow. Owner-scoped retrieval and negative cross-user access checks have live evidence. Exact test scope, narrow retrieval results, known Hinglish miss and the unverified actual Puter-generation boundary are in [production-readiness](docs/production-readiness.md).
 
-Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. Retrieval uses Hugging Face feature extraction. The optional workspace AI flow uses a separate Puter Connect popup and free-model allowlist. Server-side answer generation (Groq) and its `/api/v1/ask/stream` route were removed on 2026-11-22; the backend provides retrieval, grounded prompt assembly and citation validation only. The unused OpenRouter fallback client remains configured-off pending a separate cleanup decision. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
-
-Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel hosts the frontend only. Render hosts the single FastAPI backend and durable queue worker. The existing frontend/backend deployments are active; hosted data/auth configuration is separately controlled.
+Do not equate code pushed, preview built, production deployed, retrieval tested and a correct final answer. Free personal hosting is not a commercial uptime or unlimited-free guarantee. Google/Supabase sign-in is separate from Puter authorization. The former Render service remains suspended for rollback.
 
 ## Run locally
 
-Supported build checks use Python 3.11/3.12 and Node 20/22 with pnpm 9. The production backend Dockerfile uses Python 3.11; the frontend host uses Node 22. Copy backend/.env.example and frontend/.env.example to local environment files, then supply your own service settings. Never commit real environment files. Authentication fails closed outside explicitly configured local debug use.
+Use Python 3.11/3.12 and pnpm 9, matching CI and the lockfile. Copy the backend/frontend `.env.example` files to local environment files and supply your own service settings. Never commit secrets.
 
 ```sh
 cd backend
 uv sync --frozen
+uv run python scripts/fetch_embedding_model.py
 uv run uvicorn src.api.main:app --reload --port 8000
-# in a second terminal
+# In another terminal, from the repo root:
 cd frontend
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The frontend has Google OAuth UI plus an opt-in Puter AI authorization flow; hosted Google OAuth client/provider/redirect setup remains pending. Email/password + production SMTP is an alternative, not implemented by this change.
+The model downloader needs public network access only at build/setup time. Runtime embedding requests never download weights or send PDF text to HF inference. Generated model files are ignored by Git and explicitly bundled in the backend function. Model attribution/license is in `backend/licenses/`.
 
-## Offline verification
+## Verification and project map
 
 ```sh
-cd backend && uv run --group dev pytest -q
-cd ..
-uv run --python 3.12 --with pgserver --with psycopg2-binary python scripts/test_migrations.py
-cd frontend && node --test tests/*.test.cjs && pnpm typecheck && pnpm build
+cd backend && uv run pytest -q
+cd ../frontend && node --test tests/*.test.cjs && pnpm typecheck && pnpm build
 ```
 
-Live tests are skipped unless RUN_LIVE_TESTS=1 is explicitly supplied. They can use provider quota or money. Do not enable them without an isolated test project, service access and approved usage limits. See docs/deployment.md, SECURITY.md and docs/production-readiness.md for limits and release gates.
+Download/verify model assets before backend tests. Existing live suites remain opt-in, not automatic authority to spend quota or write hosted data. The synthetic PDF/financial seed are test fixtures, not accuracy evidence or private uploaded reports.
+
+- [Architecture](docs/architecture.md): retrieval, ownership, local embeddings and Puter boundary.
+- [Deployment](docs/deployment.md): setup, resource limits, data and rollout checks.
+- [API](docs/api-docs.md): supported routes and response boundaries.
+- [Tests](docs/TEST.md): test map and evidence rules.
+- [Readiness](docs/production-readiness.md): completed, live-tested and still open.
+- [Product idea](PROJECT_IDEA_FDIS.md) and [PRD](docs/PRD.md): unchanged purpose and behavior.
+
+Updating project notes never authorizes deleting app documents, source history, test fixtures, model assets or database schema. Re-indexing, destructive changes, new data processors and paid services need their own authority.
