@@ -48,8 +48,19 @@ export function clearLegacyPersistedSession(): void {
   }
 }
 
-/** Start (or reuse) this visitor's private guest session. No login is ever shown. */
-export async function ensureGuestSession(): Promise<{ error: Error | null }> {
+let inFlight: Promise<{ error: Error | null }> | null = null;
+
+/** Start (or reuse) this tab's private guest session. Concurrent callers share
+ * one sign-in so a fresh tab can never create duplicate guest identities. */
+export function ensureGuestSession(): Promise<{ error: Error | null }> {
+  if (!inFlight)
+    inFlight = _ensureGuestSession().finally(() => {
+      inFlight = null;
+    });
+  return inFlight;
+}
+
+async function _ensureGuestSession(): Promise<{ error: Error | null }> {
   const supabase = getSupabase();
   if (!supabase)
     return {
