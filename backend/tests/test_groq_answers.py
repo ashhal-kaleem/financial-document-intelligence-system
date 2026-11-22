@@ -230,3 +230,15 @@ def test_system_prompt_enforces_concise_same_language_plain_answers():
     assert "never Devanagari" in p
     assert "Never emit HTML tags" in p
     assert "[1], [2]" in p or "citation marker" in p  # citation guard stays
+
+
+def test_system_prompt_script_matching_variants():
+    from src.domain.citation import GROUNDED_SYSTEM_PROMPT as p
+    # Roman-script question -> Roman-script answer (Roman Urdu/Hinglish case)
+    assert "Roman (Latin) letters gets a Roman-script answer" in p
+    # Devanagari only when the user wrote it
+    assert "only use Devanagari when the user wrote in Devanagari" in p
+    # Explicit user language/script request wins over defaults
+    assert "explicitly asks for a specific language or script, use that" in p
+    # English stays English
+    assert "English questions get English answers" in p
