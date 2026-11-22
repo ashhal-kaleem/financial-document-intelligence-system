@@ -43,7 +43,7 @@ class InferenceService:
 USER INQUIRY:
 {question}
 
-Provide an accurate, comprehensive, and grounded answer strictly citing relevant passages using [1], [2], etc. If the user asks to read, summarize, or explain the document, summarize and explain what is disclosed in these passages clearly and helpfully. If specific facts or metrics requested are not mentioned anywhere in the excerpts, state that they are not disclosed."""
+Provide an accurate, grounded answer in the user's own language, strictly citing relevant passages using [1], [2], etc. Keep it short and conversational unless the user asked for detail. If the user asks to read, summarize, or explain the document, summarize and explain what is disclosed in these passages clearly and helpfully. If specific facts or metrics requested are not mentioned anywhere in the excerpts, state that they are not disclosed."""
 
         return [
             {"role": "system", "content": GROUNDED_SYSTEM_PROMPT},

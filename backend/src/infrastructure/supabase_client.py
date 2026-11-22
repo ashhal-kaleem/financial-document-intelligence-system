@@ -503,6 +503,17 @@ class SupabaseClient(BaseVectorStore):
             res.raise_for_status()
             return res.json()
 
+    async def refund_question_quota(self, owner_id: str) -> None:
+        """Return one daily question unit (per-guest and global) after a failed answer
+        (migration 0009). Provider-side token spend is separate and is not refunded."""
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                f"{self.base_url}/rest/v1/rpc/refund_question_quota",
+                headers=self.headers,
+                json={"p_owner": owner_id},
+            )
+            res.raise_for_status()
+
     async def count_owner_documents(self, owner_id: str) -> int:
         """Live (not being deleted) documents the owner currently holds."""
         async with httpx.AsyncClient(timeout=15.0) as client:

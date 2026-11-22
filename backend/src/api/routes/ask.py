@@ -64,18 +64,27 @@ async def ask_answer(payload: AskRequest, user: AuthUser = Depends(rate_limited_
         raise _quota_error(quota)
 
     messages = inference_service.build_rag_prompt(payload.question, chunks, citations)
-    answer = normalize_citation_markers(await groq.complete(messages))
-    if not validate_answer_citations(answer, citations):
-        # One regeneration, then refuse: answers without valid source markers are
-        # never shown as grounded output.
+    try:
         answer = normalize_citation_markers(await groq.complete(messages))
         if not validate_answer_citations(answer, citations):
-            raise FDISException(
-                "Citation check failed",
-                "The answer's source markers could not be verified. It was not shown. Ask again.",
-                422,
-                "invalid_citations",
-            )
+            # One regeneration, then refuse: answers without valid source markers are
+            # never shown as grounded output.
+            answer = normalize_citation_markers(await groq.complete(messages))
+            if not validate_answer_citations(answer, citations):
+                raise FDISException(
+                    "Citation check failed",
+                    "The answer's source markers could not be verified. It was not shown. Ask again.",
+                    422,
+                    "invalid_citations",
+                )
+    except Exception:
+        # A rejected answer must not burn the caller's daily question unit
+        # (provider-side token spend is separate and cannot be refunded).
+        try:
+            await supabase.refund_question_quota(user.id)
+        except Exception:
+            logger.warning("Question quota refund failed", exc_info=True)
+        raise
 
     return {
         "success": True,

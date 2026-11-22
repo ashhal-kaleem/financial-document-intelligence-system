@@ -38,6 +38,10 @@ class GroqClient:
             "messages": messages,
             "temperature": 0.1,
             "max_tokens": self.settings.LLM_MAX_OUTPUT_TOKENS,
+            # gpt-oss is a reasoning model: reasoning tokens share the max_tokens
+            # budget. Low effort keeps short extractive Q&A inside the budget
+            # (Groq-docs supported parameter for openai/gpt-oss-*).
+            "reasoning_effort": "low",
             "stream": False,
         }
         try:

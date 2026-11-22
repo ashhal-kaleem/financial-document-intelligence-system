@@ -281,3 +281,35 @@ def test_end_session_refuses_named_account(monkeypatch):
 
 async def _static_user(user):
     return user
+
+
+@pytest.mark.asyncio
+async def test_expired_sweep_url_encodes_timestamp(monkeypatch):
+    """Regression: a raw '+' in the ISO cutoff read as a space and PostgREST 400'd
+    every sweep call; the cutoff must be URL-encoded."""
+    from src.infrastructure import supabase_client as sc
+
+    urls = []
+    import httpx as _httpx
+
+    class FakeResp:
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return []
+
+    class FakeClient:
+        def __init__(self, **kw):
+            pass
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *a):
+            return False
+        async def get(self, url, headers=None):
+            urls.append(url)
+            return FakeResp()
+
+    monkeypatch.setattr(sc.httpx, "AsyncClient", FakeClient)
+    swept = await sc.SupabaseClient().sweep_expired_guest_documents()
+    assert swept == 0
+    assert urls and "%2B" in urls[0] and "+00:00" not in urls[0]

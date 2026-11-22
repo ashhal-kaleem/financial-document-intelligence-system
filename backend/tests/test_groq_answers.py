@@ -41,11 +41,14 @@ def make_inference():
 
 class FakeQuota:
     def __init__(self, result="ok"):
-        self.result, self.calls = result, []
+        self.result, self.calls, self.refunds = result, [], []
 
     async def take_question_quota(self, owner_id, user_limit, global_limit):
         self.calls.append((owner_id, user_limit, global_limit))
         return self.result
+
+    async def refund_question_quota(self, owner_id):
+        self.refunds.append(owner_id)
 
 
 class FakeGroq:
@@ -173,3 +176,56 @@ def test_fullwidth_citation_markers_are_normalized(monkeypatch):
     assert answer == "Revenue was USD 100 million[1]."
     from src.domain.citation import validate_answer_citations
     assert validate_answer_citations(answer, cits)
+
+
+@pytest.mark.asyncio
+async def test_failed_answer_refunds_exactly_one_question_unit(monkeypatch):
+    ask_routes, q, g = make_route(monkeypatch, answers=["no markers", "still none"])
+    with pytest.raises(FDISException):
+        await ask_routes.ask_answer(AskRequest(question="Revenue?"), auth.AuthUser(OWNER))
+    assert q.refunds == [OWNER]
+
+
+@pytest.mark.asyncio
+async def test_incomplete_answer_also_refunds(monkeypatch):
+    failing = FakeGroq([])
+    async def boom(messages):
+        raise FDISException("Incomplete answer", "nope", 502, "incomplete_answer")
+    failing.complete = boom
+    from src.api.routes import ask as ask_routes
+    monkeypatch.setattr(ask_routes, "inference_service", make_inference())
+    q = FakeQuota("ok")
+    monkeypatch.setattr(ask_routes, "supabase", q)
+    monkeypatch.setattr(ask_routes, "groq", failing)
+    with pytest.raises(FDISException):
+        await ask_routes.ask_answer(AskRequest(question="Revenue?"), auth.AuthUser(OWNER))
+    assert q.refunds == [OWNER]
+
+
+@pytest.mark.asyncio
+async def test_successful_answer_is_never_refunded(monkeypatch):
+    ask_routes, q, g = make_route(monkeypatch)
+    await ask_routes.ask_answer(AskRequest(question="Revenue?"), auth.AuthUser(OWNER))
+    assert q.refunds == []
+
+
+@pytest.mark.asyncio
+async def test_groq_payload_uses_low_reasoning_effort(monkeypatch):
+    captured = {}
+    def handler(request):
+        import json as _json
+        captured.update(_json.loads(request.content))
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok [1]"}, "finish_reason": "stop"}]})
+    _mock_groq_http(monkeypatch, handler)
+    monkeypatch.setattr(gc.get_settings(), "GROQ_API_KEY", "test-key")
+    await gc.GroqClient().complete([{"role": "user", "content": "hi"}])
+    assert captured.get("reasoning_effort") == "low"
+
+
+def test_system_prompt_enforces_concise_same_language_plain_answers():
+    from src.domain.citation import GROUNDED_SYSTEM_PROMPT
+    p = GROUNDED_SYSTEM_PROMPT
+    assert "short and natural" in p
+    assert "same language" in p
+    assert "Never emit HTML tags" in p
+    assert "[1], [2]" in p or "citation marker" in p  # citation guard stays
