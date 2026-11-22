@@ -226,6 +226,7 @@ def test_system_prompt_enforces_concise_same_language_plain_answers():
     from src.domain.citation import GROUNDED_SYSTEM_PROMPT
     p = GROUNDED_SYSTEM_PROMPT
     assert "short, natural answer" in p and "Write like a person explaining something directly" in p
-    assert "same language" in p
+    assert "same language AND the same script" in p
+    assert "never Devanagari" in p
     assert "Never emit HTML tags" in p
     assert "[1], [2]" in p or "citation marker" in p  # citation guard stays
