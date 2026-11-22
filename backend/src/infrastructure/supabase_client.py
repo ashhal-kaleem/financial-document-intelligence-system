@@ -96,6 +96,34 @@ class SupabaseClient(BaseVectorStore):
                 return Document(**data[0])
             return None
 
+    async def delete_uploaded_document(self, doc_id: UUID, owner_id: str) -> bool:
+        """Cancel an upload that never started processing (status 'uploaded').
+
+        Code-only path: begin_document_delete refuses uploaded rows as busy, so
+        without this an abandoned direct-to-storage upload could never be
+        deleted. Safe because no ingest can be running on an uploaded row; the
+        status=eq.uploaded filter on the DELETE fences a concurrent ingest
+        claim (it flips the row to processing, so the delete then matches
+        nothing and the caller gets a conflict instead of a race). Storage
+        cleanup is best-effort: a browser that still holds the signed URL can
+        re-create the object after this, leaving an orphan of at most the
+        upload size cap; the row is gone, so ingest can never pick it up.
+        """
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.delete(
+                f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&owner_id=eq.{owner_id}&status=eq.uploaded",
+                headers={**self.headers, "Prefer": "return=representation"},
+            )
+            res.raise_for_status()
+            deleted = res.json()
+        if not deleted:
+            return False
+        try:
+            await self.delete_pdf(doc_id, deleted[0]["filename"])
+        except Exception:
+            pass
+        return True
+
     async def delete_document(self, doc_id: UUID, owner_id: str) -> bool:
         """Deletes only a document owned by the user (shared samples are never deletable)."""
         from src.core.errors import FDISException

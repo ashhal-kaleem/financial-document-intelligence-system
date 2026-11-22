@@ -218,6 +218,23 @@ async def delete_document(document_id: UUID, user: AuthUser = Depends(get_curren
     doc = await supabase.get_document_by_id(document_id, user.id)
     if not doc:
         raise DocumentNotFoundError(str(document_id))
+    if doc.status == "uploaded":
+        # Never-ingested upload: cancel it in code (the delete RPC refuses
+        # uploaded rows as busy). False means a concurrent ingest claimed it.
+        cancelled = await supabase.delete_uploaded_document(document_id, user.id)
+        if not cancelled:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Document started processing. Wait for it to finish before deleting.",
+            )
+        return {
+            "success": True,
+            "data": {"id": str(document_id), "status": "deleted"},
+            "meta": {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "path": f"/api/v1/documents/{document_id}",
+            },
+        }
     success = await supabase.delete_document(document_id, user.id)
     if not success:
         raise DocumentNotFoundError(str(document_id))

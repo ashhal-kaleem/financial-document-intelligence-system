@@ -255,6 +255,10 @@ class _FakeAsyncClient:
         self.calls.append((method, url, json))
         return _FakeResponse({"ok": True})
 
+    async def delete(self, url, headers=None):
+        self.calls.append(("DELETE", url))
+        return _FakeResponse([{"id": "x", "filename": "f.pdf"}])
+
 
 def test_claim_inline_ingest_is_conditional_and_sets_claimed_at(monkeypatch):
     import asyncio
@@ -337,3 +341,72 @@ def test_delete_owner_rpc_failure_still_surfaces(monkeypatch):
     monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_fails)
     with pytest.raises(RuntimeError):
         client.delete(f"/api/v1/documents/{doc.id}")
+
+
+def test_delete_abandoned_upload_cancels_in_code(monkeypatch):
+    """An uploaded-but-never-ingested doc is deletable without the delete RPC."""
+    doc = make_doc(status="uploaded")
+    patch_doc(monkeypatch, doc)
+    calls = {"cancel": 0}
+
+    async def cancel(doc_id, owner_id):
+        calls["cancel"] += 1
+        assert owner_id == USER.id
+        return True
+
+    async def rpc_must_not_run(doc_id, owner_id):
+        raise AssertionError("delete RPC refuses uploaded rows; must not be called")
+
+    monkeypatch.setattr(documents_route.supabase, "delete_uploaded_document", cancel)
+    monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_must_not_run)
+    res = client.delete(f"/api/v1/documents/{doc.id}")
+    assert res.status_code == 200
+    assert calls["cancel"] == 1
+
+
+def test_delete_upload_lost_to_concurrent_ingest_is_409(monkeypatch):
+    doc = make_doc(status="uploaded")
+    patch_doc(monkeypatch, doc)
+
+    async def cancel_lost(doc_id, owner_id):
+        return False
+
+    monkeypatch.setattr(documents_route.supabase, "delete_uploaded_document", cancel_lost)
+    res = client.delete(f"/api/v1/documents/{doc.id}")
+    assert res.status_code == 409
+
+
+def test_delete_ready_doc_still_uses_rpc(monkeypatch):
+    doc = make_doc(status="ready")
+    patch_doc(monkeypatch, doc)
+    calls = {"rpc": 0}
+
+    async def rpc_delete(doc_id, owner_id):
+        calls["rpc"] += 1
+        return True
+
+    async def cancel_must_not_run(doc_id, owner_id):
+        raise AssertionError("cancel path is only for uploaded rows")
+
+    monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_delete)
+    monkeypatch.setattr(documents_route.supabase, "delete_uploaded_document", cancel_must_not_run)
+    res = client.delete(f"/api/v1/documents/{doc.id}")
+    assert res.status_code == 200
+    assert calls["rpc"] == 1
+
+
+def test_cancel_upload_delete_is_conditional_on_uploaded_status(monkeypatch):
+    import asyncio
+    from src.infrastructure import supabase_client as sc
+
+    fake = _FakeAsyncClient()
+    monkeypatch.setattr(sc.httpx, "AsyncClient", lambda timeout: fake)
+    client = sc.SupabaseClient()
+    doc_id = uuid.uuid4()
+
+    ok = asyncio.run(client.delete_uploaded_document(doc_id, USER.id))
+    assert ok is True
+    method, url = fake.calls[0]
+    assert f"id=eq.{doc_id}" in url
+    assert f"owner_id=eq.{USER.id}" in url
+    assert "status=eq.uploaded" in url  # fences a concurrent ingest claim
