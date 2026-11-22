@@ -59,6 +59,11 @@ export function ChatInterface() {
       requestRef.current = null;
     };
   }, [owner, storageScope]);
+  const singleReadyId = ready.length === 1 ? ready[0].id : null;
+  useEffect(() => {
+    if (!documentId && singleReadyId)
+      router.replace(`/qa?document=${encodeURIComponent(singleReadyId)}`);
+  }, [documentId, singleReadyId, router]);
   useEffect(() => {
     setSelectedDocument(
       document ? { id: document.id, filename: document.filename } : null,
@@ -184,7 +189,6 @@ export function ChatInterface() {
               New conversation
             </button>
           </div>
-          <h1 className="text-xl font-semibold">Document Q&A</h1>
           <p className="mt-2 text-xs text-[#6B6278]">
             Conversation stays in this browser. New conversation clears its
             saved messages. No cloud history or export yet.
@@ -196,50 +200,25 @@ export function ChatInterface() {
           </div>
         ) : (
           <>
-            <div className="shrink-0 border-b border-[#ECE8F6] p-4 sm:px-6">
-              <label
-                className="block text-xs font-medium"
-                htmlFor="question-document"
-              >
-                1. Choose a ready PDF
-              </label>
-              <select
-                id="question-document"
-                value={document?.id || ""}
-                disabled={isStreaming}
-                onChange={(e) =>
-                  router.push(
-                    e.target.value
-                      ? `/qa?document=${encodeURIComponent(e.target.value)}`
-                      : "/qa",
-                  )
-                }
-                className="mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm"
-              >
-                <option value="">Choose one document</option>
-                {ready.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.filename}
-                  </option>
-                ))}
-              </select>
-              {documentId && !document && (
-                <p role="alert" className="mt-2 text-xs text-amber-800">
-                  This document is unavailable, not yours, or not ready. Choose
-                  a ready PDF. No question will use an implicit all-document
-                  scope.
-                </p>
-              )}
-              {!ready.length && (
-                <p className="mt-2 text-xs">
-                  No ready PDF yet. Check processing status in{" "}
-                  <Link href="/documents" className="underline">
-                    Documents
-                  </Link>
-                  .
-                </p>
-              )}
-            </div>
+            {(documentId && !document) || (!documentId && ready.length > 1) ? (
+              <div className="shrink-0 border-b border-[#ECE8F6] p-4 sm:px-6">
+                {documentId && !document ? (
+                  <p role="alert" className="text-xs text-amber-800">
+                    This document is unavailable, not yours, or not ready. Open
+                    a ready PDF from Documents. No question will use an
+                    implicit all-document scope.
+                  </p>
+                ) : (
+                  <p className="text-xs">
+                    Open the PDF you want from{" "}
+                    <Link href="/documents" className="underline">
+                      Documents
+                    </Link>{" "}
+                    to ask about it.
+                  </p>
+                )}
+              </div>
+            ) : null}
             <div
               className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
               aria-live="polite"
@@ -248,8 +227,8 @@ export function ChatInterface() {
                 {!messages.length ? (
                   <p className="text-sm text-[#6B6278]">
                     {document
-                      ? "2. Ask a question about this PDF. Answers come from a free AI model using only this PDF's retrieved passages; always check the answer against the cited page. Guest PDFs are deleted after 24 hours."
-                      : "Start by choosing a ready PDF. Your question will only use that document."}
+                      ? "Ask a question about this PDF. Answers come from a free AI model using only this PDF's retrieved passages; always check the answer against the cited page. Guest PDFs are deleted after 24 hours."
+                      : "Open a ready PDF from Documents to start. Your question will only use that document."}
                   </p>
                 ) : (
                   messages.map((msg) => (
