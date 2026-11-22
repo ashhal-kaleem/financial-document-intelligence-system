@@ -21,7 +21,12 @@ def signed_in():
 def no_db(monkeypatch):
     async def none(*a, **k):
         return None
+    async def zero(*a, **k):
+        return 0
     monkeypatch.setattr(documents_route.supabase, "get_document_by_id", none)
+    monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
 
 def test_health_endpoint():
     response = client.get("/api/v1/health")

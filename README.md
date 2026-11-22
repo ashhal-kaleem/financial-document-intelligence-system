@@ -8,7 +8,7 @@ A private financial-document RAG app: upload a corporate PDF, retrieve relevant 
 - Supabase Auth, private PDF storage and Postgres/pgvector.
 - Public `sentence-transformers/all-MiniLM-L6-v2` weights downloaded from a fixed HF revision at build time and run locally on backend CPU with ONNX Runtime.
 - No hosted HF embedding API, HF token or Cloudflare integration.
-- Puter remains the separate opt-in final-answer service. It does not replace the embedding/retrieval engine, and its free-model availability/account allowance is not unlimited.
+- Answers are generated server-side on the Groq free plan (pinned `openai/gpt-oss-120b`). The key stays on the server; only the question and retrieved passages of the caller's own PDFs are sent. Daily free quotas apply; there is no paid fallback.
 
 The browser uploads directly to private Supabase storage with an object-scoped signed URL. The backend checks the stored file and processes it inline on Vercel. The app accepts PDFs up to 4 MiB in the current deployment; the bucket has a separate admission limit. Text-only PDFs are supported; scanned/empty and password-protected PDFs are rejected. OCR, structured extraction and financial-analysis dashboards are not implemented.
 
@@ -16,9 +16,9 @@ Local vectors use a pinned model/profile, masked mean pooling, L2 normalization 
 
 ## Status and evidence
 
-The MiniLM backend has been built and deployed, and a public financial-statement PDF page has reached ready through the real signed-upload flow. Owner-scoped retrieval and negative cross-user access checks have live evidence. Exact test scope, narrow retrieval results, known Hinglish miss and the unverified actual Puter-generation boundary are in [production-readiness](docs/production-readiness.md).
+The MiniLM backend has been built and deployed, and a public financial-statement PDF page has reached ready through the real signed-upload flow. Owner-scoped retrieval and negative cross-user access checks have live evidence. Exact test scope, narrow retrieval results, known Hinglish miss and the answer-generation evidence are in [production-readiness](docs/production-readiness.md).
 
-Do not equate code pushed, preview built, production deployed, retrieval tested and a correct final answer. Free personal hosting is not a commercial uptime or unlimited-free guarantee. Google/Supabase sign-in is separate from Puter authorization. The former Render service remains suspended for rollback.
+Do not equate code pushed, preview built, production deployed, retrieval tested and a correct final answer. Free personal hosting is not a commercial uptime or unlimited-free guarantee. No login is required: every visitor gets a private guest session (Supabase anonymous sign-in); guest PDFs auto-delete after 24 hours. The former Render service remains suspended for rollback.
 
 ## Run locally
 
@@ -46,7 +46,7 @@ cd ../frontend && node --test tests/*.test.cjs && pnpm typecheck && pnpm build
 
 Download/verify model assets before backend tests. Existing live suites remain opt-in, not automatic authority to spend quota or write hosted data. The synthetic PDF/financial seed are test fixtures, not accuracy evidence or private uploaded reports.
 
-- [Architecture](docs/architecture.md): retrieval, ownership, local embeddings and Puter boundary.
+- [Architecture](docs/architecture.md): retrieval, ownership, local embeddings, guest sessions and the Groq answer boundary.
 - [Deployment](docs/deployment.md): setup, resource limits, data and rollout checks.
 - [API](docs/api-docs.md): supported routes and response boundaries.
 - [Tests](docs/TEST.md): test map and evidence rules.

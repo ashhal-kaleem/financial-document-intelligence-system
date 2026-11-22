@@ -6,7 +6,7 @@ Current source overview, not a blanket production-readiness claim. Revised 22 No
 - FastAPI backend on Vercel Hobby, using inline ingestion on serverless.
 - Supabase Auth, private Storage and Postgres/pgvector.
 - MiniLM embeddings run locally in the backend using pinned, integrity-checked ONNX weights from the public Hugging Face model repository. No hosted HF inference or HF token.
-- Puter remains the opt-in browser answer service. Local embeddings do not replace its answer-writing model.
+- Answers are generated server-side on the Groq free plan. Local embeddings do not replace the answer-writing model.
 
 ## Upload and search
 
@@ -24,12 +24,14 @@ Retrieval restricts ready documents to the authenticated owner before vector sea
 
 There is no open notify endpoint. Browser history is account-scoped localStorage, not a cloud memo database. Statements/Comparison/Insights are explicitly unavailable; there is no fabricated structured-financial dataset.
 
-## Opt-in Puter path
+## Server-side Groq answer path
 
-The user signs into Supabase for document access, then separately chooses Connect AI and accepts the Puter disclosure before its SDK/auth popup loads. For each question, the backend retrieves allowed passages, checks the exact provider-qualified free-model catalog rate and signs a ten-minute owner/citation receipt. The browser sends selected passages, question, filenames and page metadata to Puter, not the original PDF or FDIS auth token. It pins provider/model, disables fallback, caps output and requires a completed answer with reported zero model cost before citation-marker validation.
+No login is shown. Each visitor gets a private Supabase anonymous (guest) session; the same bearer-token verification and owner-scoped RLS as named accounts apply, so one guest can never read another guest's or an old account's documents. For each question, the backend retrieves owner-allowed passages, spends one atomic daily quota unit (per guest and one global budget sized under the Groq free plan's daily token cap), then calls the pinned Groq model with the question and those passages. The API key never leaves the server; the original PDF and FDIS tokens are never sent.
 
-Receipts bind owner, citation IDs and expiry, not provider provenance or answer truth. Citation markers are not proof of correct amounts, years or semantic support. Catalog checks cannot lock third-party pricing, runtime charge checks happen after a call, and cancellation can stop local waiting while upstream work finishes. Puter allowances and availability are independent of this backend's free hosting. Missing models, accounts, quota or valid completion must remain an honest error, never a paid fallback.
+The model is server-pinned with no caller override, streaming disabled, output capped, and a completed (`stop`) answer whose citation markers validate against the retrieved passages is required; one regeneration is allowed, then an honest error. Citation markers are not proof of correct amounts, years or semantic support. Quota exhaustion, provider errors and incomplete answers surface as errors, never a paid fallback.
+
+Guest uploads carry a 24-hour `session_expires_at` and are removed (row, chunks, stored PDF) by a traffic-ridden sweep plus a daily cron endpoint. `DELETE /session` deletes a guest's documents, usage rows and auth identity on demand. Named (old Google) accounts have no expiry and are never swept. Anonymous sign-in is scriptable: the global daily answer budget, per-guest quotas, the 5-PDF limit and per-minute rate limits bound, but cannot eliminate, automated abuse; a CAPTCHA on anonymous sign-in remains an option.
 
 ## Evidence boundaries
 
-Local unit/fixture tests, a successful deployment, real-PDF retrieval and actual Puter answer generation are different checks. Release reports must identify which were performed. Public test reports do not establish suitability for confidential financial documents or a commercial uptime guarantee. See `deployment.md` and the backend README for deployment steps and limits.
+Local unit/fixture tests, a successful deployment, real-PDF retrieval and actual live answer generation are different checks. Release reports must identify which were performed. Public test reports do not establish suitability for confidential financial documents or a commercial uptime guarantee. See `deployment.md` and the backend README for deployment steps and limits.

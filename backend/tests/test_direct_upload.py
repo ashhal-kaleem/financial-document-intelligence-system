@@ -20,6 +20,16 @@ def signed_in():
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def no_network_extras(monkeypatch):
+    """Upload pre-checks (limits/sweeps) stay mocked; each test opts into the real paths."""
+    async def zero(*a, **k):
+        return 0
+    monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
+
+
 def make_doc(status="uploaded", owner=USER.id):
     return Document(id=uuid.uuid4(), filename="report.pdf", status=status, owner_id=owner)
 

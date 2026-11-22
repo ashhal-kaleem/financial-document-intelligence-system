@@ -38,17 +38,15 @@ export function AvatarCircle({
   );
 }
 export function ProfileChip() {
-  const { currentUser, setAuthModalOpen } = useFDISStore();
+  const { currentUser, setSessionMenuOpen } = useFDISStore();
   return (
     <button
-      onClick={() => setAuthModalOpen(true)}
+      onClick={() => setSessionMenuOpen(true)}
       className="flex min-h-11 max-w-[170px] items-center gap-2 rounded-full border border-[#DBE5DA] bg-white px-3 text-xs"
-      aria-label={currentUser ? "Account and sign out" : "Sign in"}
+      aria-label="Guest session options"
     >
       <AvatarCircle name={currentUser?.name} className="size-7" />
-      <span className="truncate">
-        {currentUser ? currentUser.name || "Account" : "Sign in"}
-      </span>
+      <span className="truncate">Guest session</span>
     </button>
   );
 }

@@ -22,6 +22,6 @@ The bundled sample_apple_10k.pdf and financial_seed.json are synthetic test fixt
 
 scripts/test_migrations.py uses throwaway local Postgres and role/auth stubs; it is not a hosted migration or storage test. Existing live suites remain opt-in. RUN_LIVE_TESTS=1 is a switch, not permission to write production data or spend quota.
 
-The public Apple statement retrieval check is separate from actual language-model generation. Its narrow result, known Hinglish miss and limitations are in production-readiness.md. Broader financial accuracy, absent-answer behavior, hostile-document resistance and real Puter generation remain separate gates.
+The public Apple statement retrieval check is separate from actual language-model generation. Its narrow result, known Hinglish miss and limitations are in production-readiness.md. Broader financial accuracy, absent-answer behavior and hostile-document resistance remain separate gates.
 
 For live checks use approved temporary users and public documents, record created IDs privately, test both owners and negative access, then remove only test data. Preserve existing app documents and metadata unless specifically approved otherwise. Do not log tokens or put private reports in fixtures.

@@ -183,7 +183,7 @@ test("Q&A has explicit document scope, no pre-accept draft deletion, and no no-o
     "src/components/chat/chat-interface.tsx",
     "utf8",
   );
-  assert.match(chat, /askPuter\(\s*content,\s*\[document.id\]/);
+  assert.match(chat, /askAI\(\s*content,\s*\[document.id\]/);
   assert.match(chat, /Back to documents/);
   assert.match(chat, /Cancel answer/);
   assert.doesNotMatch(
@@ -192,34 +192,46 @@ test("Q&A has explicit document scope, no pre-accept draft deletion, and no no-o
   );
   assert.doesNotMatch(chat, /MoreHorizontal|Export memo|Export chat/);
 });
-test("disabled Google provider stays in app without starting OAuth", async () => {
-  let oauthCalls = 0;
+test("no OAuth or third-party AI SDK remains in the frontend", () => {
+  const all = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = dir + "/" + e.name;
+      if (e.isDirectory()) walk(p);
+      else if (/\.(ts|tsx)$/.test(e.name)) all.push(p);
+    }
+  };
+  walk("src");
+  const source = all.map((p) => fs.readFileSync(p, "utf8")).join("\n");
+  assert.doesNotMatch(source, /signInWithOAuth|js\.puter\.com|askPuter|AIConnection|AuthModal/);
+  assert.equal(fs.existsSync("src/lib/puter-ai.ts"), false);
+  assert.equal(fs.existsSync("src/components/auth/auth-modal.tsx"), false);
+  assert.equal(fs.existsSync("src/components/chat/ai-connection.tsx"), false);
+});
+
+test("guest session starts anonymously and reuses the live session", async () => {
+  let anonCalls = 0;
   const client = {
     auth: {
-      signInWithOAuth: async () => {
-        oauthCalls++;
+      getSession: async () => ({ data: { session: null } }),
+      signInAnonymously: async () => {
+        anonCalls++;
         return { error: null };
       },
     },
   };
-  const auth = load("src/lib/supabase.ts", {
-    "@/lib/workspace-routes": { safeReturnPath: (p) => p },
-    "@supabase/supabase-js": { createClient: () => client },
-  });
-  // This test module reads env at initialization, so reload after configuring the synthetic project.
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://fixture.invalid";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "fixture";
   const configured = load("src/lib/supabase.ts", {
-    "@/lib/workspace-routes": { safeReturnPath: (p) => p },
     "@supabase/supabase-js": { createClient: () => client },
   });
-  global.fetch = async () =>
-    new Response(JSON.stringify({ external: { google: false } }), {
-      status: 200,
-    });
-  const { error } = await configured.signInWithGoogle();
-  assert.match(error.message, /not enabled/);
-  assert.equal(oauthCalls, 0);
+  const { error } = await configured.ensureGuestSession();
+  assert.equal(error, null);
+  assert.equal(anonCalls, 1);
+  client.auth.getSession = async () => ({ data: { session: { access_token: "t" } } });
+  const again = await configured.ensureGuestSession();
+  assert.equal(again.error, null);
+  assert.equal(anonCalls, 1); // existing session reused, no duplicate guest
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 });
@@ -324,5 +336,5 @@ test("Q&A upload belongs in composer attachment control, not an empty-state CTA"
   assert.match(chat, /retry=\{retry\} hideUpload/);
   assert.doesNotMatch(chat, /Upload a PDF in Documents/);
   assert.match(input, /aria-label="Attach PDF"/);
-  assert.match(input, /currentUser \? setUploadOpen\(true\) : setAuthModalOpen\(true\)/);
+  assert.match(input, /onClick=\{\(\) => setUploadOpen\(true\)\}/);
 });

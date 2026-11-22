@@ -94,10 +94,10 @@ class DocumentIngestionService:
             # Crucial invariant: release MuPDF internal cache
             pymupdf.TOOLS.store_shrink(100)
 
-    async def enqueue_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None) -> Document:
+    async def enqueue_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None, session_expires_at=None) -> Document:
         """Queue mode: store the PDF and a 'queued' row. A worker does the heavy work later.
         If storage fails the row becomes error and cannot be claimed."""
-        doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=owner_id)
+        doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=owner_id, session_expires_at=session_expires_at)
         created = await self.supabase.create_document(doc)
         try:
             await self.supabase.upload_pdf(doc.id, filename, pdf_bytes)
@@ -110,9 +110,9 @@ class DocumentIngestionService:
         created.status = "queued"
         return created
 
-    async def ingest_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None, is_sample: bool = False) -> Document:
+    async def ingest_document(self, filename: str, pdf_bytes: bytes, owner_id: Optional[str] = None, is_sample: bool = False, session_expires_at=None) -> Document:
         """Inline mode: create the row and process it inside the request."""
-        doc = Document(id=uuid4(), filename=filename, status="processing", is_sample=is_sample, owner_id=owner_id)
+        doc = Document(id=uuid4(), filename=filename, status="processing", is_sample=is_sample, owner_id=owner_id, session_expires_at=session_expires_at)
         created_doc = await self.supabase.create_document(doc)
         try:
             await self.supabase.upload_pdf(doc.id, filename, pdf_bytes)

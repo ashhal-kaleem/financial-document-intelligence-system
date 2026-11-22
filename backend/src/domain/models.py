@@ -13,6 +13,7 @@ class Document(BaseModel):
     error_message: Optional[str] = None
     is_sample: bool = False
     owner_id: Optional[str] = None
+    session_expires_at: Optional[datetime] = None  # guest uploads auto-delete after this; NULL never expires
     attempts: Optional[int] = None  # queue fencing token (set when a worker claims the job)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -44,15 +45,3 @@ class Citation(BaseModel):
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=2, max_length=4000, description="User question on financial reports")
     document_ids: Optional[List[UUID]] = Field(default=None, max_length=100, description="Optional document filter")
-    model: Optional[str] = Field(default=None, max_length=120, description="Configured model only")
-
-
-
-class BrowserAIRequest(AskRequest):
-    model: str = Field(..., max_length=120)
-    consent: bool = False
-
-
-class BrowserAIValidation(BaseModel):
-    receipt: str = Field(..., max_length=100000)
-    answer: str = Field(..., min_length=1, max_length=60000)

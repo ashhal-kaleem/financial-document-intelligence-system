@@ -23,7 +23,7 @@ export function ChatInputBox({
   hero = false,
 }: ChatInputBoxProps) {
   const selectedDocument = useFDISStore((s) => s.selectedDocument);
-  const { currentUser, setUploadOpen, setAuthModalOpen } = useFDISStore();
+  const { setUploadOpen } = useFDISStore();
 
   const handleSubmit = useCallback(() => {
     const trimmed = draft.trim();
@@ -65,7 +65,7 @@ export function ChatInputBox({
               aria-label="Attach PDF"
               title="Upload a PDF"
               disabled={isStreaming}
-              onClick={() => currentUser ? setUploadOpen(true) : setAuthModalOpen(true)}
+              onClick={() => setUploadOpen(true)}
               className="flex size-11 shrink-0 items-center justify-center rounded-full text-[#60449B] hover:bg-[#F1EDF8] disabled:opacity-40"
             >
               <Paperclip className="size-5" />

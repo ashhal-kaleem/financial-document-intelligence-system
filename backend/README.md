@@ -1,6 +1,6 @@
 # FDIS Backend Engine
 
-FastAPI, private Supabase storage/pgvector and CPU-only MiniLM embeddings. Puter remains the optional browser answer provider.
+FastAPI, private Supabase storage/pgvector, CPU-only MiniLM embeddings and server-side Groq free-plan answers.
 
 ## Run locally
 
@@ -26,6 +26,6 @@ The backend project uses the FastAPI preset and the entrypoint in `pyproject.tom
 
 No hosted HF inference, HF token, Cloudflare account or paid embedding API is used. The tokenizer package can bring the HF Hub library transitively; it is not called by the application. Downloading public model weights at build time is different from sending documents to a hosted inference API. The backend still consumes its hosting CPU/memory/network allowance.
 
-Puter is a separate, opt-in account-based service for final language answers. Only catalog-verified zero-priced variants are allowed by this app, with no paid fallback. Provider availability, user allowances and semantic answer correctness still need independent checks. Local embeddings do not make Puter unlimited or offline.
+Answers come from the Groq free plan (`openai/gpt-oss-120b`), called only from this backend with a server-only key; the model is pinned and there is no paid fallback. Daily free quotas are enforced per guest and globally. Semantic answer correctness still needs independent checks. Local embeddings do not make the answer model unlimited or offline.
 
 Model attribution and Apache 2.0 license: `licenses/`.

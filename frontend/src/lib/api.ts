@@ -183,25 +183,52 @@ export async function fetchDocumentChunks(
   return json.data || [];
 }
 
-export async function fetchAskContext(
+/** Grounded answer from the server: MiniLM retrieval + free Groq model. No browser AI account. */
+export async function askAI(
   question: string,
-  documentIds?: string[],
-): Promise<{
-  messages: Array<{ role: string; content: string }>;
-  citations: CitationItem[];
-  chunks_count: number;
-}> {
-  const res = await fetch(`${API_BASE}/ask/context`, {
+  documentIds: string[],
+  onEvent: (event: StreamEventPayload) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) throw new AuthRequiredError();
+  const res = await fetch(`${API_BASE}/ask/answer`, {
     method: "POST",
-    headers: await authHeaders({ "Content-Type": "application/json" }),
+    signal,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({
       question,
-      document_ids: documentIds && documentIds.length > 0 ? documentIds : null,
+      document_ids: documentIds.length ? documentIds : null,
     }),
   });
-  if (!res.ok) throw new Error("Failed to fetch ask context.");
-  const json = await res.json();
-  return json.data;
+  if (!res.ok) throw await readApiError(res, "Answer failed. Retry.");
+  const data = (await res.json()).data;
+  if (typeof data?.answer !== "string")
+    throw new Error("Answer returned an invalid response. Retry.");
+  onEvent({ event: "citations", citations: data.citations || [] });
+  onEvent({ event: "token", token: data.answer });
+  onEvent({ event: "done" });
+}
+
+/** Deletes every document and the guest identity itself, server-side. */
+export async function endSession(): Promise<{
+  documents_deleted: number;
+  documents_failed: number;
+  identity_removed: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/session`, {
+    method: "DELETE",
+    headers: await authHeaders(),
+  });
+  if (!res.ok)
+    throw await readApiError(
+      res,
+      "Session cleanup failed. Retry before leaving this device.",
+    );
+  return (await res.json()).data;
 }
 
 export async function fetchHealth(): Promise<{

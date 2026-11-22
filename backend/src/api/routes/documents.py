@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 import logging
@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from src.core.auth import AuthUser, get_current_user
 from src.core.config import effective_ingestion_mode, get_settings
 from src.core.rate_limit import rate_limited_user
-from src.core.errors import DocumentNotFoundError, InvalidPDFError
+from src.core.errors import DocumentNotFoundError, FDISException, InvalidPDFError
 from src.domain.models import Document
 from src.infrastructure.supabase_client import SupabaseClient
 from src.services.ingestion import DocumentIngestionService
@@ -27,6 +27,34 @@ def safe_filename(name: str) -> str:
 settings = get_settings()
 supabase = SupabaseClient()
 ingestion_service = DocumentIngestionService(supabase)
+
+
+def _guest_expiry(user: AuthUser):
+    """Guest uploads auto-delete; named (non-anonymous) accounts keep their documents."""
+    if not user.is_anonymous:
+        return None
+    return datetime.now(timezone.utc) + timedelta(hours=settings.GUEST_DATA_TTL_HOURS)
+
+
+async def _check_document_limit(user: AuthUser) -> None:
+    count = await supabase.count_owner_documents(user.id)
+    if count >= settings.GUEST_MAX_DOCUMENTS:
+        raise FDISException(
+            "Document limit reached",
+            f"This session already holds {count} PDFs (maximum {settings.GUEST_MAX_DOCUMENTS}). Delete one before uploading another.",
+            429,
+            "document_limit",
+        )
+
+
+async def _sweep_expired_guests() -> None:
+    """Traffic-ridden expiry sweep; the daily scheduled sweep covers quiet periods."""
+    try:
+        swept = await supabase.sweep_expired_guest_documents()
+        if swept:
+            logger.info("Expired guest sweep removed %s document(s)", swept)
+    except Exception:
+        logger.warning("Expired guest sweep failed", exc_info=True)
 
 
 async def _sweep_inline_stale() -> None:
@@ -49,6 +77,8 @@ class UploadUrlRequest(BaseModel):
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def upload_document(response: Response, file: UploadFile = File(...), user: AuthUser = Depends(rate_limited_user)):
     await _sweep_inline_stale()
+    await _sweep_expired_guests()
+    await _check_document_limit(user)
     filename = safe_filename(file.filename or "")
     if not any(filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
         supported = ", ".join(ext.lstrip(".").upper() for ext in settings.ALLOWED_EXTENSIONS)
@@ -69,13 +99,14 @@ async def upload_document(response: Response, file: UploadFile = File(...), user
     try:
         if queued:
             doc = await ingestion_service.enqueue_document(
-                filename=filename, pdf_bytes=pdf_bytes, owner_id=user.id
+                filename=filename, pdf_bytes=pdf_bytes, owner_id=user.id, session_expires_at=_guest_expiry(user)
             )
         else:
             doc = await ingestion_service.ingest_document(
                 filename=filename,
                 pdf_bytes=pdf_bytes,
                 owner_id=user.id,
+                session_expires_at=_guest_expiry(user),
             )
         if queued:
             response.status_code = status.HTTP_202_ACCEPTED
@@ -102,6 +133,8 @@ async def create_upload_url(payload: UploadUrlRequest, user: AuthUser = Depends(
     mint a one-object signed upload URL. The browser then PUTs the PDF straight
     to private Supabase storage, so big request bodies never hit this host."""
     await _sweep_inline_stale()
+    await _sweep_expired_guests()
+    await _check_document_limit(user)
     filename = safe_filename(payload.filename)
     if not any(filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
         supported = ", ".join(ext.lstrip(".").upper() for ext in settings.ALLOWED_EXTENSIONS)
@@ -111,7 +144,7 @@ async def create_upload_url(payload: UploadUrlRequest, user: AuthUser = Depends(
     if payload.size > settings.MAX_UPLOAD_SIZE_BYTES:
         max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
         raise InvalidPDFError(f"File size exceeds maximum allowable {max_mb}MB limit.")
-    doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=user.id)
+    doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=user.id, session_expires_at=_guest_expiry(user))
     await supabase.create_document(doc)
     signed = await supabase.create_signed_upload_url(doc.id, filename)
     return {
@@ -186,6 +219,7 @@ async def ingest_uploaded_document(document_id: UUID, user: AuthUser = Depends(r
 @router.get("")
 async def list_documents(user: AuthUser = Depends(get_current_user)):
     await _sweep_inline_stale()
+    await _sweep_expired_guests()
     docs = await supabase.get_documents(user.id)
     return {
         "success": True,

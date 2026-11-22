@@ -17,12 +17,18 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str = Field(..., description="Supabase Service Role Key")
     SUPABASE_STORAGE_BUCKET: str = Field("documents", description="Storage bucket name for PDFs")
 
-    # LLM Inference Configuration
-    OPENROUTER_API_KEY: str = Field("", description="OpenRouter API Key for fallback")
-    OPENROUTER_DEFAULT_MODEL: str = Field("liquid/lfm-2.5-2.6b:free", description="Default OpenRouter fallback model")
-
-    LLM_FALLBACK_ENABLED: bool = False  # opt-in only; a second provider may spend quota/money
+    # Answer generation (server-side, free Groq plan; key stays on the server)
+    GROQ_API_KEY: str = Field("", description="Groq API key for server-side answers (free plan)")
+    GROQ_MODEL: str = Field("openai/gpt-oss-120b", description="Configured Groq model; no caller override")
+    GROQ_TIMEOUT_SECONDS: float = Field(60.0, ge=5, le=120)
     LLM_MAX_OUTPUT_TOKENS: int = Field(1024, ge=1, le=8192)
+
+    # Guest-session and free-quota guards (public no-login deployment)
+    GUEST_DAILY_QUESTION_LIMIT: int = Field(20, ge=1, description="Per-guest free answers per UTC day")
+    GLOBAL_DAILY_ANSWER_LIMIT: int = Field(60, ge=1, description="All guests combined; token-aware margin under the Groq free plan's daily token cap")
+    GUEST_MAX_DOCUMENTS: int = Field(5, ge=1, description="Live documents per guest at a time")
+    GUEST_DATA_TTL_HOURS: int = Field(24, ge=1, description="Anonymous guest uploads auto-delete after this many hours")
+    CRON_SECRET: str = Field("", description="Bearer secret Vercel Cron sends to the scheduled sweep endpoint")
 
     # Transactional Email Configuration
     RESEND_API_KEY: str = Field("", description="Resend Email API Key")

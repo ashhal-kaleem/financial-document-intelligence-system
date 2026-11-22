@@ -104,14 +104,19 @@ async def test_retrieval_with_no_visible_documents_skips_search():
 @pytest.mark.asyncio
 async def test_no_context_returns_fixed_not_covered_answer_without_llm(monkeypatch):
     from src.api.routes import ask as ask_routes
-    from src.domain.models import BrowserAIRequest
+    from src.domain.models import AskRequest
     svc = InferenceService(retrieval_service=make_retrieval(FakeStore(visible=[uuid4()], matches=[])))
     monkeypatch.setattr(ask_routes, "inference_service", svc)
-    async def forbidden(*a, **k):
-        raise AssertionError("Model must not be called when nothing relevant was retrieved")
-    monkeypatch.setattr(ask_routes, "verify_free_model", forbidden)
-    result = await ask_routes.browser_context(
-        BrowserAIRequest(question="what is the CEO's salary?", model=next(iter(ask_routes.PUTER_MODELS)), consent=True),
+    class Forbidden:
+        async def complete(self, messages):
+            raise AssertionError("Model must not be called when nothing relevant was retrieved")
+    class ForbiddenQuota:
+        async def take_question_quota(self, *a, **k):
+            raise AssertionError("Quota must not be spent when no provider call happens")
+    monkeypatch.setattr(ask_routes, "groq", Forbidden())
+    monkeypatch.setattr(ask_routes, "supabase", ForbiddenQuota())
+    result = await ask_routes.ask_answer(
+        AskRequest(question="what is the CEO's salary?"),
         auth.AuthUser(OWNER),
     )
     assert result["data"]["answer"] == NOT_COVERED_ANSWER
@@ -322,6 +327,11 @@ def test_queue_mode_upload_returns_202_and_serverless_falls_back_inline(monkeypa
     async def fake_enqueue(**kw):
         return Document(filename=kw["filename"], status="queued", owner_id=kw["owner_id"])
     monkeypatch.setattr(documents_route.ingestion_service, "enqueue_document", fake_enqueue)
+    async def zero(*a, **k):
+        return 0
+    monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
     res = TestClient(app).post("/api/v1/documents", files={"file": ("r.pdf", b"%PDF-1.4 x", "application/pdf")})
     assert res.status_code == 202 and res.json()["data"]["status"] == "queued"
 

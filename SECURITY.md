@@ -19,6 +19,6 @@ Private bucket and working login need hosted setup. Live two-user isolation, ful
 
 No real provider quality/cost, dependency audit, production observability or backup/restore drill is claimed. See docs/production-readiness.md and deployment.md. Rotate exposed keys through the provider, not through committed files.
 
-## Puter boundary
+## Answer provider boundary
 
-Third-party SDK loads only after explicit user choice. Never send a Supabase/service-role key to Puter. Retrieved financial text and metadata leave FDIS only through the separately disclosed browser ask path. A signed receipt is not provenance verification of a client-supplied answer. Marker checks are not a semantic safety certificate. Provider is pinned and fallback=false; free model rates are checked against catalog per ask, and result must report zero cost, but price changes are not atomically prevented. No generation was executed during this implementation.
+The Groq API key exists only on the backend; the browser never sees it. Retrieved financial text and the question leave FDIS only to the Groq API when an answer is requested. Citation marker checks validate IDs, not semantic truth. The model is server-pinned (no caller override), free-plan only, with per-guest and global daily quotas and no paid fallback. Guests hold at most 5 PDFs and guest uploads auto-delete after 24 hours; visitors can also end the session and delete everything explicitly. Anonymous sign-ins are server-verified Supabase identities, so existing owner-scoped RLS is unchanged; old named accounts' documents stay private and never become public.

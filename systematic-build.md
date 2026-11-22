@@ -20,7 +20,7 @@ Updated 22 November 2026. This is the current checklist, not the old Groq/SSE bu
 
 ## Still separate release gates
 
-- Real authorized Puter generation with actual answer/citation/amount/year evaluation, including refusal and incomplete-response cases.
+- Broader answer-quality evaluation (amounts/years, refusal and incomplete-response cases) on the server-side Groq flow, across a wider financial corpus.
 - Wider independently labeled multi-report evaluation, including Hinglish and absent-answer questions; the narrow baseline includes a known Hinglish miss.
 - Largest supported PDFs, cold starts, concurrent load, distributed quotas, provider/account limits, monitoring and backup/restore.
 - Appropriate privacy and hosting terms for the intended audience. A free personal deployment is not a commercial SLA.

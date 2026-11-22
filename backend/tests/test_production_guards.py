@@ -1,10 +1,9 @@
 """Offline regression coverage. No provider accounts, model spend or hosted writes."""
 import json
-import pytest
 import httpx
+import pytest
 import pymupdf
 from uuid import uuid4
-from src.infrastructure.llm_stream import stream_tokens
 from src.domain.citation import validate_answer_citations, create_citations_from_chunks, GROUNDED_SYSTEM_PROMPT
 from src.domain.models import DocumentChunk, AskRequest
 from src.services.inference import InferenceService
@@ -42,41 +41,6 @@ async def test_retrieval_and_prompt_survive_without_backend_provider():
     msgs=s.build_rag_prompt('Revenue?',chunks,citations)
     assert 'Revenue $100 million' in msgs[-1]['content']
     assert not hasattr(s,'stream_answer')
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('body', ['data: {bad}\n\n','data: [DONE]\n\n','data: {"error":{"message":"secret"}}\n\n','data: {"choices":[{"delta":{"content":"partial"}}]}\n\n'])
-async def test_provider_malformed_empty_error_or_truncated_stream_fails(body):
-    with pytest.raises(RuntimeError):
-        async for _ in stream_tokens(httpx.Response(200,text=body)):pass
-
-
-@pytest.mark.asyncio
-async def test_provider_stream_requires_terminal_marker():
-    body='data: {"choices":[{"delta":{"content":"answer"}}]}\n\ndata: [DONE]\n\n'
-    assert [t async for t in stream_tokens(httpx.Response(200,text=body))]==['answer']
-
-
-@pytest.mark.asyncio
-async def test_model_override_is_rejected_before_network(monkeypatch):
-    from src.infrastructure import openrouter_client as module
-    monkeypatch.setattr(module.get_settings(),'LLM_FALLBACK_ENABLED',True)
-    monkeypatch.setattr(module.get_settings(),'OPENROUTER_API_KEY','test')
-    client=module.OpenRouterClient()
-    with pytest.raises(ValueError):
-        async for _ in client.stream_chat([],model='expensive-unapproved-model'):pass
-
-
-@pytest.mark.asyncio
-async def test_fallback_provider_never_runs_without_explicit_opt_in(monkeypatch):
-    from src.infrastructure import openrouter_client as module
-    monkeypatch.setattr(module.get_settings(),'LLM_FALLBACK_ENABLED',False)
-    monkeypatch.setattr(module.get_settings(),'OPENROUTER_API_KEY','test')
-    def unexpected_client(*args,**kwargs):
-        raise AssertionError("No provider request without opt-in")
-    monkeypatch.setattr(module.httpx,'AsyncClient',unexpected_client)
-    with pytest.raises(RuntimeError):
-        async for _ in module.OpenRouterClient().stream_chat([]):pass
 
 
 def test_blank_scanned_pdf_is_not_ready():
@@ -160,8 +124,15 @@ async def test_rate_limit_map_prunes_stale_users_and_fails_closed_when_full(monk
     rl.reset_rate_limits()
 
 
-def test_groq_settings_are_gone():
+def test_puter_browser_flow_is_gone():
     from src.core.config import Settings
     settings = Settings(_env_file=None, SUPABASE_URL="https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY="test")
-    assert not hasattr(settings, "GROQ_API_KEY")
-    assert not hasattr(settings, "GROQ_MODEL")
+    assert not hasattr(settings, "PUTER_MODELS")
+    import importlib
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("src.services.browser_ai")
+
+
+def test_answer_model_is_server_pinned_not_caller_chosen():
+    from src.domain.models import AskRequest
+    assert "model" not in AskRequest.model_fields  # no caller override reaches the provider

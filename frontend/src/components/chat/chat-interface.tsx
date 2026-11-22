@@ -8,8 +8,7 @@ import { ChatSidebar } from "@/components/shell/app-chrome";
 import { useFDISStore, Citation } from "@/store/useFDISStore";
 import { useOwnedDocuments } from "@/hooks/useOwnedDocuments";
 import { DocumentState } from "@/components/workspace/document-state";
-import { askPuter } from "@/lib/puter-ai";
-import { AIConnection } from "./ai-connection";
+import { askAI } from "@/lib/api";
 import {
   loadChatHistory,
   saveChatHistory,
@@ -24,8 +23,6 @@ export function ChatInterface() {
   const document = ready.find((d) => d.id === documentId);
   const { currentUser, setSelectedDocument, setActiveCitation } =
     useFDISStore();
-  const [aiConnected, setAIConnected] = useState(false);
-  const [aiModel, setAIModel] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraftState] = useState("");
   const [error, setError] = useState("");
@@ -67,21 +64,8 @@ export function ChatInterface() {
       document ? { id: document.id, filename: document.filename } : null,
     );
   }, [document?.id, document?.filename, setSelectedDocument]);
-  useEffect(() => {
-    if (!aiConnected) {
-      requestRef.current?.abort();
-      requestRef.current = null;
-      setIsStreaming(false);
-    }
-  }, [aiConnected]);
   const handleSend = async (content: string) => {
     if (requestRef.current || !owner || !document || !loaded) return;
-    if (!aiConnected || !aiModel) {
-      setError(
-        "Select a free model and connect AI first. Your question is still here.",
-      );
-      return;
-    }
     const controller = new AbortController();
     requestRef.current = controller;
     setError("");
@@ -107,10 +91,9 @@ export function ChatInterface() {
     previousMessages.current = messages;
     setMessages([...base, answer]);
     try {
-      await askPuter(
+      await askAI(
         content,
         [document.id],
-        aiModel,
         (event) => {
           if (!isCurrent()) return;
           if (event.event === "citations") {
@@ -147,9 +130,7 @@ export function ChatInterface() {
       if (isCurrent()) {
         setMessages(messages);
         setError(
-          err instanceof Error
-            ? err.message
-            : "Answer could not be verified. Retry.",
+          err instanceof Error ? err.message : "Answer failed. Retry.",
         );
         setDraft(content);
       }
@@ -176,7 +157,7 @@ export function ChatInterface() {
     setError("");
     saveChatHistory([], owner, storageScope);
   };
-  const canAsk = Boolean(owner && document && loaded && aiConnected && aiModel);
+  const canAsk = Boolean(owner && document && loaded);
   return (
     <div className="v8-lilac flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[#FDFDFD]">
       <ChatSidebar
@@ -205,8 +186,8 @@ export function ChatInterface() {
           </div>
           <h1 className="text-xl font-semibold">Document Q&A</h1>
           <p className="mt-2 text-xs text-[#6B6278]">
-            Browser-only conversation. New conversation clears its saved
-            messages. No cloud history or export yet.
+            Conversation stays in this browser. New conversation clears its
+            saved messages. No cloud history or export yet.
           </p>
         </div>
         {state !== "ready" ? (
@@ -259,14 +240,6 @@ export function ChatInterface() {
                 </p>
               )}
             </div>
-            {document && (
-              <AIConnection
-                connected={aiConnected}
-                setConnected={setAIConnected}
-                model={aiModel}
-                setModel={setAIModel}
-              />
-            )}
             <div
               className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
               aria-live="polite"
@@ -275,7 +248,7 @@ export function ChatInterface() {
                 {!messages.length ? (
                   <p className="text-sm text-[#6B6278]">
                     {document
-                      ? "2. Connect AI, then ask a question about this PDF. Answers must be checked against the cited page."
+                      ? "2. Ask a question about this PDF. Answers come from a free AI model using only this PDF's retrieved passages; always check the answer against the cited page. Guest PDFs are deleted after 24 hours."
                       : "Start by choosing a ready PDF. Your question will only use that document."}
                   </p>
                 ) : (

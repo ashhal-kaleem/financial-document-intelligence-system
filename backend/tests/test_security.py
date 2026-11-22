@@ -22,6 +22,16 @@ BOB = AuthUser(id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 @pytest.fixture(autouse=True)
 def clean():
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def no_network_extras(monkeypatch):
+    """Upload pre-checks (limits/sweeps) stay mocked; each test opts into the real paths."""
+    async def zero(*a, **k):
+        return 0
+    monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
     auth._token_cache.clear()
     rate_limit.reset_rate_limits()
     yield
@@ -37,7 +47,9 @@ def clean():
         ("delete", f"/api/v1/documents/{DOC_ID}"),
         ("get", f"/api/v1/documents/{DOC_ID}/chunks"),
         ("get", f"/api/v1/documents/{DOC_ID}/pdf"),
-        ("post", "/api/v1/ask/context"),
+        ("post", "/api/v1/ask/answer"),
+        ("delete", "/api/v1/session"),
+        ("get", "/api/v1/internal/sweep"),
     ],
 )
 def test_data_endpoints_require_token(method, path):

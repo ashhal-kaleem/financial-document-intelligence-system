@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from src.api.routes import ask, documents, health
+from src.api.routes import ask, documents, health, session
 from src.services.worker import IngestionWorker
 from contextlib import asynccontextmanager
 from src.core.config import effective_ingestion_mode, get_settings
@@ -71,10 +71,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(ask.router, prefix="/api/v1")
+app.include_router(session.router, prefix="/api/v1")
 
 app.include_router(health.router)
 app.include_router(documents.router)
 app.include_router(ask.router)
+app.include_router(session.router)
 
 @app.get("/")
 async def root():

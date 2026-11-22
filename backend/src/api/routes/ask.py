@@ -1,72 +1,89 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from src.core.auth import AuthUser
+from src.core.config import get_settings
+from src.core.errors import FDISException
 from src.core.rate_limit import rate_limited_user
+from src.domain.citation import NOT_COVERED_ANSWER, validate_answer_citations
 from src.domain.models import AskRequest
+from src.infrastructure.groq_client import GroqClient
+from src.infrastructure.supabase_client import SupabaseClient
 from src.services.inference import InferenceService
 
 router = APIRouter(prefix="/ask", tags=["Financial Q&A"])
 inference_service = InferenceService()
+supabase = SupabaseClient()
+groq = GroqClient()
 
-@router.post("/context")
-async def get_ask_context(payload: AskRequest, user: AuthUser = Depends(rate_limited_user)):
-    """
-    RAG Context Endpoint: Returns grounded context passages, citations, and prompt.
-    Authenticated inspection of retrieved passages; answers are produced by the user-authorized browser AI flow.
-    """
+
+def _quota_error(kind: str) -> FDISException:
+    if kind == "global_exhausted":
+        return FDISException(
+            "Free quota exhausted",
+            "Today's shared free answer quota is full. Try again tomorrow. No paid fallback was used.",
+            429,
+            "free_quota_exhausted",
+        )
+    return FDISException(
+        "Daily question limit reached",
+        "You reached today's free question limit for this guest session. Try again tomorrow or end the session to clear your data.",
+        429,
+        "daily_question_limit",
+    )
+
+
+@router.post("/answer")
+async def ask_answer(payload: AskRequest, user: AuthUser = Depends(rate_limited_user)):
+    """Grounded answer: MiniLM retrieval over the caller's own documents, then one
+    server-side completion on the configured free Groq model. Only the question and
+    retrieved passages leave the server; the key and the PDF never do."""
+    settings = get_settings()
     chunks = await inference_service.retrieval.retrieve_relevant_chunks(
         query=payload.question,
         document_ids=payload.document_ids,
         owner_id=user.id,
     )
     citations = inference_service.retrieval.build_citations(chunks)
+    if not chunks:
+        # No provider call, no quota spent: the documents simply do not cover this.
+        return {
+            "success": True,
+            "data": {
+                "answer": NOT_COVERED_ANSWER,
+                "citations": [],
+                "chunks_count": 0,
+                "model": None,
+            },
+            "meta": {"timestamp": datetime.now(timezone.utc).isoformat(), "path": "/api/v1/ask/answer"},
+        }
+
+    quota = await supabase.take_question_quota(
+        user.id, settings.GUEST_DAILY_QUESTION_LIMIT, settings.GLOBAL_DAILY_ANSWER_LIMIT
+    )
+    if quota != "ok":
+        raise _quota_error(quota)
+
     messages = inference_service.build_rag_prompt(payload.question, chunks, citations)
+    answer = await groq.complete(messages)
+    if not validate_answer_citations(answer, citations):
+        # One regeneration, then refuse: answers without valid source markers are
+        # never shown as grounded output.
+        answer = await groq.complete(messages)
+        if not validate_answer_citations(answer, citations):
+            raise FDISException(
+                "Citation check failed",
+                "The answer's source markers could not be verified. It was not shown. Ask again.",
+                422,
+                "invalid_citations",
+            )
 
     return {
         "success": True,
         "data": {
-            "messages": messages,
-            "citations": [c.model_dump() for c in citations],
+            "answer": answer,
+            "citations": [c.model_dump(mode="json") for c in citations],
             "chunks_count": len(chunks),
+            "model": settings.GROQ_MODEL,
         },
-        "meta": {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "path": "/api/v1/ask/context",
-        },
+        "meta": {"timestamp": datetime.now(timezone.utc).isoformat(), "path": "/api/v1/ask/answer"},
     }
-
-# User-authorized browser provider boundary. No Puter token is accepted by this backend.
-from src.domain.models import BrowserAIRequest, BrowserAIValidation
-from src.domain.citation import NOT_COVERED_ANSWER
-from src.services.browser_ai import PUTER_MODELS, make_receipt, validate_receipt, verify_free_model
-
-@router.get('/browser-models')
-async def browser_models(user: AuthUser = Depends(rate_limited_user)):
-    return {'models': [{'id': k, 'name': v} for k, v in PUTER_MODELS.items()]}
-
-@router.post('/browser-context')
-async def browser_context(payload: BrowserAIRequest, user: AuthUser = Depends(rate_limited_user)):
-    if not payload.consent:
-        raise HTTPException(422, 'Consent to the provider disclosure is required.')
-    if payload.model not in PUTER_MODELS:
-        raise HTTPException(422, 'Requested model is not enabled.')
-    chunks = await inference_service.retrieval.retrieve_relevant_chunks(
-        query=payload.question, document_ids=payload.document_ids, owner_id=user.id)
-    citations = inference_service.retrieval.build_citations(chunks)
-    if not chunks:
-        return {'data': {'answer': NOT_COVERED_ANSWER, 'citations': [], 'messages': [], 'receipt': None}}
-    await verify_free_model(payload.model)
-    return {'data': {
-        'messages': inference_service.build_rag_prompt(payload.question, chunks, citations),
-        'citations': [c.model_dump(mode='json') for c in citations],
-        'receipt': make_receipt(user.id, citations, payload.model),
-    }}
-
-@router.post('/browser-validate')
-async def browser_validate(payload: BrowserAIValidation, user: AuthUser = Depends(rate_limited_user)):
-    citations = validate_receipt(payload.receipt, user.id, payload.answer)
-    # Check ownership/status again: a previously visible report may have been deleted since retrieval.
-    visible = set(await inference_service.retrieval.supabase.get_visible_document_ids(user.id))
-    if any(c.document_id not in visible for c in citations):
-        raise HTTPException(409, 'Source document is no longer available. Ask again.')
-    return {'data': {'citation_ids_valid': True, 'semantic_support_verified': False}}

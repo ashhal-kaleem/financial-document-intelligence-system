@@ -5,5 +5,11 @@
       "includeFiles": "models/minilm-v1/**",
       "excludeFiles": "{tests/**,.venv/**,__pycache__/**,**/__pycache__/**}"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/v1/internal/sweep",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }

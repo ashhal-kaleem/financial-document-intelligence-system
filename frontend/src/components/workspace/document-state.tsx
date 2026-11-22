@@ -1,6 +1,11 @@
 "use client";
 
 import { useFDISStore } from "@/store/useFDISStore";
+import { ensureGuestSession } from "@/lib/supabase";
+
+async function retrySession() {
+  await ensureGuestSession();
+}
 
 export function DocumentState({
   state,
@@ -11,13 +16,13 @@ export function DocumentState({
   retry: () => unknown;
   hideUpload?: boolean;
 }) {
-  const { setAuthModalOpen, setUploadOpen } = useFDISStore();
+  const { setUploadOpen } = useFDISStore();
   if (state === "ready") return null;
   return (
     <section className="rounded-[22px] bg-white p-6 sm:p-8" aria-live="polite">
       <h2 className="text-xl font-medium fam-ink">
         {state === "signed-out"
-          ? "Your private workspace"
+          ? "Starting your private session"
           : state === "error"
             ? "Documents could not be loaded"
             : state === "loading"
@@ -26,9 +31,9 @@ export function DocumentState({
       </h2>
       <p className="mt-3 max-w-xl text-sm leading-6 fam-sub">
         {state === "signed-out"
-          ? "Sign in to see your documents. No account data is shown while signed out."
+          ? "No login needed: a private guest session starts automatically and only this browser can see its documents. If it does not start in a few seconds, retry."
           : state === "error"
-            ? "The request failed. Your library may contain documents; this is not an empty-library result. On Free hosting the server may be waking up. Retry to check; sign in again if your session expired."
+            ? "The request failed. Your library may contain documents; this is not an empty-library result. On Free hosting the server may be waking up. Retry to check."
             : state === "loading"
               ? "Loading your private library. Free hosting can take longer to start; this request will show a retry option if it takes too long."
               : "Upload a PDF to start. Only your uploaded documents will appear here."}
@@ -37,7 +42,7 @@ export function DocumentState({
         <button
           onClick={() =>
             state === "signed-out"
-              ? setAuthModalOpen(true)
+              ? retrySession()
               : state === "error"
                 ? retry()
                 : setUploadOpen(true)
@@ -45,7 +50,7 @@ export function DocumentState({
           className="mt-5 rounded-full bg-[#0C3B2E] px-5 py-2.5 text-sm font-medium text-white"
         >
           {state === "signed-out"
-            ? "Sign in"
+            ? "Retry"
             : state === "error"
               ? "Retry"
               : "Upload PDF"}
@@ -53,10 +58,10 @@ export function DocumentState({
       )}
       {state === "error" && (
         <button
-          onClick={() => setAuthModalOpen(true)}
+          onClick={() => retrySession()}
           className="ml-3 mt-4 min-h-11 underline text-sm"
         >
-          Check sign-in
+          Restart guest session
         </button>
       )}
     </section>

@@ -26,7 +26,7 @@ The parser rejects empty, scanned-only and encrypted PDFs. Default page/chunk/wo
 - `POST /ask/browser-context`: requires consent plus an allowed model; retrieves owned passages and checks zero catalog pricing, then returns messages/citations and a signed owner/expiry receipt. A no-context answer is fixed and makes no model call.
 - `POST /ask/browser-validate`: validates receipt, citation marker IDs and current source visibility. Returns `semantic_support_verified=false`; it does not prove model provenance, financial correctness or semantic support.
 
-Actual Puter generation happens separately in the authorized user's browser. There is no `/ask/stream` server-inference endpoint after Groq removal. OpenRouter fallback remains configured-off and is not part of this rollout.
+Answers are generated server-side via `POST /api/v1/ask/answer` on the Groq free plan; there is no browser AI SDK and no `/ask/stream`. `DELETE /api/v1/session` removes a guest's documents and identity; `GET /api/v1/internal/sweep` is the cron-only expiry sweep.
 
 Returned vector matches with a different or missing embedding profile fail with 409 instead of mixing vector spaces. Too-long search text fails 422; busy/exceeded local inference budgets fail 503. The limiter/encoder lock is per process, not distributed.
 

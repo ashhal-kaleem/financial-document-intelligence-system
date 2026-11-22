@@ -7,7 +7,7 @@ FDIS remains the same financial-document RAG project: private PDF upload, source
 - Source is on main. Verify the current remote HEAD before reporting it as latest.
 - Frontend and FastAPI backend use separate Vercel Hobby projects; Supabase holds auth, private PDFs and vectors. The former Render service is preserved, suspended.
 - MiniLM public model weights are pulled from a pinned HF revision at build time and run in our backend with ONNX Runtime. Hosted HF inference and HF_TOKEN are removed. No Cloudflare integration was added.
-- Puter is the separate opt-in final-answer service. Its user account, free-model availability and allowances are not the embedding engine or an unlimited-free guarantee.
+- Answers are written server-side on the Groq free plan (`openai/gpt-oss-120b`, key server-only). The free daily quota is a real cap, not an unlimited-free guarantee.
 - Existing app data is not repository documentation. Updating old Markdown files does not authorize deleting uploaded PDFs, rows, accounts, models or migrations.
 
 Start with README.md for product/setup, docs/architecture.md for data flow, docs/deployment.md for deployment controls and docs/production-readiness.md for measured evidence versus open gates. This file does not duplicate changing test counts or deployment hashes.

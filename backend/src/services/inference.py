@@ -8,11 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class InferenceService:
-    """Shared retrieval and grounded prompt assembly for the Q&A routes.
+    """Shared retrieval and grounded prompt assembly for the Q&A route.
 
-    Server-side answer generation was removed with the Groq provider. Answers
-    come from the user-authorized browser AI flow, which reuses this retrieval
-    and prompt construction.
+    MiniLM embeddings retrieve passages; one server-side completion on the
+    configured free Groq model turns them into the cited answer.
     """
 
     def __init__(self, retrieval_service: RetrievalService = None):

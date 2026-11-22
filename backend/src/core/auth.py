@@ -17,6 +17,7 @@ _token_cache: Dict[str, Tuple[float, "AuthUser"]] = {}
 class AuthUser:
     id: str
     email: Optional[str] = None
+    is_anonymous: bool = False
 
 
 class UnauthorizedError(FDISException):
@@ -44,7 +45,7 @@ async def _verify_with_supabase(token: str) -> Optional[AuthUser]:
     user_id = str(data["id"])
     if not _UUID_RE.fullmatch(user_id):
         return None
-    return AuthUser(id=user_id, email=data.get("email"))
+    return AuthUser(id=user_id, email=data.get("email"), is_anonymous=bool(data.get("is_anonymous")))
 
 
 def auth_bypass_enabled() -> bool:
@@ -55,7 +56,7 @@ def auth_bypass_enabled() -> bool:
     return not any(os.environ.get(v) for v in ("RENDER", "VERCEL", "VERCEL_ENV", "FLY_APP_NAME", "K_SERVICE"))
 
 
-LOCAL_DEV_USER = AuthUser(id="00000000-0000-0000-0000-000000000000", email="dev@localhost")
+LOCAL_DEV_USER = AuthUser(id="00000000-0000-0000-0000-000000000000", email="dev@localhost", is_anonymous=True)
 
 
 async def get_current_user(request: Request) -> AuthUser:

@@ -60,11 +60,11 @@ interface FDISState {
   currentUser: AuthUser | null;
   setCurrentUser: (user: AuthUser | null) => void;
 
-  isAuthModalOpen: boolean;
-  setAuthModalOpen: (open: boolean) => void;
-
   isUploadOpen: boolean;
   setUploadOpen: (open: boolean) => void;
+
+  isSessionMenuOpen: boolean;
+  setSessionMenuOpen: (open: boolean) => void;
 }
 
 export const useFDISStore = create<FDISState>((set) => ({
@@ -106,9 +106,9 @@ export const useFDISStore = create<FDISState>((set) => ({
           },
     ),
 
-  isAuthModalOpen: false,
-  setAuthModalOpen: (open) => set({ isAuthModalOpen: open }),
-
   isUploadOpen: false,
   setUploadOpen: (open) => set({ isUploadOpen: open }),
+
+  isSessionMenuOpen: false,
+  setSessionMenuOpen: (open) => set({ isSessionMenuOpen: open }),
 }));

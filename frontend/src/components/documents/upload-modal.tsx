@@ -21,8 +21,7 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
     mutationFn: async (file: File) => {
       const owner = useFDISStore.getState().currentUser?.id;
       if (!owner) {
-        useFDISStore.getState().setAuthModalOpen(true);
-        throw Error("Sign in before uploading.");
+        throw Error("Your private guest session is still starting. Try again in a moment.");
       }
       const doc = await uploadDocument(file);
       if (useFDISStore.getState().currentUser?.id !== owner)

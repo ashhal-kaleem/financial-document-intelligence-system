@@ -1,4 +1,6 @@
 import json
+import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 import httpx
@@ -7,6 +9,8 @@ from src.domain.models import Document, DocumentChunk
 from src.infrastructure.interfaces import BaseVectorStore
 from src.infrastructure.embedding_assets import PROFILE
 from src.core.errors import FDISException
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseClient(BaseVectorStore):
@@ -34,6 +38,8 @@ class SupabaseClient(BaseVectorStore):
                 "owner_id": doc.owner_id,
                 "created_at": doc.created_at.isoformat(),
             }
+            if doc.session_expires_at is not None:
+                payload["session_expires_at"] = doc.session_expires_at.isoformat()
             res = await client.post(
                 f"{self.base_url}/rest/v1/documents",
                 headers=self.headers,
@@ -483,6 +489,79 @@ class SupabaseClient(BaseVectorStore):
                 )
                 for r in rows
             ]
+
+    async def take_question_quota(self, owner_id: str, user_limit: int, global_limit: int) -> str:
+        """Atomically count one answer against the per-guest and global daily free quotas.
+        Returns 'ok', 'user_exhausted' or 'global_exhausted' (migration 0006)."""
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                f"{self.base_url}/rest/v1/rpc/take_question_quota",
+                headers=self.headers,
+                json={"p_owner": owner_id, "p_user_limit": user_limit, "p_global_limit": global_limit},
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def count_owner_documents(self, owner_id: str) -> int:
+        """Live (not being deleted) documents the owner currently holds."""
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(
+                f"{self.base_url}/rest/v1/documents?select=id&owner_id=eq.{owner_id}&status=neq.deleting",
+                headers={**self.headers, "Prefer": "count=exact", "Range-Unit": "items", "Range": "0-0"},
+            )
+            res.raise_for_status()
+            content_range = res.headers.get("content-range", "*/0")
+            try:
+                return int(content_range.split("/")[-1])
+            except ValueError:
+                return 0
+
+    async def sweep_expired_guest_documents(self, limit: int = 20) -> int:
+        """Delete guest uploads whose session_expires_at has passed (rows, chunks, storage objects).
+
+        Expired rows are force-deleted in any status: an expired 'processing' row is
+        stale work, not a live upload. Bounded per call; ridden by traffic and the
+        daily scheduled sweep."""
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            res = await client.get(
+                f"{self.base_url}/rest/v1/documents?select=id,filename&session_expires_at=lt.{datetime.now(timezone.utc).isoformat()}&order=session_expires_at.asc&limit={limit}",
+                headers=self.headers,
+            )
+            res.raise_for_status()
+            rows = res.json()
+            swept = 0
+            for row in rows:
+                try:
+                    await client.request(
+                        "DELETE", f"{self.base_url}/storage/v1/object/{self.bucket}",
+                        headers=self.headers, json={"prefixes": [f"{row['id']}/{row['filename']}"]},
+                    )
+                    dele = await client.delete(
+                        f"{self.base_url}/rest/v1/documents?id=eq.{row['id']}&session_expires_at=lt.{datetime.now(timezone.utc).isoformat()}",
+                        headers=self.headers,
+                    )
+                    dele.raise_for_status()
+                    swept += 1
+                except httpx.HTTPError:
+                    logger.warning("Expired guest document sweep failed for one row", exc_info=True)
+            return swept
+
+    async def delete_owner_usage(self, owner_id: str) -> None:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.delete(
+                f"{self.base_url}/rest/v1/ask_usage?owner_id=eq.{owner_id}",
+                headers=self.headers,
+            )
+            res.raise_for_status()
+
+    async def admin_delete_auth_user(self, user_id: str) -> bool:
+        """GoTrue admin delete: removes the caller's own auth identity (docs cascade by FK)."""
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.delete(
+                f"{self.base_url}/auth/v1/admin/users/{user_id}",
+                headers=self.headers,
+            )
+            return res.status_code in (200, 204)
 
     async def ping(self) -> tuple[bool, float, Optional[str]]:
         import time

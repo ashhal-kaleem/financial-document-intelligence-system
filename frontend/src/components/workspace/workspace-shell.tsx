@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { TopNav } from "@/components/shell/app-chrome";
 import { CitationDrawer } from "@/components/citations/citation-drawer";
 import { PdfViewerModal } from "@/components/pdf/pdf-viewer-modal";
-import { AuthModal } from "@/components/auth/auth-modal";
+import { SessionMenu } from "@/components/shell/session-menu";
 import { UploadModal } from "@/components/documents/upload-modal";
-import { getSupabase } from "@/lib/supabase";
+import { ensureGuestSession, getSupabase } from "@/lib/supabase";
 import { useFDISStore } from "@/store/useFDISStore";
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
@@ -41,6 +41,10 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
       apply(session?.user);
       queryClient.removeQueries({ queryKey: ["documents"] });
     });
+    // No login screen: every visitor gets a private server-verified guest session.
+    ensureGuestSession().then(({ error }) => {
+      if (error) console.warn("Guest session could not start:", error.message);
+    });
     supabase.auth.getSession().then(({ data }) => {
       if (!authEventSeen) apply(data.session?.user);
     });
@@ -67,7 +71,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
       </div>
       <CitationDrawer />
       <PdfViewerModal />
-      <AuthModal />
+      <SessionMenu />
       <UploadModal
         key={currentUser?.id || "guest"}
         onUploaded={() => {

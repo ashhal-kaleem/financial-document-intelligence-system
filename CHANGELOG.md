@@ -6,12 +6,14 @@ All notable changes to the Financial Document Intelligence System (FDIS) are doc
 
 ## [Unreleased] - 2026-11-22
 ### Changed
-- Replaced hosted HF embeddings with pinned build-time public MiniLM ONNX assets and local CPU inference. No HF token/runtime hosted inference; Puter remains the separate answer writer.
+- Replaced hosted HF embeddings with pinned build-time public MiniLM ONNX assets and local CPU inference. No HF token/runtime hosted inference.
+- Replaced the Puter browser answer flow with server-side Groq free-plan answers and removed both logins: the app is public with private per-visitor guest sessions, per-guest/global daily answer quotas, a 5-PDF guest limit, 24h guest-data expiry and explicit session deletion.
 - Added token-aware splitting, asset/profile checks, bounded local inference and financial table context. Backend 160 tests and frontend 25 tests passed during the rollout.
-- Updated current architecture/runbooks and preserved the five requested project notes. Live signed upload and five retrieval checks passed on a public one-page financial statement. Narrow local top-5 number coverage 29/30 is not answer accuracy; actual Puter generation remains gated by user consent/account authorization.
+- Updated current architecture/runbooks and preserved the five requested project notes. Live signed upload and five retrieval checks passed on a public one-page financial statement. Narrow local top-5 number coverage 29/30 is not answer accuracy.
 ### Removed
 - **Groq provider**: `groq_client.py`, GROQ_API_KEY/GROQ_MODEL settings, health check entry, env/render.yaml entries and provider tests.
-- **Server-side answer streaming**: `/api/v1/ask/stream` route and the frontend `streamQuestion` helper. Answers come from the user-authorized Puter browser AI flow; backend retrieval, grounded prompt assembly and citation validation are preserved.
+- **Server-side answer streaming**: `/api/v1/ask/stream` route and the frontend `streamQuestion` helper. Answers now come from `/api/v1/ask/answer` (server-side Groq); backend retrieval, grounded prompt assembly and citation validation are preserved.
+- **Puter browser AI flow**: the Connect AI UI, `puter-ai.ts`, receipt endpoints (`/ask/browser-*`) and `browser_ai.py`. The Google sign-in modal was also removed in favor of automatic guest sessions.
 ### Kept
 - OpenRouter fallback client and settings remain configured-off; removal is a separate pending decision.
 

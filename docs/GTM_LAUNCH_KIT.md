@@ -4,9 +4,9 @@ Updated 22 November 2026. Keep product claims aligned with measured evidence; th
 
 ## Accurate project description
 
-Built a private financial-document RAG app using Next.js, FastAPI, Supabase/pgvector and local ONNX MiniLM embeddings, with owner-scoped document retrieval, page citations and an opt-in Puter answer flow.
+Built a financial-document RAG app using Next.js, FastAPI, Supabase/pgvector and local ONNX MiniLM embeddings, with guest-private document retrieval, page citations and server-side Groq free-plan answers.
 
-That describes the implementation, not independently measured answer accuracy. The current deployment and tests are documented in production-readiness.md. Public weights are downloaded from HF at build time; hosted HF inference is not used. Puter remains a separate account-based service with its own limits.
+That describes the implementation, not independently measured answer accuracy. The current deployment and tests are documented in production-readiness.md. Public weights are downloaded from HF at build time; hosted HF inference is not used. The Groq free plan's daily quotas apply to all answers.
 
 ## Claims that need more evidence
 
