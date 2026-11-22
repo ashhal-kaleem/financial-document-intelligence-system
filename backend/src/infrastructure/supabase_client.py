@@ -390,15 +390,19 @@ class SupabaseClient(BaseVectorStore):
         Runs only in inline mode; queue rows keep their own worker sweep.
         """
         from datetime import datetime, timedelta, timezone
+        from urllib.parse import quote
+        # Percent-encode: a raw ISO "+00:00" decodes as a space server-side and
+        # PostgREST rejects the filter (400), which the caller swallows by design.
         now = datetime.now(timezone.utc)
-        stale_cutoff = (now - timedelta(seconds=stale_seconds)).isoformat()
-        abandon_cutoff = (now - timedelta(seconds=abandon_seconds)).isoformat()
+        stale_cutoff = quote((now - timedelta(seconds=stale_seconds)).isoformat(), safe="")
+        abandon_cutoff = quote((now - timedelta(seconds=abandon_seconds)).isoformat(), safe="")
+        canceled_message = quote(f'"{self.CANCELED_UPLOAD_MESSAGE}"', safe="")
         # (filter, mark rows error?) - canceled rows are already fenced error
         # markers; only their (possibly re-PUT) storage object needs reclaim.
         filters = [
             (f"status=eq.processing&claimed_at=lt.{stale_cutoff}", True),
             (f"status=eq.uploaded&created_at=lt.{abandon_cutoff}", True),
-            (f"status=eq.error&error_message=eq.\"{self.CANCELED_UPLOAD_MESSAGE}\"&created_at=lt.{abandon_cutoff}", False),
+            (f"status=eq.error&error_message=eq.{canceled_message}&created_at=lt.{abandon_cutoff}", False),
         ]
         swept = 0
         for filt, mark_error in filters:
