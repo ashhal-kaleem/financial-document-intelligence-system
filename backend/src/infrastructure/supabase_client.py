@@ -273,6 +273,87 @@ class SupabaseClient(BaseVectorStore):
             return results
 
 
+    async def create_signed_upload_url(self, document_id: UUID, filename: str) -> Dict[str, str]:
+        """Mints a short-lived signed upload URL for one owner-scoped object key.
+        The bucket stays private; no storage policy change is needed because the
+        browser only ever gets a per-object token minted here with the service key."""
+        path = f"{document_id}/{filename}"
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                f"{self.base_url}/storage/v1/object/upload/sign/{self.bucket}/{path}",
+                headers=self.headers,
+                json={},
+            )
+            res.raise_for_status()
+            signed = res.json().get("url", "")
+        token = ""
+        if "token=" in signed:
+            token = signed.split("token=", 1)[1].split("&", 1)[0]
+        if not token:
+            raise RuntimeError("Storage did not return an upload token.")
+        return {"bucket": self.bucket, "path": path, "token": token}
+
+    async def get_pdf_size(self, document_id: UUID, filename: str) -> Optional[int]:
+        """Byte size of the stored object via a 1-byte range probe; None if absent."""
+        path = f"{document_id}/{filename}"
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(
+                f"{self.base_url}/storage/v1/object/{self.bucket}/{path}",
+                headers={"apikey": self.service_key, "Authorization": f"Bearer {self.service_key}", "Range": "bytes=0-0"},
+            )
+        if res.status_code not in (200, 206):
+            return None
+        content_range = res.headers.get("content-range", "")
+        if "/" in content_range:
+            total = content_range.rsplit("/", 1)[1]
+            if total.isdigit():
+                return int(total)
+        return len(res.content)
+
+    async def delete_pdf(self, document_id: UUID, filename: str) -> None:
+        """Best-effort removal of one stored object (oversized or orphaned uploads)."""
+        path = f"{document_id}/{filename}"
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            await client.request(
+                "DELETE", f"{self.base_url}/storage/v1/object/{self.bucket}",
+                headers=self.headers, json={"prefixes": [path]},
+            )
+
+    async def fail_stale_inline(self, stale_seconds: int) -> int:
+        """Serverless (inline) recovery for jobs a platform timeout killed mid-flight.
+
+        The queue worker's fail_stale_documents only matches worker-claimed rows
+        (attempts >= 1, claimed_at set). Inline rows keep attempts = 0 and never
+        get claimed_at, so they need their own sweep. The stale threshold must
+        always exceed the host's hard request limit (Vercel: 300s), so a live
+        inline job can never be old enough to match. Runs only in inline mode.
+        Also removes any orphaned storage object left by an abandoned upload.
+        """
+        from datetime import datetime, timedelta, timezone
+        cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_seconds)).isoformat()
+        filt = f"status=in.(uploaded,processing)&attempts=eq.0&created_at=lt.{cutoff}"
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(
+                f"{self.base_url}/rest/v1/documents?select=id,filename&{filt}",
+                headers=self.headers,
+            )
+            res.raise_for_status()
+            rows = res.json()
+            if not rows:
+                return 0
+            res = await client.patch(
+                f"{self.base_url}/rest/v1/documents?{filt}",
+                headers=self.headers,
+                json={"status": "error", "error_message": "Upload or processing was interrupted. Please delete this document and try again."},
+            )
+            res.raise_for_status()
+        for row in rows:
+            try:
+                await self.delete_pdf(UUID(row["id"]), row["filename"])
+            except Exception:
+                pass  # storage cleanup is best-effort; the error row stays deletable
+        return len(rows)
+
     async def upload_pdf(self, document_id: UUID, filename: str, pdf_bytes: bytes) -> str:
         path = f"{document_id}/{filename}"
         async with httpx.AsyncClient(timeout=30.0) as client:

@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { uploadDocument } from "@/lib/api";
+import { uploadDocument, MAX_UPLOAD_BYTES } from "@/lib/api";
 import { useFDISStore } from "@/store/useFDISStore";
 export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
   const { isUploadOpen, setUploadOpen } = useFDISStore();
@@ -47,9 +47,9 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
       setValidation("Choose a PDF file.");
       return;
     }
-    if (f.size > 25 * 1024 * 1024) {
+    if (f.size > MAX_UPLOAD_BYTES) {
       setFile(null);
-      setValidation("Choose a PDF no larger than 25 MB.");
+      setValidation("Choose a PDF no larger than 4 MB.");
       return;
     }
     if (!f.size) {
@@ -91,7 +91,7 @@ export function UploadModal({ onUploaded }: { onUploaded?: () => void }) {
           }}
         >
           <span className="mb-3 block text-sm">
-            PDF up to 25 MB. Drop here, or choose a file
+            PDF up to 4 MB. Drop here, or choose a file
           </span>
           <input
             aria-label="PDF file"

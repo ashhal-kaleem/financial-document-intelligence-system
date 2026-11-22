@@ -33,3 +33,6 @@ packages = ["src"]
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.vercel]
+entrypoint = "src.api.main:app"

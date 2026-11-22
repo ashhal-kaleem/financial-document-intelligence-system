@@ -1,14 +1,16 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 import logging
 import os
 import re
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from pydantic import BaseModel, Field
 from src.core.auth import AuthUser, get_current_user
 from src.core.config import effective_ingestion_mode, get_settings
 from src.core.rate_limit import rate_limited_user
 from src.core.errors import DocumentNotFoundError, InvalidPDFError
+from src.domain.models import Document
 from src.infrastructure.supabase_client import SupabaseClient
 from src.services.ingestion import DocumentIngestionService
 
@@ -26,8 +28,27 @@ settings = get_settings()
 supabase = SupabaseClient()
 ingestion_service = DocumentIngestionService(supabase)
 
+
+async def _sweep_inline_stale() -> None:
+    """Serverless-only recovery for uploads/processing killed by a platform timeout.
+    Never breaks the request it rides on; queue mode keeps its own worker sweep."""
+    if effective_ingestion_mode() != "inline":
+        return
+    try:
+        swept = await supabase.fail_stale_inline(settings.JOB_STALE_SECONDS)
+        if swept:
+            logger.info("Inline stale sweep reclaimed %s document(s)", swept)
+    except Exception:
+        logger.warning("Inline stale sweep failed", exc_info=True)
+
+
+class UploadUrlRequest(BaseModel):
+    filename: str = Field(..., max_length=300)
+    size: int = Field(..., ge=0)
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def upload_document(response: Response, file: UploadFile = File(...), user: AuthUser = Depends(rate_limited_user)):
+    await _sweep_inline_stale()
     filename = safe_filename(file.filename or "")
     if not any(filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
         supported = ", ".join(ext.lstrip(".").upper() for ext in settings.ALLOWED_EXTENSIONS)
@@ -75,8 +96,88 @@ async def upload_document(response: Response, file: UploadFile = File(...), user
             detail="Failed to ingest document.",
         )
 
+@router.post("/upload-url", status_code=status.HTTP_201_CREATED)
+async def create_upload_url(payload: UploadUrlRequest, user: AuthUser = Depends(rate_limited_user)):
+    """Step 1 of the serverless upload: validate, create the owner-scoped row and
+    mint a one-object signed upload URL. The browser then PUTs the PDF straight
+    to private Supabase storage, so big request bodies never hit this host."""
+    await _sweep_inline_stale()
+    filename = safe_filename(payload.filename)
+    if not any(filename.lower().endswith(ext) for ext in settings.ALLOWED_EXTENSIONS):
+        supported = ", ".join(ext.lstrip(".").upper() for ext in settings.ALLOWED_EXTENSIONS)
+        raise InvalidPDFError(f"Only {supported} documents are supported.")
+    if payload.size <= 0:
+        raise InvalidPDFError("Uploaded PDF file is empty.")
+    if payload.size > settings.MAX_UPLOAD_SIZE_BYTES:
+        max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
+        raise InvalidPDFError(f"File size exceeds maximum allowable {max_mb}MB limit.")
+    doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=user.id)
+    await supabase.create_document(doc)
+    signed = await supabase.create_signed_upload_url(doc.id, filename)
+    return {
+        "success": True,
+        "data": {
+            "document_id": str(doc.id),
+            "bucket": signed["bucket"],
+            "path": signed["path"],
+            "token": signed["token"],
+            "max_upload_size_bytes": settings.MAX_UPLOAD_SIZE_BYTES,
+        },
+        "meta": {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "path": "/api/v1/documents/upload-url",
+        },
+    }
+
+
+@router.post("/{document_id}/ingest")
+async def ingest_uploaded_document(document_id: UUID, user: AuthUser = Depends(rate_limited_user)):
+    """Step 2: after the browser's direct storage upload finishes, process the
+    stored object inline. The object is re-validated server-side: the signed
+    URL, the browser and stored metadata are never trusted for size."""
+    await _sweep_inline_stale()
+    doc = await supabase.get_document_by_id(document_id, user.id)
+    if not doc:
+        raise DocumentNotFoundError(str(document_id))
+    if doc.status != "uploaded":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document is not awaiting an upload.",
+        )
+    size = await supabase.get_pdf_size(document_id, doc.filename)
+    if size is None:
+        raise InvalidPDFError("File not uploaded yet. Finish the upload, then retry.")
+    if size > settings.MAX_UPLOAD_SIZE_BYTES:
+        max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
+        await supabase.delete_pdf(document_id, doc.filename)
+        await supabase.update_document_status(
+            document_id, "error",
+            error_message=f"File size exceeds maximum allowable {max_mb}MB limit.",
+        )
+        raise InvalidPDFError(f"File size exceeds maximum allowable {max_mb}MB limit.")
+    await supabase.update_document_status(document_id, "processing")
+    doc.status = "processing"
+    try:
+        result = await ingestion_service.ingest_stored_document(doc)
+    except Exception:
+        logger.warning("Document ingestion failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to ingest document.",
+        )
+    return {
+        "success": True,
+        "data": result.model_dump(),
+        "meta": {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "path": f"/api/v1/documents/{document_id}/ingest",
+        },
+    }
+
+
 @router.get("")
 async def list_documents(user: AuthUser = Depends(get_current_user)):
+    await _sweep_inline_stale()
     docs = await supabase.get_documents(user.id)
     return {
         "success": True,

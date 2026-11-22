@@ -112,6 +112,16 @@ class DocumentIngestionService:
             raise RuntimeError("Could not store the uploaded file") from None
         return await self._process(created_doc, pdf_bytes)
 
+    async def ingest_stored_document(self, doc: Document) -> Document:
+        """Serverless entry: the browser already uploaded the PDF to storage via a
+        signed URL; process the stored object inline inside this request."""
+        pdf_bytes = await self.supabase.get_pdf_bytes(doc.id, doc.filename)
+        if not pdf_bytes:
+            await self.supabase.update_document_status(doc.id, "error", error_message="Stored file not found.")
+            doc.status = "error"
+            return doc
+        return await self._process(doc, pdf_bytes)
+
     async def process_claimed(self, doc: Document) -> Document:
         """Worker entry: fetch the stored PDF for a claimed job and process it."""
         pdf_bytes = await self.supabase.get_pdf_bytes(doc.id, doc.filename)

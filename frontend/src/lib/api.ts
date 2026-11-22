@@ -43,7 +43,7 @@ export interface StreamEventPayload {
   citations_count?: number;
 }
 
-import { getAccessToken } from "@/lib/supabase";
+import { getAccessToken, getSupabase } from "@/lib/supabase";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -102,19 +102,45 @@ export async function fetchDocuments(): Promise<DocumentItem[]> {
   }
 }
 
+// Keep in sync with the backend MAX_UPLOAD_SIZE_BYTES for this deployment (4 MB).
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+async function readApiError(res: Response, fallback: string): Promise<Error> {
+  const err = await res.json().catch(() => ({}));
+  return new Error(err?.error?.message || err?.detail || fallback);
+}
+
 export async function uploadDocument(file: File): Promise<DocumentItem> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch(`${API_BASE}/documents`, {
-    method: "POST",
-    body: formData,
-    headers: await authHeaders(),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || err?.detail || "Upload failed.");
+  // Serverless path: the PDF goes straight from the browser to private Supabase
+  // storage on a per-object signed URL; the backend then processes it from
+  // storage. Large request bodies never pass through the API host.
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("PDF must be 4 MB or smaller.");
   }
-  const json = await res.json();
+  const headers = await authHeaders();
+  const createRes = await fetch(`${API_BASE}/documents/upload-url`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, size: file.size }),
+  });
+  if (!createRes.ok) throw await readApiError(createRes, "Upload failed.");
+  const created = (await createRes.json()).data;
+
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Sign-in is not configured for this deployment.");
+  const put = await supabase.storage
+    .from(created.bucket)
+    .uploadToSignedUrl(created.path, created.token, file, {
+      contentType: "application/pdf",
+    });
+  if (put.error) throw new Error("Upload to storage failed. Please retry.");
+
+  const ingestRes = await fetch(
+    `${API_BASE}/documents/${created.document_id}/ingest`,
+    { method: "POST", headers },
+  );
+  if (!ingestRes.ok) throw await readApiError(ingestRes, "Upload failed.");
+  const json = await ingestRes.json();
   return json.data;
 }
 
