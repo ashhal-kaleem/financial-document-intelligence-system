@@ -1,42 +1,52 @@
 # Production readiness
 
-Last verified 22 November 2026. This is an evidence register, not a launch certificate. Current backend runtime is local ONNX MiniLM on Vercel; the frontend's separate Puter answer path is unchanged.
+Last verified 22 November 2026, evening (IST). This is an evidence register, not a launch certificate. Current architecture: public no-login app with per-tab private guest sessions (Supabase anonymous sign-in), local ONNX MiniLM retrieval on Vercel, and server-side answers on the Groq free plan (`openai/gpt-oss-120b`). The Puter browser answer path and all login UI (Google + Puter) are removed.
 
-## Completed
+## Live-tested 22 November 2026 (production, real services)
 
-- Removed hosted HF embedding requests, HF token/configuration and direct HF inference dependency. Public HF model weights remain a build-time source only.
-- Pinned all-MiniLM-L6-v2 revision, quantized ONNX bytes/tokenizer hashes, 384-dimensional profile, masked mean pooling and L2 normalization. Token-aware document splits and query rejection replace silent truncation.
-- Cached single-thread CPU session, independent per-input execution, bounded work/lock wait, corrupted/missing asset checks and vector-profile mismatch refusal.
-- Preserved private signed upload, owner filtering, browser PDF/citation viewer, safe-delete path and Puter as opt-in writer. No original app records were deleted/re-indexed or schema migrations applied by this rollout.
-- Preserved and updated the five requested idea/context/test/launch notes. Active technical documentation now separates current implementation from old history.
+- Fresh guest arrival creates an anonymous identity automatically; no login, modal or consent wall appears. Verified in a real browser session with screenshots.
+- UI upload of a 1-page public financial PDF: processed inline to `ready` (1 page, embeddings computed server-side).
+- Real answer through the UI's API path: "What was the revenue in fiscal year 2024?" returned "The document states that revenue for fiscal year 2024 was USD 100 million[1]." with a citation to the uploaded PDF, page 1. Model: `openai/gpt-oss-120b`.
+- Cross-guest isolation: a second anonymous guest sees an empty library and gets 404 on the first guest's document and chunk endpoints (API-verified).
+- Tab-scoped visibility: a second browser tab opened to the app shows an empty library; the first tab's PDF is not visible there (browser-verified).
+- "End session & delete my data" from the UI: deleted the guest's PDF (row, chunks, storage) and the anonymous identity (`documents_deleted: 1, identity_removed: true`), and a fresh guest session started. The Documents screen showed empty afterwards (browser-verified).
+- Deleted identity rejection: GoTrue returns 403 for a deleted user's token; the backend returns 401. During the backend's 60-second verification cache window right after deletion, the token can still authenticate, but all data is already gone and writes fail at the database (foreign key). This window is a known, bounded residual.
+- Cron: `GET /api/v1/internal/sweep` returns 401 without and with a wrong secret. Vercel lists the registered cron job `/api/v1/internal/sweep` on schedule `0 3 * * *`. The first actual scheduled fire has not happened yet.
+- Orphaned guest cleanup: migration 0007's `sweep_orphaned_guest_users` RPC exists and is granted to the service role only; test identities created during verification were deleted immediately and the daily cron sweeps the rest (anonymous, zero documents, older than 25 hours).
+- Concurrent guest-session starts are deduplicated: a fresh tab creates exactly one anonymous identity.
 
-## Live-tested
+## Incident during verification (fixed same day)
 
-- Vercel Hobby preview and production backend builds succeeded with bundled public model. Runtime health checks database plus pinned assets; health explicitly does not claim inference was probed.
-- A first-page extraction of Apple's official FY2025 Q4 financial statements, 3,554,148 bytes, passed the real signed-upload and inline-ingest path: one page, 18 chunks, ready. One ingestion took 3.205 seconds, not a latency distribution or load test. The full original PDF exceeded the current 4 MiB app cap, so this is not a whole-report success claim.
-- Five actual production retrieval questions found the expected quarterly/annual numbers in context, with the selected document and page 1 citations.
-- Cross-user document/chunk/PDF reads and delete returned 404; cross-user selected-document search returned zero chunks; unauthenticated library returned 401.
-- Actual signed-in library, Q&A and PDF viewer were visually inspected. The ready PDF and separate AI-consent boundary displayed correctly. These temporary-user probes did not re-test the Google OAuth popup.
-- Live document/chunk read policies are already strict owner-only, non-sample and hide deleting records. No new migration was needed or applied. A query below the schema character cap also returned the specific `embedding_input_too_long` 422 rather than truncating.
+The first live answer request returned HTTP 422 `invalid_citations`: `gpt-oss-120b` emits fullwidth citation markers (`【1】`) that the strict citation validator rejected. That request consumed two provider calls (initial + one regeneration) and one guest quota unit; no answer was shown. The backend now normalizes fullwidth markers to `[n]` before validation, with a regression test, and the live re-test above passed. Total live Groq calls spent on verification: 5.
 
-Local regression: backend 160 passed, 2 skipped; frontend 25 passed; TypeScript and frontend production build passed. Counts are dated evidence, not a standing promise for future commits.
+## Abuse and quota posture (honest bounds)
+
+- Per-guest: 20 questions/day, 5 PDFs max, per-minute rate limits on API calls.
+- Global: 60 answers/day (token-aware budget under the Groq free plan's 1K requests/day, 8K tokens/min, 200K tokens/day). Groq itself rejects beyond its free limits; there is no paid fallback anywhere in the code.
+- Open risk: anonymous sign-in is scriptable, so per-guest limits do not stop an attacker from creating many guests. The global answer cap bounds answer spend, but uploads, storage (Supabase free tier), database rows and ingestion CPU are not globally capped. A CAPTCHA on anonymous sign-in (Supabase supports Turnstile/hCaptcha) and/or a global daily upload cap remain available mitigations, not yet implemented.
+- Groq account status: verified on the free plan at verification time. Plan terms can change; the app has no mechanism to become paid on its own.
+
+## Data retention
+
+- Guest uploads carry a 24-hour `session_expires_at`; expired rows are force-deleted (row, chunks, stored PDF) by a traffic-ridden sweep plus the daily cron. Physical deletion happens at sweep time, not at the exact 24-hour mark and not on browser close.
+- The one pre-existing document (the owner's old Google-account PDF) is untouched, never public, and inaccessible from the guest-only UI. Old named accounts have no expiry and are never swept. Deleting that old data would need a separate explicit decision.
+- Chat history and the guest identity live in the tab's sessionStorage only. Browser "reopen closed tab" or full session restore can resurrect a closed tab's storage; that is browser behavior outside the app's control.
+
+## Local regression
+
+Backend 152 passed, 2 skipped; frontend 27 passed; TypeScript and frontend production build passed. Counts are dated evidence, not a standing promise for future commits.
 
 ## Retrieval evaluation, limited evidence
 
-A local re-encoding of the 18 live public chunks, 30 authored expected-number checks and top-5 retrieval found 29/30 numbers. English 26/26, Hinglish 3/4. This set is one page and is not independently labeled, held out, multi-report or answer accuracy. It can overestimate support because number presence does not prove that a model chose the right row, year or column.
+A local re-encoding of 18 live public chunks, 30 authored expected-number checks and top-5 retrieval found 29/30 numbers (English 26/26, Hinglish 3/4). Known miss: `2025 ka poore saal ka net profit kitna hai?` did not retrieve the expected annual net income chunk within top 5. The runner and case file are under `backend/scripts/` and `backend/tests/evaluation/`.
 
-Known miss: `2025 ka poore saal ka net profit kitna hai?` did not retrieve the chunk containing the expected annual net income 112,010 within top 5. It remains a real limitation; no unsupported multilingual claim or hidden model substitution was made. The reproducible local-only runner and case file are under `backend/scripts/` and `backend/tests/evaluation/`.
+## Remaining before stronger claims
 
-## Remaining before end-to-end financial claims
-
-1. **Actual Puter generation is unverified in this rollout.** Production Q&A requires a free-model selection, explicit report-disclosure consent and separate Puter account authorization. This check stopped at that boundary, without creating an account, authorizing a user's account or spending credits. At verification time all three configured model IDs were present with zero catalog rates. Catalog pricing is not a guarantee of remaining account allowance or service availability.
-2. In the user's own session, connect Puter after reviewing the disclosure. A real generated answer must then be checked against source amount, unit, period, calculation and cited page. Stop on quota/pricing uncertainty. No paid fallback/topup or account-plan change is authorized.
-3. Broader labeled financial-report evaluation, correct period/column interpretation, abstention and Hinglish coverage. Table context reduces lost headers but is not structured financial extraction or a semantic correctness proof. Citation validation checks identifiers/source access, not truth.
-4. Concurrency/load tests, distributed admission/quota controls, alerts, backup/restore drills and an operational owner. The current budget/lock is per process. Successful requests and a free build are not production-capacity evidence.
-5. OCR/scanned reports, larger reports, cloud conversation history/export and analytics remain unimplemented. No commercial-use/uptime claim is made for Hobby/free tiers.
+1. First real Vercel cron fire (scheduled 03:00 UTC daily) has not been observed; the endpoint, auth and RPC are verified, the schedule registration is verified, the fire itself is not.
+2. Broader labeled financial-report evaluation, correct period/column interpretation, abstention and Hinglish coverage. Citation validation checks marker identifiers, not semantic truth; answers must be checked against the cited page.
+3. Concurrency/load tests, distributed admission control beyond the current quotas, alerts, backup/restore drills. Successful requests and a free build are not production-capacity evidence.
+4. OCR/scanned reports, reports over 4 MiB, cloud conversation history/export and analytics remain unimplemented. No commercial-use/uptime claim is made for Hobby/free tiers.
 
 ## Data and deployment discipline
 
-Keep code/main, backend deployment and frontend deployment provenance separate. A docs-only commit does not alter the running embedding behavior. Google/Supabase auth is distinct from Puter auth. The suspended Render service/config remains a rollback artifact, not the current host. Existing incompatible embeddings require a separately approved re-indexing plan; do not silently clear records.
-
-Any future live probe must identify the owner, costs, source PDF, expected outputs and cleanup before making changes. The temporary public test PDF was deleted through the owner UI and both temporary users removed. Live cleanup verification returned the baseline: one pre-existing failed document metadata row preserved, zero chunks/vectors and zero private PDF objects. No original user record was removed.
+Keep code/main, backend deployment and frontend deployment provenance separate: the frontend auto-deploys from GitHub; the backend has no git link and is deployed with the Vercel CLI from `backend/`. The suspended Render service/config remains a rollback artifact, not the current host.
