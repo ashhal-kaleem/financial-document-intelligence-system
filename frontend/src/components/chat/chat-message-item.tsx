@@ -19,6 +19,19 @@ interface ChatMessageItemProps {
   onCitationClick?: (citation: Citation) => void;
 }
 
+// Render **bold** spans emitted by the answer model without raw HTML.
+function renderInline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i} className="font-semibold">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      part
+    ),
+  );
+}
+
 export function ChatMessageItem({
   message,
   onCitationClick,
@@ -60,7 +73,7 @@ export function ChatMessageItem({
           }}
         >
           <div className="whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-[#1A1A1A]">
-            {message.content}
+            {renderInline(message.content)}
           </div>
           {message.citations && message.citations.length > 0 && (
             <div className="mt-3.5 flex flex-wrap gap-1.5">
