@@ -228,7 +228,7 @@ export function ChatInterface() {
                 {!messages.length ? (
                   <p className="text-sm text-[#6B6278]">
                     {document
-                      ? "Ask a question about this PDF. Answers come from a free AI model using only this PDF's retrieved passages; always check the answer against the cited page. Guest PDFs are deleted after 24 hours."
+                      ? "Ask a question about this PDF. Answers come from a free AI model using only this PDF's retrieved passages; always check the answer against the cited page. Guest PDFs stop being accessible 24 hours after upload and are physically deleted at the next daily cleanup."
                       : "Open a ready PDF from Documents to start. Your question will only use that document."}
                   </p>
                 ) : (

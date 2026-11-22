@@ -31,6 +31,9 @@ def no_network_extras(monkeypatch):
         return 0
     monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
     monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    async def okq(*a, **k):
+        return "ok"
+    monkeypatch.setattr(documents_route.supabase, "take_upload_quota", okq)
     monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
     auth._token_cache.clear()
     rate_limit.reset_rate_limits()
@@ -207,3 +210,52 @@ def test_internal_sweep_runs_all_cleanups(monkeypatch):
         "orphaned_guest_identities_deleted": 3,
     }
     assert calls == ["stale", "expired", "orphans"]
+
+
+def test_global_upload_budget_exhaustion_returns_429(monkeypatch):
+    async def exhausted(*a, **k):
+        return "docs_exhausted"
+
+    monkeypatch.setattr(documents_route.supabase, "take_upload_quota", exhausted)
+    monkeypatch.setattr(auth, "_verify_with_supabase", lambda token: _async_alice())
+    import io
+
+    res = client.post(
+        "/api/v1/documents/upload-url",
+        json={"filename": "big.pdf", "size": 1000},
+        headers={"Authorization": "Bearer alice-token"},
+    )
+    assert res.status_code == 429
+    assert res.json()["error"]["code"] == "free_quota_exhausted"
+
+
+async def _async_alice():
+    return ALICE
+
+
+def test_end_session_invalidates_cached_identity(monkeypatch):
+    from src.api.routes import session as session_route
+    from src.core.auth import invalidate_cached_tokens_for_user, _token_cache
+    import time
+
+    monkeypatch.setattr(session_route.supabase, "get_documents", _empty_docs)
+    monkeypatch.setattr(session_route.supabase, "delete_owner_usage", _noop_async)
+    monkeypatch.setattr(session_route.supabase, "admin_delete_auth_user", _true_async)
+    monkeypatch.setattr(auth, "_verify_with_supabase", lambda token: _async_alice())
+
+    _token_cache["alice-token"] = (time.monotonic() + 60, ALICE)
+    res = client.delete("/api/v1/session", headers={"Authorization": "Bearer alice-token"})
+    assert res.status_code == 200
+    assert all(u.id != ALICE.id for _, u in _token_cache.values())
+
+
+async def _empty_docs(owner_id):
+    return []
+
+
+async def _noop_async(*a, **k):
+    return None
+
+
+async def _true_async(*a, **k):
+    return True

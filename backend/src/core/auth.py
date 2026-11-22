@@ -59,6 +59,14 @@ def auth_bypass_enabled() -> bool:
 LOCAL_DEV_USER = AuthUser(id="00000000-0000-0000-0000-000000000000", email="dev@localhost", is_anonymous=True)
 
 
+def invalidate_cached_tokens_for_user(user_id: str) -> None:
+    """Drop cached verifications for a deleted identity so its tokens 401
+    immediately instead of living out the 60-second cache window."""
+    for tok, (_, cached_user) in list(_token_cache.items()):
+        if cached_user.id == user_id:
+            _token_cache.pop(tok, None)
+
+
 async def get_current_user(request: Request) -> AuthUser:
     if auth_bypass_enabled():
         return LOCAL_DEV_USER

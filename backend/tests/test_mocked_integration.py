@@ -331,6 +331,9 @@ def test_queue_mode_upload_returns_202_and_serverless_falls_back_inline(monkeypa
         return 0
     monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
     monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    async def okq(*a, **k):
+        return "ok"
+    monkeypatch.setattr(documents_route.supabase, "take_upload_quota", okq)
     monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
     res = TestClient(app).post("/api/v1/documents", files={"file": ("r.pdf", b"%PDF-1.4 x", "application/pdf")})
     assert res.status_code == 202 and res.json()["data"]["status"] == "queued"

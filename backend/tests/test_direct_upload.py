@@ -27,6 +27,9 @@ def no_network_extras(monkeypatch):
         return 0
     monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
     monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    async def okq(*a, **k):
+        return "ok"
+    monkeypatch.setattr(documents_route.supabase, "take_upload_quota", okq)
     monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
 
 

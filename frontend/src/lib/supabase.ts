@@ -82,6 +82,23 @@ async function _ensureGuestSession(): Promise<{ error: Error | null }> {
   }
 }
 
+/** Recover from a dead guest identity (expired/swept server-side): drop the
+ * stale session and start a fresh anonymous one. Only ever called after the
+ * backend has already rejected the old identity, so no data is reachable. */
+export async function resetGuestSession(): Promise<{ error: Error | null }> {
+  const supabase = getSupabase();
+  if (!supabase)
+    return {
+      error: new Error("Guest sessions are not configured for this deployment."),
+    };
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    // A stale session may fail to sign out; it is unusable either way.
+  }
+  return ensureGuestSession();
+}
+
 export async function signOutUser(): Promise<void> {
   const result = await getSupabase()?.auth.signOut();
   if (result?.error) throw new Error("Sign out failed.");

@@ -47,6 +47,22 @@ async def _check_document_limit(user: AuthUser) -> None:
         )
 
 
+async def _check_global_upload_budget(byte_size: int) -> None:
+    """Global daily upload admission: anonymous sign-in is scriptable, so a
+    race-safe shared budget protects free-tier storage and ingestion CPU even
+    when per-guest limits are multiplied across fresh identities."""
+    quota = await supabase.take_upload_quota(
+        byte_size, settings.GLOBAL_DAILY_UPLOAD_LIMIT, settings.GLOBAL_DAILY_UPLOAD_BYTES
+    )
+    if quota != "ok":
+        raise FDISException(
+            "Free quota exhausted",
+            "Today's shared free upload capacity is full. Try again tomorrow. No paid fallback was used.",
+            429,
+            "free_quota_exhausted",
+        )
+
+
 async def _sweep_expired_guests() -> None:
     """Traffic-ridden expiry sweep; the daily scheduled sweep covers quiet periods."""
     try:
@@ -94,6 +110,8 @@ async def upload_document(response: Response, file: UploadFile = File(...), user
 
     if not pdf_bytes.startswith(b"%PDF"):
         raise InvalidPDFError("File content is not a PDF.")
+
+    await _check_global_upload_budget(len(pdf_bytes))
 
     queued = effective_ingestion_mode() == "queue"
     try:
@@ -144,6 +162,7 @@ async def create_upload_url(payload: UploadUrlRequest, user: AuthUser = Depends(
     if payload.size > settings.MAX_UPLOAD_SIZE_BYTES:
         max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
         raise InvalidPDFError(f"File size exceeds maximum allowable {max_mb}MB limit.")
+    await _check_global_upload_budget(payload.size)
     doc = Document(id=uuid4(), filename=filename, status="uploaded", owner_id=user.id, session_expires_at=_guest_expiry(user))
     await supabase.create_document(doc)
     signed = await supabase.create_signed_upload_url(doc.id, filename)

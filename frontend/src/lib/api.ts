@@ -43,7 +43,7 @@ export interface StreamEventPayload {
   citations_count?: number;
 }
 
-import { getAccessToken, getSupabase } from "@/lib/supabase";
+import { getAccessToken, getSupabase, resetGuestSession } from "@/lib/supabase";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -64,6 +64,22 @@ async function authHeaders(
   return { ...extra, Authorization: `Bearer ${token}` };
 }
 
+/** Authed fetch with one recovery: when the backend rejects the identity
+ * (401 - e.g. the guest expired or was swept server-side), reset the tab's
+ * guest session and retry once with the fresh token. */
+async function authedFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const build = async () => ({
+    ...init,
+    headers: { ...(init.headers || {}), ...(await authHeaders()) },
+  });
+  let res = await fetch(url, await build());
+  if (res.status === 401) {
+    await resetGuestSession();
+    res = await fetch(url, await build());
+  }
+  return res;
+}
+
 export async function fetchDocuments(): Promise<DocumentItem[]> {
   // Bound both session lookup and the complete HTTP/body read. A stalled request
   // must become a retryable error, never an endless loading or empty-library result.
@@ -76,18 +92,15 @@ export async function fetchDocuments(): Promise<DocumentItem[]> {
     }, 45000);
   });
   const request = async () => {
-    const token = await getAccessToken();
-    if (!token) throw new AuthRequiredError();
     if (controller.signal.aborted) throw new Error("Documents request timed out.");
-    const res = await fetch(`${API_BASE}/documents`, {
+    const res = await authedFetch(`${API_BASE}/documents`, {
       cache: "no-store",
-      headers: { Authorization: `Bearer ${token}` },
       signal: controller.signal,
     });
     if (!res.ok)
       throw new Error(
         res.status === 401
-          ? "Your session expired. Sign in again."
+          ? "Session could not be restored. Reload the page."
           : "Documents could not load. Retry to check your library.",
       );
     const json = await res.json();
@@ -117,10 +130,9 @@ export async function uploadDocument(file: File): Promise<DocumentItem> {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error("PDF must be 4 MB or smaller.");
   }
-  const headers = await authHeaders();
-  const createRes = await fetch(`${API_BASE}/documents/upload-url`, {
+  const createRes = await authedFetch(`${API_BASE}/documents/upload-url`, {
     method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: file.name, size: file.size }),
   });
   if (!createRes.ok) throw await readApiError(createRes, "Upload failed.");
@@ -135,9 +147,9 @@ export async function uploadDocument(file: File): Promise<DocumentItem> {
     });
   if (put.error) throw new Error("Upload to storage failed. Please retry.");
 
-  const ingestRes = await fetch(
+  const ingestRes = await authedFetch(
     `${API_BASE}/documents/${created.document_id}/ingest`,
-    { method: "POST", headers },
+    { method: "POST" },
   );
   if (!ingestRes.ok) throw await readApiError(ingestRes, "Upload failed.");
   const json = await ingestRes.json();
@@ -145,16 +157,15 @@ export async function uploadDocument(file: File): Promise<DocumentItem> {
 }
 
 export async function deleteDocument(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/documents/${id}`, {
+  const res = await authedFetch(`${API_BASE}/documents/${id}`, {
     method: "DELETE",
-    headers: await authHeaders(),
   });
   if (!res.ok)
     throw new Error(
       res.status === 409
         ? "Document is busy processing. Wait and retry deletion."
         : res.status === 401
-          ? "Your session expired. Sign in again before retrying deletion."
+          ? "Session could not be restored. Reload the page before retrying deletion."
           : "Delete failed. Please retry. The document has not been confirmed deleted.",
     );
   return true;
@@ -164,9 +175,7 @@ export async function deleteDocument(id: string): Promise<boolean> {
 export async function fetchDocumentPdfBlobUrl(
   documentId: string,
 ): Promise<string> {
-  const res = await fetch(`${API_BASE}/documents/${documentId}/pdf`, {
-    headers: await authHeaders(),
-  });
+  const res = await authedFetch(`${API_BASE}/documents/${documentId}/pdf`);
   if (!res.ok) throw new Error("Could not load this document.");
   return URL.createObjectURL(await res.blob());
 }
@@ -174,9 +183,8 @@ export async function fetchDocumentPdfBlobUrl(
 export async function fetchDocumentChunks(
   documentId: string,
 ): Promise<DocumentChunkItem[]> {
-  const res = await fetch(`${API_BASE}/documents/${documentId}/chunks`, {
+  const res = await authedFetch(`${API_BASE}/documents/${documentId}/chunks`, {
     cache: "no-store",
-    headers: await authHeaders(),
   });
   if (!res.ok) throw new Error("Failed to fetch chunks.");
   const json = await res.json();
@@ -190,15 +198,10 @@ export async function askAI(
   onEvent: (event: StreamEventPayload) => void,
   signal: AbortSignal,
 ): Promise<void> {
-  const token = await getAccessToken();
-  if (!token) throw new AuthRequiredError();
-  const res = await fetch(`${API_BASE}/ask/answer`, {
+  const res = await authedFetch(`${API_BASE}/ask/answer`, {
     method: "POST",
     signal,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       question,
       document_ids: documentIds.length ? documentIds : null,
@@ -219,9 +222,8 @@ export async function endSession(): Promise<{
   documents_failed: number;
   identity_removed: boolean;
 }> {
-  const res = await fetch(`${API_BASE}/session`, {
+  const res = await authedFetch(`${API_BASE}/session`, {
     method: "DELETE",
-    headers: await authHeaders(),
   });
   if (!res.ok)
     throw await readApiError(

@@ -19,7 +19,10 @@ function load(path, imports = {}) {
 }
 const history = load("src/lib/chat-history.ts");
 const api = load("src/lib/api.ts", {
-  "@/lib/supabase": { getAccessToken: async () => "test-token" },
+  "@/lib/supabase": {
+    getAccessToken: async () => "test-token",
+    resetGuestSession: async () => ({ error: null }),
+  },
 });
 test("history is account-scoped, tab-scoped and wipes legacy persistent entries", async () => {
   const makeStore = (seed = {}) => {
@@ -297,7 +300,7 @@ test("retired frontend source and assets are absent, required framework packages
 test("document request uses one session lookup and explicit private auth", async () => {
   let calls = 0;
   const docsApi = load("src/lib/api.ts", {
-    "@/lib/supabase": { getAccessToken: async () => { calls++; return "synthetic-token"; } },
+    "@/lib/supabase": { getAccessToken: async () => { calls++; return "synthetic-token"; }, resetGuestSession: async () => ({ error: null }) },
   });
   global.fetch = async (_url, options) => {
     assert.equal(options.headers.Authorization, "Bearer synthetic-token");
@@ -333,7 +336,7 @@ test("missing session, rejected auth, and malformed document response never repo
   const signedOutApi = load("src/lib/api.ts", {"@/lib/supabase": {getAccessToken: async () => null}});
   await assert.rejects(signedOutApi.fetchDocuments(), /Sign in/);
   global.fetch = async () => new Response("{}", {status:401});
-  await assert.rejects(api.fetchDocuments(), /session expired/);
+  await assert.rejects(api.fetchDocuments(), /Session could not be restored/);
   global.fetch = async () => new Response("{}", {status:200});
   await assert.rejects(api.fetchDocuments(), /invalid response/);
 });

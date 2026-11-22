@@ -26,6 +26,9 @@ def no_db(monkeypatch):
     monkeypatch.setattr(documents_route.supabase, "get_document_by_id", none)
     monkeypatch.setattr(documents_route.supabase, "count_owner_documents", zero)
     monkeypatch.setattr(documents_route.supabase, "sweep_expired_guest_documents", zero)
+    async def okq(*a, **k):
+        return "ok"
+    monkeypatch.setattr(documents_route.supabase, "take_upload_quota", okq)
     monkeypatch.setattr(documents_route.supabase, "fail_stale_inline", zero)
 
 def test_health_endpoint():

@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request
-from src.core.auth import AuthUser, UnauthorizedError, get_current_user
+from src.core.auth import AuthUser, UnauthorizedError, get_current_user, invalidate_cached_tokens_for_user
 from src.core.config import get_settings
 from src.infrastructure.supabase_client import SupabaseClient
 
@@ -34,6 +34,8 @@ async def end_session(user: AuthUser = Depends(get_current_user)):
     except Exception:
         logger.warning("Session usage cleanup failed", exc_info=True)
     identity_removed = await supabase.admin_delete_auth_user(user.id)
+    if identity_removed:
+        invalidate_cached_tokens_for_user(user.id)
     return {
         "success": True,
         "data": {

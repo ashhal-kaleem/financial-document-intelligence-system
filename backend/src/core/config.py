@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     GUEST_DAILY_QUESTION_LIMIT: int = Field(20, ge=1, description="Per-guest free answers per UTC day")
     GLOBAL_DAILY_ANSWER_LIMIT: int = Field(60, ge=1, description="All guests combined; token-aware margin under the Groq free plan's daily token cap")
     GUEST_MAX_DOCUMENTS: int = Field(5, ge=1, description="Live documents per guest at a time")
+    GLOBAL_DAILY_UPLOAD_LIMIT: int = Field(100, ge=1, description="All guests combined; uploads admitted per UTC day")
+    GLOBAL_DAILY_UPLOAD_BYTES: int = Field(200 * 1024 * 1024, ge=1, description="All guests combined; uploaded bytes admitted per UTC day")
     GUEST_DATA_TTL_HOURS: int = Field(24, ge=1, description="Anonymous guest uploads auto-delete after this many hours")
     CRON_SECRET: str = Field("", description="Bearer secret Vercel Cron sends to the scheduled sweep endpoint")
 
