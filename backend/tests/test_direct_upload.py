@@ -312,3 +312,28 @@ def test_sweep_skips_recent_claims_and_recent_uploads(monkeypatch):
     swept = asyncio.run(client.fail_stale_inline(stale_seconds=600, abandon_seconds=21600))
     assert swept == 0
     assert [c for c in fake.calls if c[0] in ("PATCH", "DELETE")] == []
+
+
+def test_delete_cross_user_returns_404_even_if_rpc_fails(monkeypatch):
+    """Owner check happens before the delete RPC: foreign docs are 404, never 500."""
+    patch_doc(monkeypatch, None)
+
+    async def rpc_would_fail(doc_id, owner_id):
+        raise AssertionError("delete RPC must not run for a non-owned document")
+
+    monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_would_fail)
+    res = client.delete(f"/api/v1/documents/{uuid.uuid4()}")
+    assert res.status_code == 404
+
+
+def test_delete_owner_rpc_failure_still_surfaces(monkeypatch):
+    """A real owner's delete failure is not hidden by the guard."""
+    doc = make_doc(status="ready")
+    patch_doc(monkeypatch, doc)
+
+    async def rpc_fails(doc_id, owner_id):
+        raise RuntimeError("rpc unavailable")
+
+    monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_fails)
+    with pytest.raises(RuntimeError):
+        client.delete(f"/api/v1/documents/{doc.id}")

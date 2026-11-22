@@ -7,9 +7,15 @@ from src.core.auth import AuthUser, get_current_user
 from src.core.config import get_settings
 from src.domain.models import Document
 
+
 client = TestClient(app)
 DOC_ID = "22222222-2222-2222-2222-222222222222"
 ALICE = AuthUser(id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+def make_doc(status="ready"):
+    import uuid as _uuid
+    return Document(id=_uuid.uuid4(), filename="d.pdf", status=status, owner_id=BOB.id)
+
+
 BOB = AuthUser(id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 
 
@@ -97,9 +103,14 @@ def test_delete_passes_owner(monkeypatch):
     app.dependency_overrides[get_current_user] = lambda: BOB
     seen = {}
 
+    async def fake_get(doc_id, owner_id):
+        seen["get_owner"] = owner_id
+        return make_doc()
+
     async def fake_delete(doc_id, owner_id):
         seen["owner"] = owner_id
         return False
+    monkeypatch.setattr(documents_route.supabase, "get_document_by_id", fake_get)
     monkeypatch.setattr(documents_route.supabase, "delete_document", fake_delete)
     assert client.delete(f"/api/v1/documents/{DOC_ID}").status_code == 404
     assert seen["owner"] == BOB.id

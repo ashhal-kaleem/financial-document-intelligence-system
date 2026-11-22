@@ -213,6 +213,11 @@ async def get_document(document_id: UUID, user: AuthUser = Depends(get_current_u
 
 @router.delete("/{document_id}")
 async def delete_document(document_id: UUID, user: AuthUser = Depends(get_current_user)):
+    # Owner check first: a missing or foreign document is a 404 even if the
+    # delete RPC is unavailable, while a real owner delete failure must surface.
+    doc = await supabase.get_document_by_id(document_id, user.id)
+    if not doc:
+        raise DocumentNotFoundError(str(document_id))
     success = await supabase.delete_document(document_id, user.id)
     if not success:
         raise DocumentNotFoundError(str(document_id))
