@@ -58,8 +58,13 @@ async def scheduled_sweep(request: Request):
         raise UnauthorizedError()
     stale = await supabase.fail_stale_inline(settings.JOB_STALE_SECONDS, settings.UPLOAD_ABANDON_SECONDS)
     expired = await supabase.sweep_expired_guest_documents(limit=100)
+    orphans = await supabase.sweep_orphaned_guest_users()
     return {
         "success": True,
-        "data": {"stale_reclaimed": stale, "expired_guest_documents_deleted": expired},
+        "data": {
+            "stale_reclaimed": stale,
+            "expired_guest_documents_deleted": expired,
+            "orphaned_guest_identities_deleted": orphans,
+        },
         "meta": {"timestamp": datetime.now(timezone.utc).isoformat(), "path": "/api/v1/internal/sweep"},
     }

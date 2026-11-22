@@ -171,3 +171,39 @@ def test_cors_rejects_unlisted_origin():
         headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "GET"},
     )
     assert "access-control-allow-origin" not in res.headers
+
+
+def test_internal_sweep_runs_all_cleanups(monkeypatch):
+    from src.api.routes import session as session_route
+
+    calls = []
+
+    async def fake_stale(job_seconds, upload_seconds):
+        calls.append("stale")
+        return 1
+
+    async def fake_expired(limit=100):
+        calls.append("expired")
+        return 2
+
+    async def fake_orphans(max_rows=100):
+        calls.append("orphans")
+        return 3
+
+    monkeypatch.setattr(session_route.supabase, "fail_stale_inline", fake_stale)
+    monkeypatch.setattr(session_route.supabase, "sweep_expired_guest_documents", fake_expired)
+    monkeypatch.setattr(session_route.supabase, "sweep_orphaned_guest_users", fake_orphans)
+    monkeypatch.setattr(session_route.get_settings(), "CRON_SECRET", "test-secret")
+
+    denied = client.get("/api/v1/internal/sweep", headers={"Authorization": "Bearer wrong"})
+    assert denied.status_code == 401
+    assert calls == []
+
+    res = client.get("/api/v1/internal/sweep", headers={"Authorization": "Bearer test-secret"})
+    assert res.status_code == 200
+    assert res.json()["data"] == {
+        "stale_reclaimed": 1,
+        "expired_guest_documents_deleted": 2,
+        "orphaned_guest_identities_deleted": 3,
+    }
+    assert calls == ["stale", "expired", "orphans"]

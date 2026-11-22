@@ -21,25 +21,34 @@ const history = load("src/lib/chat-history.ts");
 const api = load("src/lib/api.ts", {
   "@/lib/supabase": { getAccessToken: async () => "test-token" },
 });
-test("history is account-scoped and never claims legacy unscoped messages", async () => {
-  global.window = {};
-  const data = new Map([
-    ["fdis_chat_messages_v1", '[{"content":"legacy private data"}]'],
-  ]);
-  global.localStorage = {
-    getItem: (k) => data.get(k),
-    setItem: (k, v) => data.set(k, v),
-    removeItem: (k) => data.delete(k),
+test("history is account-scoped, tab-scoped and wipes legacy persistent entries", async () => {
+  const makeStore = (seed = {}) => {
+    const store = { ...seed };
+    Object.defineProperties(store, {
+      getItem: { value: (k) => (k in store ? store[k] : null) },
+      setItem: { value: (k, v) => { store[k] = String(v); } },
+      removeItem: { value: (k) => { delete store[k]; } },
+    });
+    return store;
   };
+  const persistent = makeStore({
+    fdis_chat_messages_v1: '[{"content":"legacy private data"}]',
+    "fdis_chat_messages_v2:carol": '[{"content":"old guest residue"}]',
+  });
+  const tab = makeStore();
+  global.localStorage = persistent;
+  global.sessionStorage = tab;
+  global.window = { localStorage: persistent, sessionStorage: tab };
   assert.deepEqual(await history.loadChatHistory("alice"), []);
-  assert.equal(data.has("fdis_chat_messages_v1"), false);
+  assert.deepEqual(Object.keys(persistent), []); // legacy localStorage residue wiped
   const messages = [{ id: "1", role: "user", content: "alice report" }];
   await history.saveChatHistory(messages, "alice");
   assert.deepEqual(await history.loadChatHistory("bob"), []);
   assert.deepEqual(await history.loadChatHistory(), []);
   assert.deepEqual(await history.loadChatHistory("alice"), messages);
   await history.saveChatHistory(messages);
-  assert.equal(data.size, 1);
+  assert.deepEqual(Object.keys(persistent), []); // history never persists beyond the tab
+  assert.equal(Object.keys(tab).length, 1);
 });
 test("failed deletion is not reported as success", async () => {
   global.fetch = async () => new Response("{}", { status: 500 });
@@ -228,7 +237,7 @@ test("guest session starts anonymously and reuses the live session", async () =>
   const { error } = await configured.ensureGuestSession();
   assert.equal(error, null);
   assert.equal(anonCalls, 1);
-  client.auth.getSession = async () => ({ data: { session: { access_token: "t" } } });
+  client.auth.getSession = async () => ({ data: { session: { access_token: "t", user: { is_anonymous: true } } } });
   const again = await configured.ensureGuestSession();
   assert.equal(again.error, null);
   assert.equal(anonCalls, 1); // existing session reused, no duplicate guest

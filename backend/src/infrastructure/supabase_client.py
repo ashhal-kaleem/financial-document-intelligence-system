@@ -546,6 +546,18 @@ class SupabaseClient(BaseVectorStore):
                     logger.warning("Expired guest document sweep failed for one row", exc_info=True)
             return swept
 
+    async def sweep_orphaned_guest_users(self, max_rows: int = 100) -> int:
+        """Delete anonymous identities older than the retention window that own no
+        documents (closed-tab guests whose uploads were already swept)."""
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await client.post(
+                f"{self.base_url}/rest/v1/rpc/sweep_orphaned_guest_users",
+                headers=self.headers,
+                json={"max_rows": max_rows},
+            )
+            res.raise_for_status()
+            return int(res.json())
+
     async def delete_owner_usage(self, owner_id: str) -> None:
         async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.delete(

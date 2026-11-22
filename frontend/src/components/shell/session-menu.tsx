@@ -72,10 +72,9 @@ export function SessionMenu() {
           Private guest session
         </h2>
         <p className="mt-2 text-[12px] leading-relaxed fam-sub">
-          No account or login. Your PDFs and questions are visible only to this
-          browser session. Guest PDFs are deleted automatically after 24 hours.
-          Clearing this browser's site data loses access to this session's
-          documents.
+          No account or login. Your PDFs and questions are visible only in
+          this tab. Closing the tab ends your access: a new tab starts empty.
+          Any PDFs left behind are deleted automatically within about a day.
         </p>
         {done ? (
           <p role="status" className="mt-4 text-[13px] text-[#174A37]">

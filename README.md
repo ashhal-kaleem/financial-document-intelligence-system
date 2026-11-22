@@ -18,7 +18,7 @@ Local vectors use a pinned model/profile, masked mean pooling, L2 normalization 
 
 The MiniLM backend has been built and deployed, and a public financial-statement PDF page has reached ready through the real signed-upload flow. Owner-scoped retrieval and negative cross-user access checks have live evidence. Exact test scope, narrow retrieval results, known Hinglish miss and the answer-generation evidence are in [production-readiness](docs/production-readiness.md).
 
-Do not equate code pushed, preview built, production deployed, retrieval tested and a correct final answer. Free personal hosting is not a commercial uptime or unlimited-free guarantee. No login is required: every visitor gets a private guest session (Supabase anonymous sign-in); guest PDFs auto-delete after 24 hours. The former Render service remains suspended for rollback.
+Do not equate code pushed, preview built, production deployed, retrieval tested and a correct final answer. Free personal hosting is not a commercial uptime or unlimited-free guarantee. No login is required: every tab gets a fresh private guest session (Supabase anonymous sign-in in tab-scoped storage); closing the tab ends access, and any PDFs left behind are deleted automatically within about a day. The former Render service remains suspended for rollback.
 
 ## Run locally
 
