@@ -249,7 +249,7 @@ class _FakeAsyncClient:
 
     async def patch(self, url, headers=None, json=None):
         self.calls.append(("PATCH", url, json))
-        return _FakeResponse([{"id": "x"}])
+        return _FakeResponse([{"id": "x", "filename": "f.pdf"}])
 
     async def request(self, method, url, headers=None, json=None):
         self.calls.append((method, url, json))
@@ -357,7 +357,7 @@ def test_delete_abandoned_upload_cancels_in_code(monkeypatch):
     async def rpc_must_not_run(doc_id, owner_id):
         raise AssertionError("delete RPC refuses uploaded rows; must not be called")
 
-    monkeypatch.setattr(documents_route.supabase, "delete_uploaded_document", cancel)
+    monkeypatch.setattr(documents_route.supabase, "cancel_uploaded_document", cancel)
     monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_must_not_run)
     res = client.delete(f"/api/v1/documents/{doc.id}")
     assert res.status_code == 200
@@ -371,7 +371,7 @@ def test_delete_upload_lost_to_concurrent_ingest_is_409(monkeypatch):
     async def cancel_lost(doc_id, owner_id):
         return False
 
-    monkeypatch.setattr(documents_route.supabase, "delete_uploaded_document", cancel_lost)
+    monkeypatch.setattr(documents_route.supabase, "cancel_uploaded_document", cancel_lost)
     res = client.delete(f"/api/v1/documents/{doc.id}")
     assert res.status_code == 409
 
@@ -389,13 +389,13 @@ def test_delete_ready_doc_still_uses_rpc(monkeypatch):
         raise AssertionError("cancel path is only for uploaded rows")
 
     monkeypatch.setattr(documents_route.supabase, "delete_document", rpc_delete)
-    monkeypatch.setattr(documents_route.supabase, "delete_uploaded_document", cancel_must_not_run)
+    monkeypatch.setattr(documents_route.supabase, "cancel_uploaded_document", cancel_must_not_run)
     res = client.delete(f"/api/v1/documents/{doc.id}")
     assert res.status_code == 200
     assert calls["rpc"] == 1
 
 
-def test_cancel_upload_delete_is_conditional_on_uploaded_status(monkeypatch):
+def test_cancel_upload_is_conditional_and_keeps_fenced_marker_row(monkeypatch):
     import asyncio
     from src.infrastructure import supabase_client as sc
 
@@ -404,9 +404,33 @@ def test_cancel_upload_delete_is_conditional_on_uploaded_status(monkeypatch):
     client = sc.SupabaseClient()
     doc_id = uuid.uuid4()
 
-    ok = asyncio.run(client.delete_uploaded_document(doc_id, USER.id))
+    ok = asyncio.run(client.cancel_uploaded_document(doc_id, USER.id))
     assert ok is True
-    method, url = fake.calls[0]
+    method, url, body = fake.calls[0]
+    assert method == "PATCH"  # row kept as tracking marker, not deleted
     assert f"id=eq.{doc_id}" in url
     assert f"owner_id=eq.{USER.id}" in url
     assert "status=eq.uploaded" in url  # fences a concurrent ingest claim
+    assert body["status"] == "error"
+    assert body["error_message"] == client.CANCELED_UPLOAD_MESSAGE
+    # the current object is removed best-effort
+    assert any(c[0] == "DELETE" for c in fake.calls)
+
+
+def test_sweep_reclaims_canceled_rows_objects_after_grant_expiry(monkeypatch):
+    import asyncio
+    from src.infrastructure import supabase_client as sc
+
+    canceled = {"id": str(uuid.uuid4()), "filename": "reput.pdf"}
+    fake = _FakeAsyncClient({"status=eq.error": [canceled]})
+    monkeypatch.setattr(sc.httpx, "AsyncClient", lambda timeout: fake)
+    client = sc.SupabaseClient()
+
+    swept = asyncio.run(client.fail_stale_inline(stale_seconds=600, abandon_seconds=21600))
+    assert swept == 1
+    get_urls = [u for m, u, *_ in (c for c in fake.calls if c[0] == "GET")]
+    error_filt = next(u for u in get_urls if "status=eq.error" in u)
+    assert "created_at=lt." in error_filt  # only after signed-grant expiry
+    # the canceled row is NOT re-marked (no PATCH), only its object reclaimed
+    assert [c for c in fake.calls if c[0] == "PATCH"] == []
+    assert [c for c in fake.calls if c[0] == "DELETE"]

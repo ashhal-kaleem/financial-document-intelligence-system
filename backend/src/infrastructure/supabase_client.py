@@ -96,30 +96,34 @@ class SupabaseClient(BaseVectorStore):
                 return Document(**data[0])
             return None
 
-    async def delete_uploaded_document(self, doc_id: UUID, owner_id: str) -> bool:
+    CANCELED_UPLOAD_MESSAGE = "Upload canceled."
+
+    async def cancel_uploaded_document(self, doc_id: UUID, owner_id: str) -> bool:
         """Cancel an upload that never started processing (status 'uploaded').
 
         Code-only path: begin_document_delete refuses uploaded rows as busy, so
         without this an abandoned direct-to-storage upload could never be
-        deleted. Safe because no ingest can be running on an uploaded row; the
-        status=eq.uploaded filter on the DELETE fences a concurrent ingest
-        claim (it flips the row to processing, so the delete then matches
-        nothing and the caller gets a conflict instead of a race). Storage
-        cleanup is best-effort: a browser that still holds the signed URL can
-        re-create the object after this, leaving an orphan of at most the
-        upload size cap; the row is gone, so ingest can never pick it up.
+        removed. The row is NOT deleted: it flips to a fenced 'error' marker
+        (conditional on status=eq.uploaded, so a concurrent ingest claim gets
+        no match and the caller gets a conflict instead of a race). Keeping the
+        row keeps the object tracked: a browser still holding the signed URL
+        (valid up to 2h) can re-PUT the object after cancellation, and the
+        inline sweep reclaims canceled rows' objects once the grant is expired
+        (abandon threshold 6h > grant lifetime). While the row exists, ingest
+        can never pick the object up (409 for non-uploaded rows).
         """
         async with httpx.AsyncClient(timeout=15.0) as client:
-            res = await client.delete(
+            res = await client.patch(
                 f"{self.base_url}/rest/v1/documents?id=eq.{doc_id}&owner_id=eq.{owner_id}&status=eq.uploaded",
                 headers={**self.headers, "Prefer": "return=representation"},
+                json={"status": "error", "error_message": self.CANCELED_UPLOAD_MESSAGE},
             )
             res.raise_for_status()
-            deleted = res.json()
-        if not deleted:
+            rows = res.json()
+        if not rows:
             return False
         try:
-            await self.delete_pdf(doc_id, deleted[0]["filename"])
+            await self.delete_pdf(doc_id, rows[0]["filename"])
         except Exception:
             pass
         return True
@@ -387,12 +391,17 @@ class SupabaseClient(BaseVectorStore):
         """
         from datetime import datetime, timedelta, timezone
         now = datetime.now(timezone.utc)
+        stale_cutoff = (now - timedelta(seconds=stale_seconds)).isoformat()
+        abandon_cutoff = (now - timedelta(seconds=abandon_seconds)).isoformat()
+        # (filter, mark rows error?) - canceled rows are already fenced error
+        # markers; only their (possibly re-PUT) storage object needs reclaim.
         filters = [
-            f"status=eq.processing&claimed_at=lt.{(now - timedelta(seconds=stale_seconds)).isoformat()}",
-            f"status=eq.uploaded&created_at=lt.{(now - timedelta(seconds=abandon_seconds)).isoformat()}",
+            (f"status=eq.processing&claimed_at=lt.{stale_cutoff}", True),
+            (f"status=eq.uploaded&created_at=lt.{abandon_cutoff}", True),
+            (f"status=eq.error&error_message=eq.\"{self.CANCELED_UPLOAD_MESSAGE}\"&created_at=lt.{abandon_cutoff}", False),
         ]
         swept = 0
-        for filt in filters:
+        for filt, mark_error in filters:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 res = await client.get(
                     f"{self.base_url}/rest/v1/documents?select=id,filename&{filt}",
@@ -402,12 +411,13 @@ class SupabaseClient(BaseVectorStore):
                 rows = res.json()
                 if not rows:
                     continue
-                res = await client.patch(
-                    f"{self.base_url}/rest/v1/documents?{filt}",
-                    headers=self.headers,
-                    json={"status": "error", "error_message": "Upload or processing was interrupted. Please delete this document and try again."},
-                )
-                res.raise_for_status()
+                if mark_error:
+                    res = await client.patch(
+                        f"{self.base_url}/rest/v1/documents?{filt}",
+                        headers=self.headers,
+                        json={"status": "error", "error_message": "Upload or processing was interrupted. Please delete this document and try again."},
+                    )
+                    res.raise_for_status()
             for row in rows:
                 try:
                     await self.delete_pdf(UUID(row["id"]), row["filename"])

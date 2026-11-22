@@ -220,8 +220,9 @@ async def delete_document(document_id: UUID, user: AuthUser = Depends(get_curren
         raise DocumentNotFoundError(str(document_id))
     if doc.status == "uploaded":
         # Never-ingested upload: cancel it in code (the delete RPC refuses
-        # uploaded rows as busy). False means a concurrent ingest claimed it.
-        cancelled = await supabase.delete_uploaded_document(document_id, user.id)
+        # uploaded rows as busy). The row stays as a fenced 'error' marker so
+        # the storage object remains tracked until the signed grant expires.
+        cancelled = await supabase.cancel_uploaded_document(document_id, user.id)
         if not cancelled:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -229,7 +230,7 @@ async def delete_document(document_id: UUID, user: AuthUser = Depends(get_curren
             )
         return {
             "success": True,
-            "data": {"id": str(document_id), "status": "deleted"},
+            "data": {"id": str(document_id), "status": "canceled"},
             "meta": {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "path": f"/api/v1/documents/{document_id}",
