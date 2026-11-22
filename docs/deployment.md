@@ -1,39 +1,49 @@
 # Deployment runbook
 
-Status: frontend deployed to Vercel Hobby and backend to Render Free. Last revised 6 November 2026. Working deployment is not production acceptance; the hosted auth/storage/schema and real-user workflow gates below remain open. This runbook is not permission to provision, mutate hosted settings or spend.
+Revised 22 November 2026. The frontend and FastAPI backend use separate Vercel Hobby projects. Supabase holds auth, private PDFs and vectors. The old Render service stays suspended as a rollback option. A deployed app is not a production-acceptance certificate, and this file grants no account, data or spending authority.
 
-## Architecture
+## Backend build
 
-- Frontend: Next.js on Vercel, version pinned in frontend/package.json.
-- Backend: FastAPI on Render with queue ingestion.
-- Data: Supabase Postgres/pgvector, Auth and private Storage.
-- Inference: no server-side answer provider. Answers come from the user-authorized browser AI flow (Puter free-model allowlist). The unused OpenRouter fallback client stays disabled unless explicitly enabled and configured. Configured keys do not prove provider availability.
+```sh
+cd backend
+uv sync --frozen
+uv run python scripts/fetch_embedding_model.py
+uv run pytest -q
+```
 
-## Before setup
+Use the FastAPI preset with the entrypoint in `pyproject.toml`. Its build script fetches public MiniLM weights at a fixed revision, checks sizes/SHA-256 and bundles them. `vercel.json` explicitly includes generated model assets, excludes test/virtualenv files and sets a 300-second maximum. Do not download weights during a user request, depend on warm caches or silently change model precision. Keep model attribution/license in the bundle.
 
-1. Review migrations against the actual target. On 6 November 2026 the financial-rag app schema was rebuilt with approval using 0001-0003. Empty tables, app functions/grants and owner policies were checked live. This does not grant permission for another rebuild or destructive migration. Other projects may have incompatible drift.
-2. Resolve the login route: existing UI is Google OAuth. Enabling it requires a Google Cloud client and Supabase provider/redirect settings. Email/password needs UI plus production SMTP for arbitrary signups. Neither route is verified working here. Ask before hosted settings changes.
-3. Propose private `documents` bucket creation separately. No bucket existed at last verification. Confirm file size/MIME limits and prohibit public access; the backend service role mediates file reads. No direct client storage access is required.
-4. Approve a separate empty test project and bounded provider usage before real integration tests. Never use private reports as test fixtures.
+No HF inference token, Cloudflare setup or paid embedding endpoint is needed. Supabase URL/service-role/anon settings, private bucket name, allowed frontend origins and auth flags remain necessary. Never expose the service role in a frontend variable or log. Vercel forces inline ingestion; use the queue worker only on a separately approved long-running host. Configure `MAX_UPLOAD_SIZE_BYTES=4194304` for the current 4 MiB app cap. The bucket's admission limit is separate.
 
-## Configuration
+Frontend configuration: `NEXT_PUBLIC_API_URL=https://fdis-backend.vercel.app/api/v1`, plus the existing Supabase public URL/anon key. Puter has its own explicit sign-in/consent flow and no backend account token.
 
-Backend: copy backend/.env.example. Supply SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, HF_TOKEN (only for approved embedding use) and ALLOWED_ORIGINS. Puter browser inference needs no backend provider key. Optional fallback requires LLM_FALLBACK_ENABLED=true plus OPENROUTER_API_KEY. Output has a configured cap. No client-chosen arbitrary model.
+## Hosted data
 
-Frontend: copy frontend/.env.example. Set NEXT_PUBLIC_API_URL to the backend /api/v1 URL, NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Never expose service role/provider keys in NEXT_PUBLIC settings or client code. No project is hardcoded.
+The existing project has migrations 0001-0004 from prior approved work. Never infer that another target is empty or compatible. Read current vector/document counts and schema before a model rollout. New chunks carry a model-profile tag; incompatible/missing tags on search results are rejected. Re-indexing existing vectors, destructive cleanup, schema changes and applying 0005 require their own approval. Keep original documents and useful rollback history.
 
-## Ingestion
+Owner-isolation tests use fresh temporary test users and public test PDFs. Record created IDs privately and delete only that test data after checking owner reads/searches/deletes and cross-owner denial. Do not touch an existing errored user document as cleanup.
 
-- Inline (default): request parses, embeds and stores the report; intended for local use and small-file tests, not guaranteed within serverless time limits.
-- Queue: use INGESTION_MODE=queue on a long-running host. Upload first stores a nonclaimable row and PDF, then changes state to queued. A failed storage write cannot create a claimable job. API worker claims, heartbeats and uses fenced database writes.
-- Claims increment attempts; expired leases can retry up to three attempts. Old workers cannot write after loss of their fencing token. A lost worker can still waste billed embedding compute until its next fenced write.
-- Render hosts the backend/worker. Vercel deploys only frontend; NEXT_PUBLIC_API_URL must point to the Render /api/v1 URL.
-- Nonempty crash/restart recovery has local automated evidence, not a live Supabase end-to-end result.
+## Runtime limits
 
-## Release checklist
+The published Fluid Hobby limits are 2 GB function memory and a 300-second maximum, with a standard Python bundle limit of 500 MB. Verify actual build output and deployment settings; a local footprint is not deployed size. The filesystem is read-only except ephemeral instance-local `/tmp`. The default 2,000-chunk cap, 45-second cooperative parser check and bounded encoder budget reduce work, but native operations cannot be forcibly interrupted by those checks. File size does not bound page count, tokens or table complexity. Large/slow PDFs must return a clear error or use a separately designed resumable pipeline.
 
-Run backend tests, local migration tests, frontend regression tests/typecheck/build. Review dependency advisories and scan repository/history/configuration for secrets. Review migrations 0004 and 0005 and get target-specific approval before applying them; they change delete/RLS behavior. Then on the isolated target test real login, signed uploads, PDF access, two-user isolation, deletion, queue recovery, provider failures and timeout handling. Record model/version, latency, quality, quota/cost and failed cases.
+The rate limiter/inference lock is per process, not a distributed quota. Free hosting and Puter allowances can pause or fail. No unlimited uptime, free-forever or business SLA claim is supported. Vercel Hobby is personal/noncommercial.
 
-Do not release until private storage, distributed quotas, reviewed/apply-authorized migrations 0004/0005 and real Storage deletion tests, observability, secret rotation procedures and a backup/restore drill are addressed. The current in-memory rate limiter is per-process, not a shared quota. Table extraction is heuristic, not a verified accounting model. Citation ID validation does not prove semantic support.
+## Before committing or releasing
 
-render.yaml defines the existing Free backend deployment shape. All future hosted changes require their own established authority. Root and /api/v1 API routes remain compatibility aliases until consumers are checked. Production frontend API calls use NEXT_PUBLIC_API_URL pointing to Render; the Next proxy exists only in development.
+1. Verify the current remote head, working diff and expected author identity. Run tests, inspect each staged diff and exclude secrets, generated model binaries and unrelated changes. Push small meaningful commits.
+2. Run backend tests with downloaded pinned assets, frontend regression tests/typecheck/build, and local migration regression tests when the migration contract is affected. Model tests must prove offline operation, dimensions, normalization, token bounds, corruption/missing-asset handling and reproducible doc/query vectors.
+3. Build a preview, inspect its actual package/config and test its authenticated endpoints. Deploy production only under the established rollout scope. Confirm the production target's source hash separately from the latest commit and from a newer environment-only redeployment.
+4. Test a public financial PDF through signed upload, ready status, owner retrieval with correct source pages, denied cross-owner reads/searches/deletes, failure states and owner deletion. Record exact source/amount/year retrieval checks. Citation-marker success is not semantic accuracy.
+5. Treat actual Puter model generation as a separate authorized check. The allowlist uses catalog-verified zero-priced variants and no paid fallback, but availability/account limits remain external. Do not claim full Q&A works if only retrieval/receipt plumbing was tested.
+6. Confirm only test data was removed and the original data/configuration remain. Report pushed, deployed, tested and pending facts separately with current hashes and dates.
+
+## Sources
+
+- https://vercel.com/docs/frameworks/backend/fastapi
+- https://vercel.com/docs/functions/runtimes/python
+- https://vercel.com/docs/functions/limitations
+- https://vercel.com/docs/functions/runtimes
+- https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+- https://docs.puter.com/user-pays-model/
+- https://docs.puter.com/rate-limits-and-quotas/

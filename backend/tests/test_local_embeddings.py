@@ -8,7 +8,7 @@ import pytest
 from src.infrastructure import embedding_assets as assets
 from src.infrastructure import embedding_client as enc
 from src.services.ingestion import DocumentIngestionService
-from src.core.errors import InvalidPDFError
+from src.core.errors import InvalidPDFError, FDISException
 from src.domain.models import DocumentChunk
 
 
@@ -29,9 +29,9 @@ def test_local_encoder_offline_normalized_and_batch_invariant(monkeypatch):
 
 def test_long_input_rejected_not_silently_truncated():
     client = enc.EmbeddingClient()
-    with pytest.raises(ValueError, match="token limit"):
+    with pytest.raises(FDISException, match="token search limit"):
         client.embed_query("financial revenue " * 500)
-    with pytest.raises(ValueError, match="empty"):
+    with pytest.raises(FDISException, match="non-empty"):
         client.embed_query("  ")
 
 
@@ -61,7 +61,7 @@ def test_capacity_wait_is_bounded(monkeypatch):
     lock = threading.Lock()
     lock.acquire()
     monkeypatch.setattr(enc, "_INFERENCE_LOCK", lock)
-    with pytest.raises(TimeoutError, match="busy"):
+    with pytest.raises(FDISException, match="busy"):
         client.embed_texts(["revenue"])
     lock.release()
 
@@ -70,7 +70,7 @@ def test_embedding_budget_stops_between_batches(monkeypatch):
     client = enc.EmbeddingClient()
     client.timeout_seconds = .001
     monkeypatch.setattr(enc.time, "monotonic", iter([0, 1]).__next__)
-    with pytest.raises(TimeoutError, match="budget"):
+    with pytest.raises(FDISException, match="budget"):
         client.embed_texts(["revenue"])
     assert not enc._INFERENCE_LOCK.locked()
 
@@ -93,3 +93,27 @@ def test_sessions_are_cached_and_cpu_only():
     session = enc._get_session()
     assert enc._get_session() is session
     assert session.get_providers() == ["CPUExecutionProvider"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("profile", [None, "old-provider-profile", assets.PROFILE])
+async def test_vector_profile_guard(monkeypatch, profile):
+    import httpx
+    from src.infrastructure.supabase_client import SupabaseClient
+    data = {"document_id": str(uuid4()), "content": "Revenue FY2025 USD 100 million",
+            "source": "public-test.pdf", "page": 1, "chunk_index": 0, "total_chunks": 1,
+            "similarity": .8, "metadata": {"embedding_profile": profile} if profile else {}}
+    class FakeClient:
+        def __init__(self, **kw): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        async def post(self, url, **kw):
+            return httpx.Response(200, json=[data], request=httpx.Request("POST", url))
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+    if profile != assets.PROFILE:
+        with pytest.raises(FDISException) as exc:
+            await SupabaseClient().match_chunks([0.0] * 384)
+        assert exc.value.code == "embedding_profile_mismatch"
+    else:
+        result = await SupabaseClient().match_chunks([0.0] * 384)
+        assert len(result) == 1 and result[0].metadata["embedding_profile"] == assets.PROFILE

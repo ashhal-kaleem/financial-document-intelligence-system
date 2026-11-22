@@ -6,6 +6,7 @@ from src.core.config import get_settings
 from src.domain.models import Document, DocumentChunk
 from src.infrastructure.interfaces import BaseVectorStore
 from src.infrastructure.embedding_assets import PROFILE
+from src.core.errors import FDISException
 
 
 class SupabaseClient(BaseVectorStore):
@@ -290,8 +291,8 @@ class SupabaseClient(BaseVectorStore):
             
             results = []
             for r in rows:
-                if r.get("metadata", {}).get("embedding_profile") != PROFILE:
-                    raise RuntimeError("Stored embedding profile differs. Reprocessing requires owner approval.")
+                if (r.get("metadata") or {}).get("embedding_profile") != PROFILE:
+                    raise FDISException("Search index differs", "Stored search vectors use a different model profile. Reprocessing requires owner approval.", 409, "embedding_profile_mismatch")
                 results.append(
                     DocumentChunk(
                         id=r.get("id"),

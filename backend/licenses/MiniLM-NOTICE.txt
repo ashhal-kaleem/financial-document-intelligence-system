@@ -1,0 +1,6 @@
+FDIS bundles the public sentence-transformers/all-MiniLM-L6-v2 model under Apache License 2.0.
+Original model: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+Pinned source revision: 1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+Artifact: onnx/model_quint8_avx2.onnx plus tokenizer.json, unchanged from that revision.
+The application runs its own masked mean pooling and L2 normalization. No training or fine-tuning was performed.
+The complete license is included in MiniLM-LICENSE.txt.

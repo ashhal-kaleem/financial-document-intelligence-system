@@ -81,21 +81,32 @@ class RecursiveFinancialChunker:
         Chunks a single page's text and table content.
         Preserves table formatting at the start of chunks.
         """
-        combined_text_parts = []
+        # Repeat source page headings/periods on table continuations. A PDF table's
+        # first detected row can be data, so keep its original column order rather
+        # than inventing year labels or treating it as a verified accounting schema.
+        page_context = re.sub(r"\s+", " ", page_text[:700]).strip()[:340]
+        raw_chunks = []
         if page_tables:
             for table_str in page_tables:
-                if table_str.strip():
-                    combined_text_parts.append(f"--- [Table on Page {page_number}] ---\n{table_str.strip()}")
-
+                if not table_str.strip():
+                    continue
+                lines = [line for line in table_str.splitlines() if line.strip()]
+                prefix = f"--- [Table on Page {page_number}] ---\nPage context: {page_context}\n"
+                header = "\n".join(lines[:2]) + "\n" if len(lines) > 2 else ""
+                rows = lines[2:] if header else lines
+                current = []
+                for row in rows:
+                    if current and len(prefix + header + "\n".join(current + [row])) > self.target_chunk_size + len(prefix):
+                        raw_chunks.append(prefix + header + "\n".join(current))
+                        current = []
+                    current.append(row)
+                if current:
+                    raw_chunks.append(prefix + header + "\n".join(current))
         if page_text.strip():
-            combined_text_parts.append(page_text.strip())
-
-        full_page_content = "\n\n".join(combined_text_parts)
-        if not full_page_content.strip():
+            raw_chunks.extend(self._split_text_recursively(page_text.strip(), self.separators))
+        if not raw_chunks:
             return []
 
-        raw_chunks = self._split_text_recursively(full_page_content, self.separators)
-        
         doc_chunks = []
         for idx, chunk_text in enumerate(raw_chunks):
             doc_chunks.append(

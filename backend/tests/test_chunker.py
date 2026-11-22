@@ -77,3 +77,16 @@ def test_citations_formatting():
     assert citations[0].similarity == 0.8845
     formatted = format_citation_string(citations[0])
     assert formatted == "[1] apple_10k_2024.pdf, p.32 (chunk 1/3)"
+
+
+def test_table_continuations_keep_source_year_units_and_rows():
+    chunker = RecursiveFinancialChunker(target_chunk_size=180, overlap=20)
+    rows = "| Metric | FY2025 | FY2024 |\n| --- | --- | --- |\n" + "\n".join(
+        f"| Revenue segment {i} | {i}00 | {i}10 |" for i in range(20))
+    chunks = chunker.chunk_page(uuid4(), "report.pdf", 5,
+        "Consolidated results, USD millions. FY2025 and FY2024.", [rows])
+    tables = [c for c in chunks if "Table on Page" in c.content]
+    assert len(tables) > 1
+    assert all("USD millions" in c.content and "FY2025" in c.content and "FY2024" in c.content for c in tables)
+    assert all("| Metric | FY2025 | FY2024 |" in c.content for c in tables)
+    assert all(any(f"Revenue segment {i} |" in c.content for c in tables) for i in range(20))

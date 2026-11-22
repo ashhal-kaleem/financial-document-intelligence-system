@@ -4,6 +4,7 @@ import threading
 import time
 from typing import List
 import numpy as np
+from src.core.errors import FDISException
 from src.infrastructure.embedding_assets import (
     ARTIFACTS, DIMENSIONS, MAX_TOKENS, MODEL_DIR, PROFILE, get_tokenizer, verify_artifact,
 )
@@ -42,9 +43,9 @@ class EmbeddingClient:
         tokenizer = get_tokenizer()
         encoded = tokenizer.encode_batch(texts)
         if any(not text.strip() for text in texts):
-            raise ValueError("Cannot embed empty text")
+            raise FDISException("Empty search text", "Enter a non-empty question.", 422, "empty_embedding_input")
         if any(len(e.ids) > MAX_TOKENS for e in encoded):
-            raise ValueError("Text exceeds the embedding token limit; split it before indexing.")
+            raise FDISException("Search text too long", "Text exceeds the 256-token search limit. Shorten the question or split the document.", 422, "embedding_input_too_long")
         session = _get_session()
         vectors = []
         # Dynamic quantization can change activation scales when unrelated inputs share
@@ -69,15 +70,15 @@ class EmbeddingClient:
             return []
         deadline = time.monotonic() + self.timeout_seconds
         if not _INFERENCE_LOCK.acquire(timeout=self.timeout_seconds):
-            raise TimeoutError("Embedding capacity is busy. Retry later.")
+            raise FDISException("Search busy", "Embedding capacity is busy. Retry later.", 503, "embedding_busy")
         try:
             out = []
             for i in range(0, len(texts), self.batch_size):
                 if time.monotonic() >= deadline:
-                    raise TimeoutError("Embedding processing budget exceeded. Use a smaller document.")
+                    raise FDISException("Search time limit", "Embedding processing budget exceeded. Use a smaller document.", 503, "embedding_timeout")
                 out.extend(self._embed_batch(texts[i:i + self.batch_size]))
             if time.monotonic() >= deadline:
-                raise TimeoutError("Embedding processing budget exceeded. Use a smaller document.")
+                raise FDISException("Search time limit", "Embedding processing budget exceeded. Use a smaller document.", 503, "embedding_timeout")
             return out
         finally:
             _INFERENCE_LOCK.release()

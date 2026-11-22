@@ -67,3 +67,10 @@ def split_embedding_text(text: str, overlap: int = 32) -> list[str]:
             break
         start = max(start + 1, stop - overlap)
     return parts
+
+
+@lru_cache(maxsize=1)
+def verify_model_assets() -> bool:
+    for name, (_, size, digest) in ARTIFACTS.items():
+        verify_artifact(MODEL_DIR / name, size, digest)
+    return True
