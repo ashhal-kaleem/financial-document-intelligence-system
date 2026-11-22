@@ -26,7 +26,7 @@
 │   │   ├── core/              # Config, Error handling, Settings
 │   │   ├── domain/            # Pure domain models, recursive chunker, citations
 │   │   ├── services/          # Business logic (Ingestion, Retrieval, Inference)
-│   │   └── infrastructure/    # Supabase (pgvector/storage), Groq, OpenRouter, Resend
+│   │   └── infrastructure/    # Supabase (pgvector/storage), OpenRouter, Resend
 │   ├── tests/                 # Unit & contract tests
 │   ├── pyproject.toml         # Python package & dependency definition
 │   └── .env.local             # Local backend secrets

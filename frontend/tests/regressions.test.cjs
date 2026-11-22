@@ -41,51 +41,6 @@ test("history is account-scoped and never claims legacy unscoped messages", asyn
   await history.saveChatHistory(messages);
   assert.equal(data.size, 1);
 });
-function mockStream(text) {
-  global.fetch = async () =>
-    new Response(
-      new ReadableStream({
-        start(c) {
-          // Deliberately split inside JSON and UTF-8 bytes.
-          const bytes = new TextEncoder().encode(text);
-          for (let i = 0; i < bytes.length; i += 7)
-            c.enqueue(bytes.slice(i, i + 7));
-          c.close();
-        },
-      }),
-      { status: 200 },
-    );
-}
-test("stream accepts only a complete answer and terminal marker", async () => {
-  mockStream(
-    'data: {"event":"token","token":"₹42 [1]"}\n\ndata: {"event":"done"}\n\ndata: [DONE]\n\n',
-  );
-  const events = [];
-  await api.streamQuestion("question", [], undefined, (e) => events.push(e));
-  assert.equal(events[0].token, "₹42 [1]");
-  assert.equal(events.at(-1).event, "done");
-});
-for (const [name, text] of Object.entries({
-  provider_error:
-    'data: {"event":"error","detail":"failed"}\n\ndata: [DONE]\n\n',
-  missing_done: "data: [DONE]\n\n",
-  truncated: 'data: {"event":"token","token":"partial"}\n\n',
-  no_terminal: 'data: {"event":"done"}\n\n',
-  malformed: "data: {invalid}\n\n",
-}))
-  test(`stream rejects ${name}`, async () => {
-    mockStream(text);
-    await assert.rejects(api.streamQuestion("question", []));
-  });
-test("callback failures propagate rather than being swallowed", async () => {
-  mockStream('data: {"event":"token","token":"x"}\n\n');
-  await assert.rejects(
-    api.streamQuestion("q", [], undefined, () => {
-      throw Error("callback failure");
-    }),
-    /callback failure/,
-  );
-});
 test("failed deletion is not reported as success", async () => {
   global.fetch = async () => new Response("{}", { status: 500 });
   await assert.rejects(api.deleteDocument("id"), /Delete failed/);

@@ -4,7 +4,6 @@ import pytest
 import httpx
 import pymupdf
 from uuid import uuid4
-from src.infrastructure.groq_client import GroqClient
 from src.infrastructure.llm_stream import stream_tokens
 from src.domain.citation import validate_answer_citations, create_citations_from_chunks, GROUNDED_SYSTEM_PROMPT
 from src.domain.models import DocumentChunk, AskRequest
@@ -35,29 +34,14 @@ class Retrieval:
     def build_citations(self, chunks): return create_citations_from_chunks(chunks)
 
 
-class LLM:
-    def __init__(self, tokens, error=False): self.tokens,self.error=tokens,error
-    async def stream_chat(self,*a,**kw):
-        for x in self.tokens:yield x
-        if self.error:raise RuntimeError('secret provider body')
-
-
 @pytest.mark.asyncio
-@pytest.mark.parametrize('tokens,error', [(['Partial [1]'],True),(['Unknown source [7]'],False),(['No citation'],False)])
-async def test_failed_or_ungrounded_stream_never_emits_success_done(tokens,error):
-    s=InferenceService(retrieval_service=Retrieval(),llm_client=LLM(tokens,error))
-    out=[x async for x in s.stream_answer('Revenue?')]
-    assert out[-1]['event']=='error'
-    assert not any(x['event']=='done' for x in out)
-    assert 'secret' not in json.dumps(out)
-
-
-@pytest.mark.asyncio
-async def test_grounded_stream_completes_with_chunk_count_not_fake_token_usage():
-    s=InferenceService(retrieval_service=Retrieval(),llm_client=LLM(['Revenue ','$100 million [1]']))
-    out=[x async for x in s.stream_answer('Revenue?')]
-    assert out[-1]['event']=='done' and out[-1]['stream_chunks']==2
-    assert 'total_tokens' not in out[-1]
+async def test_retrieval_and_prompt_survive_without_backend_provider():
+    s=InferenceService(retrieval_service=Retrieval())
+    chunks=await s.retrieval.retrieve_relevant_chunks()
+    citations=s.retrieval.build_citations(chunks)
+    msgs=s.build_rag_prompt('Revenue?',chunks,citations)
+    assert 'Revenue $100 million' in msgs[-1]['content']
+    assert not hasattr(s,'stream_answer')
 
 
 @pytest.mark.asyncio
@@ -74,30 +58,25 @@ async def test_provider_stream_requires_terminal_marker():
 
 
 @pytest.mark.asyncio
-async def test_model_override_is_rejected_before_network():
+async def test_model_override_is_rejected_before_network(monkeypatch):
+    from src.infrastructure import openrouter_client as module
+    monkeypatch.setattr(module.get_settings(),'LLM_FALLBACK_ENABLED',True)
+    monkeypatch.setattr(module.get_settings(),'OPENROUTER_API_KEY','test')
+    client=module.OpenRouterClient()
     with pytest.raises(ValueError):
-        async for _ in GroqClient().stream_chat([],model='expensive-unapproved-model'):pass
+        async for _ in client.stream_chat([],model='expensive-unapproved-model'):pass
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('partial,enabled,expect_fallback', [(False,False,False),(False,True,True),(True,True,False)])
-async def test_fallback_opt_in_and_no_midstream_provider_switch(monkeypatch,partial,enabled,expect_fallback):
-    from src.infrastructure import groq_client as module
-    real=httpx.AsyncClient
-    def handler(req):
-        if partial:return httpx.Response(200,text='data: {"choices":[{"delta":{"content":"partial"}}]}\n\n')
-        return httpx.Response(503,json={'message':'private provider error'})
-    monkeypatch.setattr(module.httpx,'AsyncClient',lambda **kw:real(transport=httpx.MockTransport(handler)))
-    s=GroqClient();monkeypatch.setattr(s.settings,'LLM_FALLBACK_ENABLED',enabled);monkeypatch.setattr(s.settings,'OPENROUTER_API_KEY','test')
-    calls=[]
-    async def fallback(*a,**kw):calls.append(True);yield 'fallback'
-    s.fallback_client.stream_chat=fallback
-    if expect_fallback:
-        assert [x async for x in s.stream_chat([])]==['fallback']
-    else:
-        with pytest.raises(RuntimeError):
-            async for _ in s.stream_chat([]):pass
-    assert bool(calls)==expect_fallback
+async def test_fallback_provider_never_runs_without_explicit_opt_in(monkeypatch):
+    from src.infrastructure import openrouter_client as module
+    monkeypatch.setattr(module.get_settings(),'LLM_FALLBACK_ENABLED',False)
+    monkeypatch.setattr(module.get_settings(),'OPENROUTER_API_KEY','test')
+    def unexpected_client(*args,**kwargs):
+        raise AssertionError("No provider request without opt-in")
+    monkeypatch.setattr(module.httpx,'AsyncClient',unexpected_client)
+    with pytest.raises(RuntimeError):
+        async for _ in module.OpenRouterClient().stream_chat([]):pass
 
 
 def test_blank_scanned_pdf_is_not_ready():
@@ -181,19 +160,8 @@ async def test_rate_limit_map_prunes_stale_users_and_fails_closed_when_full(monk
     rl.reset_rate_limits()
 
 
-@pytest.mark.asyncio
-async def test_unconfigured_backend_provider_makes_no_request(monkeypatch):
-    provider = GroqClient()
-    monkeypatch.setattr(provider, "api_key", "")
-    def unexpected_client(*args, **kwargs):
-        raise AssertionError("No provider request without configured key")
-    monkeypatch.setattr("src.infrastructure.groq_client.httpx.AsyncClient", unexpected_client)
-    with pytest.raises(RuntimeError, match="not configured"):
-        async for _ in provider.stream_chat([]):
-            pass
-
-def test_groq_key_is_optional_for_app_startup(monkeypatch):
+def test_groq_settings_are_gone():
     from src.core.config import Settings
-    monkeypatch.delenv("GROQ_API_KEY", raising=False)
     settings = Settings(_env_file=None, SUPABASE_URL="https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY="test")
-    assert settings.GROQ_API_KEY == ""
+    assert not hasattr(settings, "GROQ_API_KEY")
+    assert not hasattr(settings, "GROQ_MODEL")

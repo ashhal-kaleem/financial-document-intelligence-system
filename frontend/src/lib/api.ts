@@ -178,69 +178,6 @@ export async function fetchAskContext(
   return json.data;
 }
 
-export async function streamQuestion(
-  question: string,
-  documentIds: string[],
-  model?: string,
-  onEvent?: (event: StreamEventPayload) => void,
-  signal?: AbortSignal,
-): Promise<void> {
-  const response = await fetch(`${API_BASE}/ask/stream`, {
-    method: "POST",
-    headers: await authHeaders({
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-    }),
-    body: JSON.stringify({
-      question,
-      document_ids: documentIds.length > 0 ? documentIds : null,
-      model: model || null,
-    }),
-    signal,
-  });
-
-  if (!response.ok || !response.body)
-    throw new Error(`Stream failed: ${response.status}`);
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-
-  let completed = false;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n\n");
-      buffer = lines.pop() || "";
-      for (const block of lines) {
-        const trimmed = block.trim();
-        if (!trimmed || !trimmed.startsWith("data: ")) continue;
-        const dataStr = trimmed.slice(6).trim();
-        if (dataStr === "[DONE]") {
-          if (!completed)
-            throw new Error("Answer stream ended before completion.");
-          return;
-        }
-        let parsed: StreamEventPayload;
-        try {
-          parsed = JSON.parse(dataStr);
-        } catch {
-          throw new Error("Invalid answer stream.");
-        }
-        if (parsed.event === "error")
-          throw new Error(parsed.detail || "Answer failed.");
-        if (parsed.event === "done") completed = true;
-        if (onEvent) onEvent(parsed);
-      }
-    }
-    throw new Error("Answer stream was interrupted. Please retry.");
-  } finally {
-    await reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
-}
-
 export async function fetchHealth(): Promise<{
   status: string;
   latency_ms: number;

@@ -101,23 +101,25 @@ async def test_retrieval_with_no_visible_documents_skips_search():
     assert store.calls == []
 
 
-class ExplodingLLM:
-    async def stream_chat(self, *a, **k):
-        raise AssertionError("LLM must not be called when nothing relevant was retrieved")
-        yield
-
-
 @pytest.mark.asyncio
-async def test_no_context_returns_fixed_not_covered_answer_without_llm():
-    svc = InferenceService(retrieval_service=make_retrieval(FakeStore(visible=[uuid4()], matches=[])), llm_client=ExplodingLLM())
-    events = [e async for e in svc.stream_answer("what is the CEO's salary?", owner_id=OWNER)]
-    tokens = "".join(e["token"] for e in events if e["event"] == "token")
-    assert tokens == NOT_COVERED_ANSWER
-    assert events[-1]["event"] == "done" and events[-1]["citations_count"] == 0
+async def test_no_context_returns_fixed_not_covered_answer_without_llm(monkeypatch):
+    from src.api.routes import ask as ask_routes
+    from src.domain.models import BrowserAIRequest
+    svc = InferenceService(retrieval_service=make_retrieval(FakeStore(visible=[uuid4()], matches=[])))
+    monkeypatch.setattr(ask_routes, "inference_service", svc)
+    async def forbidden(*a, **k):
+        raise AssertionError("Model must not be called when nothing relevant was retrieved")
+    monkeypatch.setattr(ask_routes, "verify_free_model", forbidden)
+    result = await ask_routes.browser_context(
+        BrowserAIRequest(question="what is the CEO's salary?", model=next(iter(ask_routes.PUTER_MODELS)), consent=True),
+        auth.AuthUser(OWNER),
+    )
+    assert result["data"]["answer"] == NOT_COVERED_ANSWER
+    assert result["data"]["citations"] == []
 
 
 def test_no_context_prompt_pins_the_exact_sentence():
-    svc = InferenceService(retrieval_service=make_retrieval(FakeStore([], [])), llm_client=ExplodingLLM())
+    svc = InferenceService(retrieval_service=make_retrieval(FakeStore([], [])))
     msgs = svc.build_rag_prompt("q", [], [])
     assert NOT_COVERED_ANSWER in msgs[-1]["content"] and "exactly" in msgs[-1]["content"]
 

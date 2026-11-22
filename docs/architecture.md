@@ -6,7 +6,7 @@ Frontend Next.js/React manages UI state with Zustand and owner-keyed document qu
 
 Uploads store a nonclaimable document row and private PDF before queueing. A long-running API worker claims from Postgres, heartbeats and uses attempt-fenced writes. Parsing/embedding run off the asyncio event loop. Vercel hosts the frontend only; there is no duplicate serverless backend.
 
-Retrieval restricts visible ready documents before embedding/search. Current embeddings call HF feature_extraction with all-MiniLM-L6-v2 and384 dimensions, not local CPU inference. Inference currently uses configured Groq with optional opt-in OpenRouter fallback. Puter is a separate opt-in browser inference flow; it does not replace the retrieval embedding provider. No fallback joins a partial primary stream.
+Retrieval restricts visible ready documents before embedding/search. Current embeddings call HF feature_extraction with all-MiniLM-L6-v2 and384 dimensions, not local CPU inference. Server-side answer generation was removed with the Groq provider (2026-11-22); answers come from the opt-in Puter browser inference flow, which reuses backend retrieval, grounded prompt assembly and citation validation. Puter does not replace the retrieval embedding provider. The unused OpenRouter fallback client remains configured-off.
 
 Document passages/metadata are untrusted input. Prompt rules preserve units/year/basis, and completed answers must cite retrieved marker IDs. These controls do not prove semantic grounding or injection resistance. Model stream failure is not success. PDF table extraction is heuristic.
 

@@ -1,3 +1,5 @@
+> **2026-11-22 update:** The Groq provider, `groq_client.py`, the `/api/v1/ask/stream` route and GROQ_* settings were removed. Answers use the Puter browser AI flow. Historical Groq verification steps below are build history, not current architecture.
+
 > Historical planning/status record. For current implementation and open gates see README.md and docs/production-readiness.md. Old verification and feature claims below are not a live production certificate.
 
 # Historical build record

@@ -32,7 +32,6 @@ def clean():
         ("get", f"/api/v1/documents/{DOC_ID}/chunks"),
         ("get", f"/api/v1/documents/{DOC_ID}/pdf"),
         ("post", "/api/v1/ask/context"),
-        ("post", "/api/v1/ask/stream"),
     ],
 )
 def test_data_endpoints_require_token(method, path):
@@ -44,6 +43,10 @@ def test_data_endpoints_require_token(method, path):
 def test_health_and_root_stay_public():
     assert client.get("/").status_code == 200
     assert client.get("/api/v1/health").status_code in (200, 503)
+
+
+def test_ask_stream_route_removed():
+    assert client.post("/api/v1/ask/stream", json={"question": "q"}).status_code in (404, 405)
 
 
 def test_notify_route_removed():

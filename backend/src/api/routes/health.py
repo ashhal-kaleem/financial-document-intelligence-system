@@ -36,9 +36,6 @@ async def health_check():
             "status": "connected" if db_ok else "degraded",
             "latency_ms": latency_ms,
         },
-        "groq": {
-            "status": "configured_unverified" if settings.GROQ_API_KEY else "unconfigured",
-        },
         "openrouter": {
             "status": "configured_unverified" if settings.OPENROUTER_API_KEY else "unconfigured",
         },

@@ -7,7 +7,7 @@ Status: frontend deployed to Vercel Hobby and backend to Render Free. Last revis
 - Frontend: Next.js on Vercel, version pinned in frontend/package.json.
 - Backend: FastAPI on Render with queue ingestion.
 - Data: Supabase Postgres/pgvector, Auth and private Storage.
-- Inference: configured Groq model; OpenRouter fallback is explicit opt-in and never joins a partial primary answer. Configured keys do not prove provider availability.
+- Inference: no server-side answer provider. Answers come from the user-authorized browser AI flow (Puter free-model allowlist). The unused OpenRouter fallback client stays disabled unless explicitly enabled and configured. Configured keys do not prove provider availability.
 
 ## Before setup
 
@@ -18,7 +18,7 @@ Status: frontend deployed to Vercel Hobby and backend to Render Free. Last revis
 
 ## Configuration
 
-Backend: copy backend/.env.example. Supply SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, HF_TOKEN (only for approved embedding use) and ALLOWED_ORIGINS. GROQ_API_KEY is optional for explicit backend inference; Puter browser inference does not require it. Use a reviewed model identifier actually available to the provider account. Optional fallback requires LLM_FALLBACK_ENABLED=true plus OPENROUTER_API_KEY. Output has a configured cap. No client-chosen arbitrary model.
+Backend: copy backend/.env.example. Supply SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, HF_TOKEN (only for approved embedding use) and ALLOWED_ORIGINS. Puter browser inference needs no backend provider key. Optional fallback requires LLM_FALLBACK_ENABLED=true plus OPENROUTER_API_KEY. Output has a configured cap. No client-chosen arbitrary model.
 
 Frontend: copy frontend/.env.example. Set NEXT_PUBLIC_API_URL to the backend /api/v1 URL, NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Never expose service role/provider keys in NEXT_PUBLIC settings or client code. No project is hardcoded.
 

@@ -4,6 +4,13 @@
 
 All notable changes to the Financial Document Intelligence System (FDIS) are documented here.
 
+## [Unreleased] - 2026-11-22
+### Removed
+- **Groq provider**: `groq_client.py`, GROQ_API_KEY/GROQ_MODEL settings, health check entry, env/render.yaml entries and provider tests.
+- **Server-side answer streaming**: `/api/v1/ask/stream` route and the frontend `streamQuestion` helper. Answers come from the user-authorized Puter browser AI flow; backend retrieval, grounded prompt assembly and citation validation are preserved.
+### Kept
+- OpenRouter fallback client and settings remain configured-off; removal is a separate pending decision.
+
 ## [1.0.0] - 2026-09-06
 ### Added
 - **4-Tier Clean Architecture**: Decoupled routers, services, domain core, and infrastructure adapters.

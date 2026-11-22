@@ -5,7 +5,6 @@ import pytest
 os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
 os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "test-service-key")
 os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
-os.environ.setdefault("GROQ_API_KEY", "test-groq-key")
 
 
 def pytest_configure(config):

@@ -1,7 +1,6 @@
 import pytest
 from src.infrastructure.embedding_client import EmbeddingClient
 from src.infrastructure.supabase_client import SupabaseClient
-from src.infrastructure.groq_client import GroqClient
 from src.infrastructure.resend_client import ResendClient
 
 
@@ -23,13 +22,6 @@ def test_supabase_client_initialization():
     assert client.base_url.startswith("https://")
     assert "apikey" in client.headers
     assert "Authorization" in client.headers
-
-
-def test_groq_client_initialization():
-    client = GroqClient()
-    assert client.api_key is not None
-    assert client.default_model == "qwen/qwen3.8-27b"
-    assert client.fallback_client is not None
 
 
 def test_resend_client_initialization():

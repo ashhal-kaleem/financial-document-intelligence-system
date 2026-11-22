@@ -17,7 +17,7 @@ Hosted app schema was checked after migrations 0001-0003. Source contains safe-d
 
 ## Architecture
 
-Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. Retrieval uses Hugging Face feature extraction. The optional workspace AI flow uses a separate Puter Connect popup and free-model allowlist; backend Groq streaming remains an explicit API route, not an automatic Puter failure fallback. OpenRouter fallback is disabled unless explicitly enabled and configured. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
+Next.js (version pinned in frontend/package.json) + React frontend → FastAPI → Supabase Postgres/pgvector and private Storage. Retrieval uses Hugging Face feature extraction. The optional workspace AI flow uses a separate Puter Connect popup and free-model allowlist. Server-side answer generation (Groq) and its `/api/v1/ask/stream` route were removed on 2026-11-22; the backend provides retrieval, grounded prompt assembly and citation validation only. The unused OpenRouter fallback client remains configured-off pending a separate cleanup decision. Model identifiers in examples are configuration defaults, not current availability or free-usage guarantees.
 
 Queue ingestion runs a worker in the long-running API host. Claims, leases, heartbeat and fenced writes are in Postgres. Vercel hosts the frontend only. Render hosts the single FastAPI backend and durable queue worker. The existing frontend/backend deployments are active; hosted data/auth configuration is separately controlled.
 

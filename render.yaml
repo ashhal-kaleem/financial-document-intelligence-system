@@ -16,10 +16,6 @@ services:
         sync: false
       - key: SUPABASE_STORAGE_BUCKET
         value: documents
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: qwen/qwen3.8-27b
       - key: OPENROUTER_API_KEY
         sync: false
       - key: HF_TOKEN
