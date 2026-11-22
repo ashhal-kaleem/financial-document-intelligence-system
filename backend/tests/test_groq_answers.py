@@ -225,7 +225,7 @@ async def test_groq_payload_uses_low_reasoning_effort(monkeypatch):
 def test_system_prompt_enforces_concise_same_language_plain_answers():
     from src.domain.citation import GROUNDED_SYSTEM_PROMPT
     p = GROUNDED_SYSTEM_PROMPT
-    assert "short and natural" in p
+    assert "short, natural answer" in p and "Write like a person explaining something directly" in p
     assert "same language" in p
     assert "Never emit HTML tags" in p
     assert "[1], [2]" in p or "citation marker" in p  # citation guard stays

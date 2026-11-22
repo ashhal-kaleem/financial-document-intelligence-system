@@ -98,7 +98,7 @@ class GroqClient:
             )
             raise FDISException(
                 "Incomplete answer",
-                "The AI did not return a complete answer. Nothing was accepted; retry the question.",
+                "I couldn't put together a complete answer just now. Please ask the question again.",
                 502,
                 "incomplete_answer",
             )
