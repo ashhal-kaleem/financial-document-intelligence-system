@@ -10,13 +10,13 @@ from src.domain.models import Document
 
 client = TestClient(app)
 DOC_ID = "22222222-2222-2222-2222-222222222222"
-ALICE = AuthUser(id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+ALICE = AuthUser(id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", is_anonymous=True)
 def make_doc(status="ready"):
     import uuid as _uuid
     return Document(id=_uuid.uuid4(), filename="d.pdf", status=status, owner_id=BOB.id)
 
 
-BOB = AuthUser(id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+BOB = AuthUser(id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", is_anonymous=True)
 
 
 @pytest.fixture(autouse=True)
@@ -259,3 +259,25 @@ async def _noop_async(*a, **k):
 
 async def _true_async(*a, **k):
     return True
+
+
+def test_end_session_refuses_named_account(monkeypatch):
+    """A non-anonymous (named) identity can never be deleted through the guest endpoint."""
+    from src.api.routes import session as session_route
+
+    called = []
+    async def _spy_delete(user_id):
+        called.append(user_id)
+        return True
+
+    named = AuthUser(id="cccccccc-cccc-cccc-cccc-cccccccccccc", is_anonymous=False)
+    monkeypatch.setattr(session_route.supabase, "admin_delete_auth_user", _spy_delete)
+    monkeypatch.setattr(auth, "_verify_with_supabase", lambda token: _static_user(named))
+
+    res = client.delete("/api/v1/session", headers={"Authorization": "Bearer named-token"})
+    assert res.status_code == 403
+    assert called == []
+
+
+async def _static_user(user):
+    return user

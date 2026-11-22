@@ -1,7 +1,7 @@
 """Guest session lifecycle: explicit self-service deletion and the scheduled expiry sweep."""
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from src.core.auth import AuthUser, UnauthorizedError, get_current_user, invalidate_cached_tokens_for_user
 from src.core.config import get_settings
 from src.infrastructure.supabase_client import SupabaseClient
@@ -15,7 +15,13 @@ supabase = SupabaseClient()
 async def end_session(user: AuthUser = Depends(get_current_user)):
     """Delete everything the caller owns: documents (rows, chunks, stored PDFs),
     usage counters and the auth identity itself. Self-scoped: only the caller's
-    data is touched. Old named accounts are never affected unless they call this."""
+    data is touched. Guest-only: a named (non-anonymous) account is never
+    deleted through this endpoint."""
+    if not user.is_anonymous:
+        raise HTTPException(
+            status_code=403,
+            detail="Session deletion is only available for guest sessions.",
+        )
     documents = await supabase.get_documents(user.id)
     deleted, failed = 0, 0
     for doc in documents:
