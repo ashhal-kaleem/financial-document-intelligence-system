@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     INGESTION_MODE: str = Field("inline", description="inline = process inside the upload request; queue = store, return 202, a background worker processes (needs a long-running host)")
     WORKER_POLL_SECONDS: float = Field(5.0, description="Queue poll interval")
     JOB_STALE_SECONDS: int = Field(600, description="A claimed job older than this is retried")
+    UPLOAD_ABANDON_SECONDS: int = Field(6 * 3600, description="Inline sweep: uploaded rows (never ingested) older than this are reclaimed; must exceed the signed-upload URL lifetime")
     JOB_MAX_ATTEMPTS: int = Field(3, description="Attempts before a job is marked error")
     MAX_PDF_PAGES: int = Field(500, description="Reject PDFs with more pages than this")
     ALLOWED_EXTENSIONS: list[str] = Field([".pdf"], description="Allowed document extensions")

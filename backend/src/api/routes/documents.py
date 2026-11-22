@@ -35,7 +35,7 @@ async def _sweep_inline_stale() -> None:
     if effective_ingestion_mode() != "inline":
         return
     try:
-        swept = await supabase.fail_stale_inline(settings.JOB_STALE_SECONDS)
+        swept = await supabase.fail_stale_inline(settings.JOB_STALE_SECONDS, settings.UPLOAD_ABANDON_SECONDS)
         if swept:
             logger.info("Inline stale sweep reclaimed %s document(s)", swept)
     except Exception:
@@ -155,7 +155,15 @@ async def ingest_uploaded_document(document_id: UUID, user: AuthUser = Depends(r
             error_message=f"File size exceeds maximum allowable {max_mb}MB limit.",
         )
         raise InvalidPDFError(f"File size exceeds maximum allowable {max_mb}MB limit.")
-    await supabase.update_document_status(document_id, "processing")
+    # Atomic claim fences the stale sweep: claimed_at is refreshed now, so a
+    # delayed ingest on an old upload can never be swept mid-flight, and a
+    # concurrent ingest/sweep gets no match instead of racing.
+    claimed = await supabase.claim_inline_ingest(document_id, doc.attempts or 0)
+    if not claimed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document is not awaiting an upload.",
+        )
     doc.status = "processing"
     try:
         result = await ingestion_service.ingest_stored_document(doc)

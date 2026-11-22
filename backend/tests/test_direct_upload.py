@@ -142,6 +142,9 @@ def test_ingest_success(monkeypatch):
     async def set_status(doc_id, st, **kw):
         return True
 
+    async def claim(doc_id, attempts):
+        return True
+
     async def ingest(d):
         d.status = "ready"
         d.page_count = 3
@@ -149,11 +152,34 @@ def test_ingest_success(monkeypatch):
 
     monkeypatch.setattr(documents_route.supabase, "get_pdf_size", ok_size)
     monkeypatch.setattr(documents_route.supabase, "update_document_status", set_status)
+    monkeypatch.setattr(documents_route.supabase, "claim_inline_ingest", claim)
     monkeypatch.setattr(documents_route.ingestion_service, "ingest_stored_document", ingest)
 
     res = client.post(f"/api/v1/documents/{doc.id}/ingest")
     assert res.status_code == 200
     assert res.json()["data"]["status"] == "ready"
+
+
+def test_ingest_conflict_when_claim_lost(monkeypatch):
+    """A concurrent ingest or sweep already took the row: no double processing."""
+    doc = make_doc()
+    patch_doc(monkeypatch, doc)
+
+    async def ok_size(doc_id, filename):
+        return 1024
+
+    async def claim_lost(doc_id, attempts):
+        return False
+
+    async def forbidden_ingest(d):
+        raise AssertionError("processing must not start when the claim is lost")
+
+    monkeypatch.setattr(documents_route.supabase, "get_pdf_size", ok_size)
+    monkeypatch.setattr(documents_route.supabase, "claim_inline_ingest", claim_lost)
+    monkeypatch.setattr(documents_route.ingestion_service, "ingest_stored_document", forbidden_ingest)
+
+    res = client.post(f"/api/v1/documents/{doc.id}/ingest")
+    assert res.status_code == 409
 
 
 def test_inline_sweep_skipped_in_queue_mode(monkeypatch):
@@ -184,3 +210,105 @@ def test_inline_sweep_failure_does_not_break_requests(monkeypatch):
     monkeypatch.setattr(documents_route.supabase, "get_document_by_id", none)
     res = client.get(f"/api/v1/documents/{uuid.uuid4()}")
     assert res.status_code == 404
+
+
+class _FakeResponse:
+    def __init__(self, json_data=None, status=200, headers=None):
+        self._json = json_data if json_data is not None else []
+        self.status_code = status
+        self.headers = headers or {}
+        self.content = b""
+
+    def json(self):
+        return self._json
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(f"http {self.status_code}")
+
+
+class _FakeAsyncClient:
+    """Records REST calls and serves canned rows per request."""
+
+    def __init__(self, rows_by_marker=None):
+        self.calls = []
+        self.rows_by_marker = rows_by_marker or {}
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    async def get(self, url, headers=None):
+        self.calls.append(("GET", url))
+        for marker, rows in self.rows_by_marker.items():
+            if marker in url:
+                return _FakeResponse(rows)
+        return _FakeResponse([])
+
+    async def patch(self, url, headers=None, json=None):
+        self.calls.append(("PATCH", url, json))
+        return _FakeResponse([{"id": "x"}])
+
+    async def request(self, method, url, headers=None, json=None):
+        self.calls.append((method, url, json))
+        return _FakeResponse({"ok": True})
+
+
+def test_claim_inline_ingest_is_conditional_and_sets_claimed_at(monkeypatch):
+    import asyncio
+    from src.infrastructure import supabase_client as sc
+
+    fake = _FakeAsyncClient()
+    monkeypatch.setattr(sc.httpx, "AsyncClient", lambda timeout: fake)
+    client = sc.SupabaseClient()
+    doc_id = uuid.uuid4()
+
+    ok = asyncio.run(client.claim_inline_ingest(doc_id, 0))
+    assert ok is True
+    method, url, body = fake.calls[0]
+    assert f"id=eq.{doc_id}" in url and "status=eq.uploaded" in url
+    assert body["status"] == "processing" and body["attempts"] == 1
+    assert body["claimed_at"]  # fresh claim timestamp is the sweep fence
+
+
+def test_sweep_fences_processing_on_claim_time_not_document_age(monkeypatch):
+    import asyncio
+    from src.infrastructure import supabase_client as sc
+
+    stale_row = {"id": str(uuid.uuid4()), "filename": "old.pdf"}
+    abandoned_row = {"id": str(uuid.uuid4()), "filename": "abandoned.pdf"}
+    fake = _FakeAsyncClient({"status=eq.processing": [stale_row], "status=eq.uploaded": [abandoned_row]})
+    monkeypatch.setattr(sc.httpx, "AsyncClient", lambda timeout: fake)
+    client = sc.SupabaseClient()
+
+    swept = asyncio.run(client.fail_stale_inline(stale_seconds=600, abandon_seconds=21600))
+    assert swept == 2
+
+    get_urls = [u for m, u, *_ in (c for c in fake.calls if c[0] == "GET")]
+    processing_filt = next(u for u in get_urls if "status=eq.processing" in u)
+    uploaded_filt = next(u for u in get_urls if "status=eq.uploaded" in u)
+    # Processing rows fence on claim time: a delayed ingest on an old document
+    # refreshes claimed_at, so a live function can never match this filter.
+    assert "claimed_at=lt." in processing_filt
+    assert "created_at" not in processing_filt
+    # Uploaded rows fence on creation age (no live function possible), with a
+    # threshold beyond the signed URL lifetime, and are reclaimed (orphan object deleted).
+    assert "created_at=lt." in uploaded_filt
+    deletes = [c for c in fake.calls if c[0] == "DELETE"]
+    assert len(deletes) == 2
+
+
+def test_sweep_skips_recent_claims_and_recent_uploads(monkeypatch):
+    import asyncio
+    from src.infrastructure import supabase_client as sc
+
+    # No canned rows -> both filters return nothing, nothing is touched.
+    fake = _FakeAsyncClient()
+    monkeypatch.setattr(sc.httpx, "AsyncClient", lambda timeout: fake)
+    client = sc.SupabaseClient()
+
+    swept = asyncio.run(client.fail_stale_inline(stale_seconds=600, abandon_seconds=21600))
+    assert swept == 0
+    assert [c for c in fake.calls if c[0] in ("PATCH", "DELETE")] == []

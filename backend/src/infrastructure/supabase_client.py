@@ -319,40 +319,74 @@ class SupabaseClient(BaseVectorStore):
                 headers=self.headers, json={"prefixes": [path]},
             )
 
-    async def fail_stale_inline(self, stale_seconds: int) -> int:
-        """Serverless (inline) recovery for jobs a platform timeout killed mid-flight.
+    async def claim_inline_ingest(self, document_id: UUID, attempts: int) -> bool:
+        """Atomically flip uploaded -> processing, fencing the inline sweep.
 
-        The queue worker's fail_stale_documents only matches worker-claimed rows
-        (attempts >= 1, claimed_at set). Inline rows keep attempts = 0 and never
-        get claimed_at, so they need their own sweep. The stale threshold must
-        always exceed the host's hard request limit (Vercel: 300s), so a live
-        inline job can never be old enough to match. Runs only in inline mode.
-        Also removes any orphaned storage object left by an abandoned upload.
+        Sets claimed_at to now: the sweep fences processing rows on claim time,
+        never on document creation time, so a delayed ingest that just started
+        on an old upload can never be swept while its function is alive. The
+        status=eq.uploaded filter makes the claim atomic: a second ingest, or a
+        sweep that already errored the row, gets no match instead of a race.
+        """
+        from datetime import datetime, timezone
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.patch(
+                f"{self.base_url}/rest/v1/documents?id=eq.{document_id}&status=eq.uploaded",
+                headers={**self.headers, "Prefer": "return=representation"},
+                json={
+                    "status": "processing",
+                    "attempts": attempts + 1,
+                    "claimed_at": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            res.raise_for_status()
+            return bool(res.json())
+
+    async def fail_stale_inline(self, stale_seconds: int, abandon_seconds: int) -> int:
+        """Serverless (inline) recovery for uploads/processing a timeout killed.
+
+        Two fences, both immune to live work:
+        - processing rows are matched on claimed_at (processing start), not
+          created_at. stale_seconds always exceeds the host's hard request cap
+          (Vercel: 300s), so the invocation that set claimed_at is provably dead
+          before the row matches. A delayed ingest starting on an old upload is
+          safe: its claim refreshes claimed_at.
+        - uploaded rows are matched on created_at against abandon_seconds,
+          which exceeds the signed-upload URL's lifetime. No function runs for
+          an uploaded row, so age alone is safe here; the fence exists only to
+          reclaim orphaned storage objects.
+        Runs only in inline mode; queue rows keep their own worker sweep.
         """
         from datetime import datetime, timedelta, timezone
-        cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_seconds)).isoformat()
-        filt = f"status=in.(uploaded,processing)&attempts=eq.0&created_at=lt.{cutoff}"
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            res = await client.get(
-                f"{self.base_url}/rest/v1/documents?select=id,filename&{filt}",
-                headers=self.headers,
-            )
-            res.raise_for_status()
-            rows = res.json()
-            if not rows:
-                return 0
-            res = await client.patch(
-                f"{self.base_url}/rest/v1/documents?{filt}",
-                headers=self.headers,
-                json={"status": "error", "error_message": "Upload or processing was interrupted. Please delete this document and try again."},
-            )
-            res.raise_for_status()
-        for row in rows:
-            try:
-                await self.delete_pdf(UUID(row["id"]), row["filename"])
-            except Exception:
-                pass  # storage cleanup is best-effort; the error row stays deletable
-        return len(rows)
+        now = datetime.now(timezone.utc)
+        filters = [
+            f"status=eq.processing&claimed_at=lt.{(now - timedelta(seconds=stale_seconds)).isoformat()}",
+            f"status=eq.uploaded&created_at=lt.{(now - timedelta(seconds=abandon_seconds)).isoformat()}",
+        ]
+        swept = 0
+        for filt in filters:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                res = await client.get(
+                    f"{self.base_url}/rest/v1/documents?select=id,filename&{filt}",
+                    headers=self.headers,
+                )
+                res.raise_for_status()
+                rows = res.json()
+                if not rows:
+                    continue
+                res = await client.patch(
+                    f"{self.base_url}/rest/v1/documents?{filt}",
+                    headers=self.headers,
+                    json={"status": "error", "error_message": "Upload or processing was interrupted. Please delete this document and try again."},
+                )
+                res.raise_for_status()
+            for row in rows:
+                try:
+                    await self.delete_pdf(UUID(row["id"]), row["filename"])
+                except Exception:
+                    pass  # storage cleanup is best-effort; the error row stays deletable
+            swept += len(rows)
+        return swept
 
     async def upload_pdf(self, document_id: UUID, filename: str, pdf_bytes: bytes) -> str:
         path = f"{document_id}/{filename}"
