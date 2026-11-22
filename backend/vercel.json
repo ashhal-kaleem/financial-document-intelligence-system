@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "src/api/main.py": {
+      "maxDuration": 300,
+      "includeFiles": "models/minilm-v1/**",
+      "excludeFiles": "{tests/**,.venv/**,__pycache__/**,**/__pycache__/**}"
+    }
+  }
+}

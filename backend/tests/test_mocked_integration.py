@@ -170,21 +170,17 @@ async def test_ingestion_failure_stores_generic_message_only():
     assert status == "error" and "hf_SECRET" not in kw["error_message"]
 
 
-def test_embedding_batches_and_retries(monkeypatch):
-    client = EmbeddingClient.__new__(EmbeddingClient)
-    client.model_name, client.batch_size, client.max_retries, client.retry_delay = "m", 2, 3, 0
-    attempts = {"n": 0}
-
-    class Flaky:
-        def feature_extraction(self, batch, model):
-            attempts["n"] += 1
-            if attempts["n"] == 1:
-                raise RuntimeError("429")
-            return [[1.0] * 3 for _ in batch]
-    client.client = Flaky()
+def test_local_embedding_batches_without_network(monkeypatch):
+    client = EmbeddingClient()
+    client.batch_size = 2
+    batches = []
+    def run(batch):
+        batches.append(batch)
+        return [[1.0] * 384 for _ in batch]
+    monkeypatch.setattr(client, "_embed_batch", run)
     out = client.embed_texts(["a", "b", "c", "d", "e"])
     assert len(out) == 5
-    assert attempts["n"] == 4  # 3 batches + 1 retry
+    assert list(map(len, batches)) == [2, 2, 1]
 
 
 @pytest.mark.parametrize(

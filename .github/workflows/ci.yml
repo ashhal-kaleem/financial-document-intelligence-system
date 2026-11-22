@@ -16,6 +16,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with: { python-version: "${{ matrix.python }}" }
       - run: uv sync --frozen
+      - run: uv run python scripts/fetch_embedding_model.py
       - run: uv run pytest -q   # live tests are skipped without RUN_LIVE_TESTS=1
   migrations:
     runs-on: ubuntu-latest

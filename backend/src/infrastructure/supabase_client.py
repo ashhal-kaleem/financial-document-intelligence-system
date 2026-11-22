@@ -5,6 +5,7 @@ import httpx
 from src.core.config import get_settings
 from src.domain.models import Document, DocumentChunk
 from src.infrastructure.interfaces import BaseVectorStore
+from src.infrastructure.embedding_assets import PROFILE
 
 
 class SupabaseClient(BaseVectorStore):
@@ -289,6 +290,8 @@ class SupabaseClient(BaseVectorStore):
             
             results = []
             for r in rows:
+                if r.get("metadata", {}).get("embedding_profile") != PROFILE:
+                    raise RuntimeError("Stored embedding profile differs. Reprocessing requires owner approval.")
                 results.append(
                     DocumentChunk(
                         id=r.get("id"),

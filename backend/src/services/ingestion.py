@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import suppress
 import logging
+import time
 from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 import pymupdf
@@ -9,6 +10,7 @@ from src.core.errors import InvalidPDFError
 from src.domain.chunker import RecursiveFinancialChunker
 from src.domain.models import Document, DocumentChunk
 from src.infrastructure.embedding_client import get_embedding_client
+from src.infrastructure.embedding_assets import PROFILE, split_embedding_text
 from src.infrastructure.supabase_client import SupabaseClient
 
 logger = logging.getLogger(__name__)
@@ -48,7 +50,11 @@ class DocumentIngestionService:
             if page_count > self.settings.MAX_PDF_PAGES:
                 raise InvalidPDFError(f"PDF has {page_count} pages; the limit is {self.settings.MAX_PDF_PAGES}.")
 
+            parse_deadline = time.monotonic() + self.settings.PDF_PARSE_TIMEOUT_SECONDS
+            extracted_chars = 0
             for page_idx in range(page_count):
+                if time.monotonic() >= parse_deadline:
+                    raise InvalidPDFError("PDF parsing took too long. Use a smaller report.")
                 page = doc[page_idx]
                 page_num = page_idx + 1
 
@@ -71,6 +77,9 @@ class DocumentIngestionService:
                 except Exception as e:
                     logger.debug("Table detection skipped on page %s", page_num)
 
+                extracted_chars += len(page_text) + sum(map(len, page_tables))
+                if extracted_chars > self.settings.MAX_DOCUMENT_CHUNKS * self.settings.CHUNK_SIZE * 2:
+                    raise InvalidPDFError("PDF contains too much text for one upload. Split the report.")
                 pages_data.append((page_num, page_text, page_tables))
             if not any(text.strip() or tables for _, text, tables in pages_data):
                 raise InvalidPDFError("No readable text found. Scanned PDFs need OCR, which is not supported yet.")
@@ -134,6 +143,18 @@ class DocumentIngestionService:
             return doc
         return await self._process(doc, pdf_bytes, raise_on_error=False, attempt=doc.attempts)
 
+    def _bound_embedding_chunks(self, chunks: List[DocumentChunk]) -> List[DocumentChunk]:
+        bounded = []
+        for chunk in chunks:
+            for part in split_embedding_text(chunk.content):
+                bounded.append(chunk.model_copy(update={
+                    "content": part,
+                    "metadata": {**chunk.metadata, "embedding_profile": PROFILE},
+                }))
+                if len(bounded) > self.settings.MAX_DOCUMENT_CHUNKS:
+                    raise InvalidPDFError("PDF has too many text chunks. Split the report into smaller files.")
+        return bounded
+
     async def _heartbeat(self, doc_id: UUID, attempt: int) -> None:
         while True:
             await asyncio.sleep(HEARTBEAT_SECONDS)
@@ -174,6 +195,7 @@ class DocumentIngestionService:
                         page_tables=page_tables,
                     )
                 )
+            all_chunks = await asyncio.to_thread(self._bound_embedding_chunks, all_chunks)
             for idx, c in enumerate(all_chunks):
                 c.chunk_index = idx
                 c.total_chunks = len(all_chunks)

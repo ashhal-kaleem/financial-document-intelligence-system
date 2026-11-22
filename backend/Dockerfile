@@ -20,9 +20,10 @@ ENV PATH="/root/.local/bin:${PATH}"
 # Copy dependency specifications
 COPY pyproject.toml uv.lock README.md ./
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 
 # Install python dependencies
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev && uv run --frozen --no-dev python scripts/fetch_embedding_model.py
 
 
 EXPOSE 8000

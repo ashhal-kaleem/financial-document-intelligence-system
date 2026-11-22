@@ -26,11 +26,10 @@ class Settings(BaseSettings):
 
     # Transactional Email Configuration
     RESEND_API_KEY: str = Field("", description="Resend Email API Key")
-    HF_TOKEN: str = Field("", description="Hugging Face API token")
 
     # Embedding & RAG Parameters
-    EMBEDDING_MODEL_NAME: str = Field("all-MiniLM-L6-v2", description="Sentence Transformers model")
-    EMBEDDING_DIMENSIONS: int = Field(384, description="Vector dimension size")
+    MAX_DOCUMENT_CHUNKS: int = Field(2000, ge=1, le=5000, description="Bound CPU/memory work per report")
+    PDF_PARSE_TIMEOUT_SECONDS: float = Field(45.0, ge=1, le=90)
     CHUNK_SIZE: int = Field(512, description="Target characters per chunk")
     CHUNK_OVERLAP: int = Field(64, description="Overlap characters between chunks")
     SIMILARITY_THRESHOLD: float = Field(0.05, description="Minimum cosine similarity threshold")
