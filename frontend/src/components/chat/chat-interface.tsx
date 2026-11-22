@@ -189,6 +189,7 @@ export function ChatInterface() {
               New conversation
             </button>
           </div>
+          <h1 className="text-xl font-semibold">Document Q&amp;A</h1>
           <p className="mt-2 text-xs text-[#6B6278]">
             Conversation stays in this browser. New conversation clears its
             saved messages. No cloud history or export yet.

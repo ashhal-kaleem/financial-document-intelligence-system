@@ -160,3 +160,16 @@ async def test_complete_answer_is_returned(monkeypatch):
     import json
     body = json.loads(seen[0].content)
     assert body["model"] == gc.get_settings().GROQ_MODEL and body["stream"] is False
+
+
+def test_fullwidth_citation_markers_are_normalized(monkeypatch):
+    """gpt-oss models emit 【1】; the answer must validate and ship as [1]."""
+    from src.api.routes import ask as ask_route
+    from src.domain.citation import normalize_citation_markers
+    from src.domain.models import Citation
+
+    cits = [Citation(citation_id=1, document_id="22222222-2222-2222-2222-222222222222", filename="e2e.pdf", page=1, chunk_index=0, total_chunks=1, similarity=0.9, snippet="x")]
+    answer = normalize_citation_markers("Revenue was USD 100 million【1】.")
+    assert answer == "Revenue was USD 100 million[1]."
+    from src.domain.citation import validate_answer_citations
+    assert validate_answer_citations(answer, cits)

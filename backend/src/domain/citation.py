@@ -45,6 +45,12 @@ STRICT GROUNDING RULES:
 """
 
 
+def normalize_citation_markers(answer: str) -> str:
+    """Some models emit fullwidth markers like 【1】 instead of [1]; normalize
+    them so the strict validator and the UI see one canonical form."""
+    return re.sub(r"【(\d+)】", r"[\1]", answer)
+
+
 def validate_answer_citations(answer: str, citations: List[Citation]) -> bool:
     """Checks citation identifiers only, NOT whether the cited passage supports a claim."""
     cited = {int(x) for x in re.findall(r"\[(\d+)\]", answer)}

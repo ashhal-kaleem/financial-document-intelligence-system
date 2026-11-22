@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { ArrowUp, Loader2, Sparkles, FileText, Paperclip } from "lucide-react";
+import { ArrowUp, Loader2, FileText, Paperclip } from "lucide-react";
 import { useFDISStore } from "@/store/useFDISStore";
 import { cn } from "@/lib/utils";
 
@@ -70,9 +70,6 @@ export function ChatInputBox({
             >
               <Paperclip className="size-5" />
             </button>
-            <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-3 py-1.5 text-[11px] font-medium text-[#6D5BD0]">
-              <Sparkles className="size-3" /> Document Q&A
-            </span>
             {selectedDocument && (
               <span className="flex items-center gap-1.5 rounded-full bg-[#F1EDF8] px-2.5 py-1.5 text-[10px] font-medium text-[#6D5BD0]">
                 <FileText className="size-3" />

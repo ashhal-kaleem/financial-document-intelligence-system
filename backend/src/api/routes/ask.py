@@ -4,7 +4,7 @@ from src.core.auth import AuthUser
 from src.core.config import get_settings
 from src.core.errors import FDISException
 from src.core.rate_limit import rate_limited_user
-from src.domain.citation import NOT_COVERED_ANSWER, validate_answer_citations
+from src.domain.citation import NOT_COVERED_ANSWER, normalize_citation_markers, validate_answer_citations
 from src.domain.models import AskRequest
 from src.infrastructure.groq_client import GroqClient
 from src.infrastructure.supabase_client import SupabaseClient
@@ -64,11 +64,11 @@ async def ask_answer(payload: AskRequest, user: AuthUser = Depends(rate_limited_
         raise _quota_error(quota)
 
     messages = inference_service.build_rag_prompt(payload.question, chunks, citations)
-    answer = await groq.complete(messages)
+    answer = normalize_citation_markers(await groq.complete(messages))
     if not validate_answer_citations(answer, citations):
         # One regeneration, then refuse: answers without valid source markers are
         # never shown as grounded output.
-        answer = await groq.complete(messages)
+        answer = normalize_citation_markers(await groq.complete(messages))
         if not validate_answer_citations(answer, citations):
             raise FDISException(
                 "Citation check failed",
